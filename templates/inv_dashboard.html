@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('inventory','لوحة المخزون') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-warehouse" style="color:var(--gold-dark);margin-left:10px;"></i>{{ t.get('inventory','المخزون') }}</h4>
+</div>
+
+{% include '_inv_nav.html' %}
+
+{# ── بطاقات الرصيد (24K فقط) ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-arrow-down"></i></div>
+      <div class="stat-value" style="color:#86efac;">{{ '%.4f'|format(total_in_24) }}</div>
+      <div class="stat-label">{{ t.get('pure_in','إجمالي الوارد (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-arrow-up"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ '%.4f'|format(total_out_24) }}</div>
+      <div class="stat-label">{{ t.get('pure_out','إجمالي الصادر (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:var(--gold-border);background:linear-gradient(135deg,#fff,#fffef5);">
+      <div class="stat-icon ic-gold"><i class="fas fa-balance-scale"></i></div>
+      <div class="stat-value" style="color:var(--gold-dark);font-size:22px;">{{ '%.4f'|format(balance_24) }}</div>
+      <div class="stat-label">{{ t.get('pure_balance','الرصيد الحالي (24K)') }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── بطاقات الإنتاج (كل قيمة 24K منفصلة) ── #}
+<div class="row g-3 mb-2">
+  <div class="col-12">
+    <div style="font-size:13px;font-weight:700;color:var(--text-muted);margin-bottom:8px;
+                text-transform:uppercase;letter-spacing:.5px;">
+      <i class="fas fa-industry" style="color:var(--gold-dark);margin-left:6px;"></i>
+      {{ t.get('production_report','تحليل الإنتاج (24K)') }}
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ '%.4f'|format(total_production_24) }}</div>
+      <div class="stat-label">{{ t.get('total_produced','إجمالي الإنتاج (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon ic-red"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-value">{{ '%.4f'|format(total_loss_24) }}</div>
+      <div class="stat-label">{{ t.get('total_loss_label','إجمالي الفاقد (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-undo-alt"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ '%.4f'|format(total_scrap_24) }}</div>
+      <div class="stat-label">{{ t.get('scrap_weight','إجمالي الرجيع (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-gem"></i></div>
+      <div class="stat-value" style="color:#86efac;">{{ '%.4f'|format(total_stone_gain) }}</div>
+      <div class="stat-label">{{ t.get('from_stone','كسب الأحجار (24K)') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
+        {{ t.get('pure_formula','وزن الأحجار = قيراط × 0.2') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert-custom alert-warning mt-3" style="font-size:12.5px;">
+  <i class="fas fa-info-circle"></i>
+  <span>{{ t.get('pure_formula','جميع القيم بعيار 24') }}</span>
+</div>
+
+{% endblock %}

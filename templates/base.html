@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  
+  <script>/* Mode init — before CSS paint */
+    (function(){var m=localStorage.getItem('goldErpMode');
+      if(m==='dark')document.documentElement.setAttribute('data-theme','dark');
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% block title %}{{ t.gold_factory }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block extra_head %}{% endblock %}
+  {# ── Factory brand color override ── #}
+  {% if current_user.is_authenticated and not current_user.is_platform_user
+        and current_user.factory and current_user.factory.factory_color %}
+  <style>
+    :root {
+      --gold:        {{ current_user.factory.factory_color }};
+      --gold-dark:   {{ current_user.factory.factory_color }};
+      --gold-light:  {{ current_user.factory.factory_color }};
+      --gold-pale:   {{ current_user.factory.factory_color }}22;
+      --gold-border: {{ current_user.factory.factory_color }}55;
+    }
+  </style>
+  {% endif %}
+</head>
+<body>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<!-- ── Sidebar ───────────────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    {# Platform logo — always use sidebar-logo div to keep golden background #}
+    {% if platform_logo %}
+    <div class="sidebar-logo" style="padding:0;overflow:hidden;">
+      <img src="{{ platform_logo }}" alt="logo"
+           style="width:42px;height:42px;object-fit:contain;
+                  mix-blend-mode:multiply;"/>
+    </div>
+    {% else %}
+    <div class="sidebar-logo"><i class="fas fa-ring"></i></div>
+    {% endif %}
+    <span class="sidebar-brand-name">
+      {% if current_user.is_authenticated and not current_user.is_superadmin and current_user.factory %}
+        {{ current_user.factory.name }}
+      {% else %}
+        {{ platform_name }}
+      {% endif %}
+    </span>
+    <span class="sidebar-brand-sub">{{ platform_version }}</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    {% if current_user.is_authenticated and current_user.is_superadmin %}
+      <!-- SUPER ADMIN NAV -->
+      <ul class="nav-list">
+        <li class="nav-item">
+          <a href="{{ url_for('admin.dashboard') }}" class="nav-link-item">
+            <i class="fas fa-tachometer-alt nav-ico"></i>
+            <span>{{ t.dashboard }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.factories') }}" class="nav-link-item">
+            <i class="fas fa-building nav-ico"></i>
+            <span>{{ t.factories }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.create_factory_slot') }}" class="nav-link-item">
+            <i class="fas fa-key nav-ico"></i>
+            <span>{{ t.gen_code }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.users') }}" class="nav-link-item">
+            <i class="fas fa-building nav-ico"></i>
+            <span>{{ t.get('factory_users','مستخدمو المصانع') }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.team') }}" class="nav-link-item">
+            <i class="fas fa-user-shield nav-ico"></i>
+            <span>{{ t.get('system_team','فريق النظام') }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.subscriptions') }}" class="nav-link-item">
+            <i class="fas fa-credit-card nav-ico"></i>
+            <span>{{ t.get('subscriptions','الاشتراكات') }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.analytics') }}" class="nav-link-item">
+            <i class="fas fa-chart-line nav-ico"></i>
+            <span>{{ t.get('analytics','التحليلات') }}</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('admin.platform_settings') }}" class="nav-link-item">
+            <i class="fas fa-sliders-h nav-ico"></i>
+            <span>{{ t.get('platform_settings','إعدادات المنصة') }}</span>
+          </a>
+        </li>
+      </ul>
+
+    {% elif current_user.is_authenticated %}
+      <!-- FACTORY NAV -->
+      <ul class="nav-list">
+
+        {# لوحة التحكم — direct link #}
+        <li class="nav-item">
+          <a href="{{ url_for('factory.dashboard') }}" class="nav-link-item">
+            <i class="fas fa-chart-pie nav-ico"></i>
+            <span>{{ t.get('dashboard','لوحة التحكم') }}</span>
+          </a>
+        </li>
+
+        {# أوامر التشغيل — collapsible #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('orders.') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-clipboard-list nav-ico"></i>
+            <span>{{ t.get('work_orders','أوامر التشغيل') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('orders.list_orders') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('work_orders','عرض الأوامر') }}
+            </a></li>
+            <li><a href="{{ url_for('orders.create_order') }}" class="nav-sub-link">
+              <i class="fas fa-plus fa-xs"></i> {{ t.get('new_order','أمر جديد') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# الموظفين — قسم بـ 3 روابط #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('workers.') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-user-tie nav-ico"></i>
+            <span>{{ t.get('employees','الموظفين') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('workers.list_workers') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('employee_list_label','قائمة الموظفين') }}
+            </a></li>
+            <li><a href="{{ url_for('workers.create_worker') }}" class="nav-sub-link">
+              <i class="fas fa-user-plus fa-xs"></i> {{ t.get('add_employee_nav','إضافة موظف') }}
+            </a></li>
+            <li><a href="{{ url_for('workers.analysis') }}" class="nav-sub-link">
+              <i class="fas fa-chart-bar fa-xs"></i> {{ t.get('employee_analysis_nav','تحليل الموظفين') }}
+            </a></li>
+            <li><a href="{{ url_for('workers.list_terminated') }}" class="nav-sub-link">
+              <i class="fas fa-user-slash fa-xs" style="color:#f87171;"></i> {{ t.get('employee_terminated','الموظفون السابقون') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# العملاء — قسم بـ 3 روابط #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('customers.') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-address-book nav-ico"></i>
+            <span>{{ t.get('customers','العملاء') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('customers.list_customers') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('customers_statement','كشف العملاء') }}
+            </a></li>
+            <li><a href="{{ url_for('customers.create_customer') }}" class="nav-sub-link">
+              <i class="fas fa-user-plus fa-xs"></i> {{ t.get('add_customer_nav','إضافة عميل') }}
+            </a></li>
+            <li><a href="{{ url_for('customers.analysis') }}" class="nav-sub-link">
+              <i class="fas fa-chart-bar fa-xs"></i> {{ t.get('customer_analysis_nav','تحليل العملاء') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# المبيعات — قسم مستقل #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint in ['exports.list_exports','exports.create_export','exports.export_result'] else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-arrow-up nav-ico" style="color:#f87171;"></i>
+            <span>{{ t.get('sales','المبيعات') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('exports.create_export') }}" class="nav-sub-link">
+              <i class="fas fa-plus fa-xs"></i> {{ t.get('new_sale_btn','بيع جديد') }}
+            </a></li>
+            <li><a href="{{ url_for('exports.list_exports') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('sales_statement','كشف المبيعات') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# المشتريات — قسم مستقل #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint in ['exports.list_purchases','exports.create_import'] else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-arrow-down nav-ico" style="color:#86efac;"></i>
+            <span>{{ t.get('purchases','المشتريات') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('exports.create_import') }}" class="nav-sub-link">
+              <i class="fas fa-plus fa-xs"></i> {{ t.get('new_purchase_btn','شراء جديد') }}
+            </a></li>
+            <li><a href="{{ url_for('exports.list_purchases') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('purchases_statement','كشف المشتريات') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# المخزون — collapsible #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('factory.inventory') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-warehouse nav-ico"></i>
+            <span>{{ t.get('inventory','المخزون') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('factory.inventory') }}" class="nav-sub-link">
+              <i class="fas fa-tachometer-alt fa-xs"></i> {{ t.get('inventory_board','لوحة المخزون') }}
+            </a></li>
+            <li><a href="{{ url_for('factory.inventory_karats') }}" class="nav-sub-link">
+              <i class="fas fa-layer-group fa-xs"></i> {{ t.get('karat_analysis','تحليل العيارات') }}
+            </a></li>
+            <li><a href="{{ url_for('factory.inventory_movements') }}" class="nav-sub-link">
+              <i class="fas fa-exchange-alt fa-xs"></i> {{ t.get('gold_movements','حركة الذهب') }}
+            </a></li>
+            <li><a href="{{ url_for('factory.inventory_products') }}" class="nav-sub-link">
+              <i class="fas fa-boxes fa-xs"></i> {{ t.get('product_stock','مخزون المنتجات') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# المنتجات — قسم مستقل #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('prod_inv.') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-store nav-ico"></i>
+            <span>{{ t.get('products','المنتجات') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('prod_inv.list_products') }}" class="nav-sub-link">
+              <i class="fas fa-list fa-xs"></i> {{ t.get('product_stock','مخزون المنتجات') }}
+            </a></li>
+            <li><a href="{{ url_for('prod_inv.add_product_page') }}" class="nav-sub-link">
+              <i class="fas fa-plus fa-xs"></i> {{ t.get('add_product_nav','إضافة منتج') }}
+            </a></li>
+            <li><a href="{{ url_for('prod_inv.analysis') }}" class="nav-sub-link">
+              <i class="fas fa-chart-pie fa-xs"></i> {{ t.get('product_analysis_nav','تحليل المنتجات') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# التقارير — collapsible #}
+        <li class="nav-item has-sub {{ 'open' if request.endpoint and request.endpoint.startswith('reports.') else '' }}">
+          <button class="nav-link-item nav-toggle" onclick="toggleNav(this)">
+            <i class="fas fa-chart-bar nav-ico"></i>
+            <span>{{ t.get('reports','التقارير') }}</span>
+            <i class="fas fa-chevron-down nav-arrow"></i>
+          </button>
+          <ul class="nav-sub">
+            <li><a href="{{ url_for('reports.orders_report') }}" class="nav-sub-link">
+              <i class="fas fa-file-invoice fa-xs"></i> {{ t.get('per_order','حسب الأمر') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.stages_report') }}" class="nav-sub-link">
+              <i class="fas fa-layer-group fa-xs"></i> {{ t.get('per_stage','حسب المرحلة') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.workers_report') }}" class="nav-sub-link">
+              <i class="fas fa-user-clock fa-xs"></i> {{ t.get('per_worker','حسب الموظف') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.production_report') }}" class="nav-sub-link">
+              <i class="fas fa-industry fa-xs"></i> {{ t.get('production_report','تقرير الإنتاج') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.customers_report') }}" class="nav-sub-link">
+              <i class="fas fa-users-cog fa-xs"></i> {{ t.get('customers_report','تقرير العملاء') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.inventory_report') }}" class="nav-sub-link">
+              <i class="fas fa-warehouse fa-xs"></i> {{ t.get('inventory_report','تقرير المخزون') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.products_report') }}" class="nav-sub-link">
+              <i class="fas fa-box fa-xs"></i> {{ t.get('reports_products', 'تقرير المنتجات') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.purchases_report') }}" class="nav-sub-link">
+              <i class="fas fa-arrow-down fa-xs" style="color:#86efac;"></i> {{ t.get('reports_purchases', 'تقرير المشتريات') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.sales_report') }}" class="nav-sub-link">
+              <i class="fas fa-arrow-up fa-xs" style="color:#f87171;"></i> {{ t.get('reports_sales', 'تقرير المبيعات') }}
+            </a></li>
+            <li><a href="{{ url_for('reports.archive_index') }}" class="nav-sub-link">
+              <i class="fas fa-archive fa-xs" style="color:var(--gold-dark);"></i> {{ t.get('reports_archive', 'الأرشيف') }}
+            </a></li>
+          </ul>
+        </li>
+
+        {# الإعدادات — direct link #}
+        <li class="nav-item">
+          <a href="{{ url_for('factory.settings') }}" class="nav-link-item">
+            <i class="fas fa-cog nav-ico"></i>
+            <span>{{ t.get('settings','الإعدادات') }}</span>
+          </a>
+        </li>
+
+      </ul>
+    {% endif %}
+  </nav>
+
+  <div class="sidebar-footer">
+    {% if current_user.is_authenticated %}
+      <div style="display:flex;gap:4px;padding:8px;flex-wrap:wrap;">
+        <a href="{{ url_for('lang', code='ar') }}"
+           style="flex:1;text-align:center;padding:5px 4px;border-radius:7px;font-size:12px;
+                  font-weight:700;text-decoration:none;transition:all .15s;
+                  background:{{ 'rgba(212,175,55,.2)' if lang=='ar' else 'transparent' }};
+                  color:{{ 'var(--gold-dark)' if lang=='ar' else 'var(--text-muted)' }};
+                  border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='ar' else 'transparent' }};">
+          AR
+        </a>
+        <a href="{{ url_for('lang', code='en') }}"
+           style="flex:1;text-align:center;padding:5px 4px;border-radius:7px;font-size:12px;
+                  font-weight:700;text-decoration:none;transition:all .15s;
+                  background:{{ 'rgba(212,175,55,.2)' if lang=='en' else 'transparent' }};
+                  color:{{ 'var(--gold-dark)' if lang=='en' else 'var(--text-muted)' }};
+                  border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='en' else 'transparent' }};">
+          EN
+        </a>
+        <a href="{{ url_for('lang', code='tr') }}"
+           style="flex:1;text-align:center;padding:5px 4px;border-radius:7px;font-size:12px;
+                  font-weight:700;text-decoration:none;transition:all .15s;
+                  background:{{ 'rgba(212,175,55,.2)' if lang=='tr' else 'transparent' }};
+                  color:{{ 'var(--gold-dark)' if lang=='tr' else 'var(--text-muted)' }};
+                  border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='tr' else 'transparent' }};">
+          TR
+        </a>
+      </div>
+      <a href="{{ url_for('auth.logout') }}" class="logout-btn">
+        <span class="nav-icon"><i class="fas fa-sign-out-alt"></i></span>{{ t.logout }}
+      </a>
+    {% endif %}
+  </div>
+</aside>
+
+<!-- ── Main ───────────────────────────────────────────────── -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button id="sidebarToggle" class="btn-grey btn-sm" style="display:none;">
+        <i class="fas fa-bars"></i>
+      </button>
+      <a href="{{ url_for('admin.dashboard') if current_user.is_authenticated and current_user.is_platform_user else url_for('factory.dashboard') }}"
+         style="text-decoration:none;color:inherit;">
+        <div class="topbar-title">
+          {% if platform_logo %}
+          <img src="{{ platform_logo }}" alt="logo"
+               style="width:24px;height:24px;object-fit:contain;border-radius:6px;
+                      vertical-align:middle;margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"/>
+          {% else %}
+          <i class="fas fa-ring" style="color:var(--gold);font-size:18px;"></i>
+          {% endif %}
+          {{ platform_name }}
+        </div>
+      </a>
+    </div>
+    <div class="topbar-right">
+      {% if current_user.is_authenticated and not current_user.is_superadmin and current_user.factory %}
+        <span class="factory-chip">
+          <i class="fas fa-building"></i>{{ current_user.factory.name }}
+        </span>
+      {% elif current_user.is_authenticated and current_user.is_superadmin %}
+        <span class="factory-chip" style="background:rgba(147,51,234,.1);border-color:rgba(147,51,234,.3);color:#9333ea;">
+          <i class="fas fa-crown"></i> Super Admin
+        </span>
+      {% endif %}
+      <span style="color:var(--text-light);font-size:12px;font-weight:600;">
+        {{ now.strftime('%Y-%m-%d') if now is defined else '' }}
+      </span>
+      {# ── Dark / Light mode toggle ── #}
+      <button onclick="toggleMode()" id="modeToggleBtn"
+              title="{{ t.get('toggle_mode','تبديل الوضع') }}"
+              style="background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.25);
+                     border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px;
+                     color:var(--gold);transition:all .2s;flex-shrink:0;">
+        <i class="fas fa-moon" id="modeIcon"></i>
+      </button>
+    </div>
+  </header>
+
+  <div class="page-body">
+{# ── Read-Only warning banner ── #}
+{% if current_user.is_authenticated and not current_user.is_platform_user
+      and current_user.factory and current_user.factory.is_read_only %}
+<div style="background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;
+            text-align:center;padding:10px;font-size:13px;font-weight:700;
+            position:sticky;top:var(--topbar-h);z-index:100;">
+  <i class="fas fa-lock" style="margin-left:6px;"></i>
+  {{ t.get('err_read_only','حسابك في وضع القراءة فقط — تواصل مع الإدارة لتجديد الاشتراك.') }}
+</div>
+{% elif current_user.is_authenticated and not current_user.is_platform_user
+        and current_user.factory and current_user.factory.is_in_grace_period %}
+<div style="background:linear-gradient(90deg,#f59e0b,#d97706);color:#fff;
+            text-align:center;padding:8px;font-size:12px;font-weight:700;
+            position:sticky;top:var(--topbar-h);z-index:100;">
+  <i class="fas fa-exclamation-triangle" style="margin-left:6px;"></i>
+  {{ t.get('err_grace_period','⚠️ الاشتراك انتهى — فترة السماح نشطة. جدد الاشتراك قريباً.') }}
+</div>
+{% endif %}
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert-custom alert-{{ 'success' if cat=='success' else ('warning' if cat=='warning' else 'danger') }}">
+            <i class="fas fa-{{ 'check-circle' if cat=='success' else ('exclamation-triangle' if cat=='warning' else 'times-circle') }}"></i>
+            {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<!-- ── Confirm Modal ──────────────────────────────────────── -->
+<div class="gmodal-overlay" id="gModal">
+  <div class="gmodal-box">
+    <div class="gmodal-icon"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="gmodal-title" id="mTitle">Confirm</div>
+    <div class="gmodal-msg"   id="mMsg">Are you sure?</div>
+    <div class="d-flex gap-2 justify-content-center">
+      <button id="mOkBtn" class="btn-danger-soft">
+        <i class="fas fa-trash-alt"></i> {{ t.confirm }}
+      </button>
+      <button onclick="closeModal()" class="btn-grey">
+        <i class="fas fa-times"></i> {{ t.cancel }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<script>
+// ── Collapsible sidebar — one open at a time ─────────────
+function toggleNav(btn) {
+  const li     = btn.closest('.nav-item.has-sub');
+  const isOpen = li.classList.contains('open');
+
+  // Close ALL open sub-menus first
+  document.querySelectorAll('.nav-item.has-sub.open').forEach(el => {
+    el.classList.remove('open');
+  });
+
+  // If it was closed, open it; if it was already open, leave it closed (toggle)
+  if (!isOpen) {
+    li.classList.add('open');
+  }
+}
+
+
+</script>
+<script>
+/* Global translation dict — injected from Flask g.t */
+window._T = {
+  grams:           "{{ t.get('grams','جم') }}",
+  net24k:          "{{ t.get('net_24k','صافي 24K') }}",
+  unit_weight:     "{{ t.get('unit_weight','وزن الوحدة') }}",
+  total_weight:    "{{ t.get('total_weight','الوزن الإجمالي') }}",
+  single_weight:   "{{ t.get('input_mode_single','وزن القطعة') }}",
+  enter_weight:    "{{ t.get('weight','أدخل الوزن') }}",
+  max_label:       "{{ t.get('allowed_return','الحد الأقصى') }}",
+  confirm_delete:  "{{ t.get('confirm_delete','تأكيد الحذف') }}",
+  are_you_sure:    "{{ t.get('are_you_sure','هل أنت متأكد؟') }}",
+  weight_invalid:  "{{ t.get('err_weight_positive','يرجى إدخال وزن صحيح أكبر من الصفر.') }}",
+  photo_too_large: "{{ t.get('logo_size_limit','حجم الصورة يتجاوز الحد المسموح.') }}",
+  expired:         "{{ t.get('sub_expired','انتهى الوقت') }}",
+};
+</script>
+{% block extra_js %}{% endblock %}
+
+{# ── WhatsApp Floating Button ─────────────────────────────── #}
+{% if support_whatsapp %}
+{% set wa_msg = t.get('whatsapp_msg','السلام عليكم، عندي استفسار بخصوص نظام مصنع الذهب') %}
+{% set wa_url = 'https://wa.me/' + support_whatsapp + '?text=' + wa_msg|urlencode %}
+<a href="{{ wa_url }}" target="_blank" rel="noopener"
+   id="waBtnFloat"
+   title="{{ t.get('contact_support','تواصل مع خدمة العملاء') }}"
+   style="position:fixed;bottom:20px;{{ 'right' if dir=='ltr' else 'left' }}:20px;
+          z-index:9990;display:flex;align-items:center;gap:7px;
+          background:#25D366;color:#fff;
+          padding:8px 14px;border-radius:50px;
+          text-decoration:none;font-weight:700;font-size:12px;
+          box-shadow:0 3px 12px rgba(37,211,102,.4);
+          transition:transform .2s,box-shadow .2s;"
+   onmouseover="this.style.transform='scale(1.05)'"
+   onmouseout="this.style.transform='scale(1)'">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+       viewBox="0 0 24 24" fill="white" style="flex-shrink:0;">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.147 1.545 5.882L.057 23.636a.5.5 0 0 0 .61.61l5.754-1.488A11.942 11.942 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.693-.499-5.241-1.371l-.374-.217-3.875 1.002 1.002-3.875-.217-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+  </svg>
+  <span>{{ t.get('contact_support','تواصل معنا') }}</span>
+</a>
+{% endif %}
+
+
+
+</body>
+</html>

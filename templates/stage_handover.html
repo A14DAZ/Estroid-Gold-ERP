@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}{{ t.stage_handover }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">
+    {{ t.stage_handover }} —
+    <span style="color:var(--gold-dark);">{{ order.order_number }}</span>
+    <span class="karat-badge" style="font-size:11px;margin-{{ 'right' if dir=='rtl' else 'left' }}:8px;">{{ order.karat }}K</span>
+  </h4>
+  <a href="{{ url_for('orders.order_detail', order_id=order.id) }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <div class="alert-custom alert-info mb-3">
+      <i class="fas fa-info-circle"></i>
+      {{ 'سجّل الذهب المسلَّم للعامل. ستُسجَّل الأحجار بشكل منفصل في مرحلة تركيب الأحجار.' if lang=='ar'
+         else 'Record the gold handed to the worker. Stones are tracked separately in the Setting stage.' }}
+    </div>
+
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-paper-plane"></i></span>{{ t.stage_handover }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST" id="stageForm">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.stage }} *</label>
+              <select name="stage_name" class="form-select-custom" required
+                      onchange="toggleStoneSection(this.value, '{{ setting_stage }}')">
+                {% for s in stage_list %}
+                  <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.worker }}</label>
+              <select name="worker_id" class="form-select-custom">
+                <option value="">— {{ t.all }} —</option>
+                {% for w in workers %}
+                  <option value="{{ w.id }}">{{ w.name }}{% if w.specialty %} ({{ w.specialty }}){% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.received_weight }} ({{ t.grams }})</label>
+              {# LOCKED: value is set automatically from previous stage or initial weight #}
+              <input type="hidden" name="received_weight" value="{{ '%.3f'|format(locked_weight) }}"/>
+              <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);
+                          border:2px solid var(--gold-border);border-radius:10px;
+                          padding:10px 14px;display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-lock" style="color:var(--gold-dark);font-size:14px;"></i>
+                <div>
+                  <div style="font-size:22px;font-weight:900;color:var(--gold-dark);">
+                    {{ '%.3f'|format(locked_weight) }} {{ t.grams }}
+                  </div>
+                  <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
+                    {{ locked_source }}
+                  </div>
+                </div>
+              </div>
+              <small style="color:var(--gold-dark);font-size:11px;margin-top:4px;display:block;">
+                <i class="fas fa-info-circle" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:4px;"></i>
+                {{ 'يُعيَّن تلقائياً من الوزن السابق — لا يمكن التعديل.' if lang=='ar'
+                   else 'Auto-set from previous weight — cannot be edited.' }}
+              </small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.notes }}</label>
+              <input type="text" name="notes" class="form-control-custom" placeholder="..."/>
+            </div>
+
+            {# ══ STONE SECTION — only for Setting stage ══ #}
+            <div class="col-12" id="stoneSection" style="display:none;">
+              <div class="stone-box">
+                <div class="stone-title">
+                  <i class="fas fa-gem"></i>
+                  {{ t.stone_section }}
+                  <span style="font-size:11px;color:#94a3b8;font-weight:500;margin-{{ 'right' if dir=='rtl' else 'left' }}:8px;">
+                    ({{ t.get('notes','محسوبة بشكل منفصل') }})
+                  </span>
+                </div>
+
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label-custom">{{ t.stone_type }}</label>
+                    <input type="text" name="stone_type" class="form-control-custom"
+                           placeholder="{{ t.get('stone_type','ماسة، زمرد، ياقوت...') }}"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-custom">{{ t.stone_color }}</label>
+                    <input type="text" name="stone_color" class="form-control-custom"
+                           placeholder="{{ t.get('stone_color','شفاف، أخضر، أحمر...') }}"/>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label-custom">{{ t.stone_unit if t.stone_unit else 'Unit' }}</label>
+                    <select name="stone_unit" class="form-select-custom" id="stoneUnit"
+                            onchange="updateStoneLabels()">
+                      <option value="carat">{{ t.get('stone_weight_ct','قيراط (ct)') }}</option>
+                      <option value="gram">{{ t.get('grams','جرام (g)') }}</option>
+                    </select>
+                  </div>
+
+                  {# ── Conversion helper ── #}
+                  <div class="col-12">
+                    <div class="ct-converter" id="convHelper">
+                      <i class="fas fa-calculator" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+                      <span id="convText">
+                        {{ '1 قيراط = 0.2 جرام  |  1 جرام = 5 قيراط' if lang=='ar' else '1 carat = 0.2 g  |  1 gram = 5 carats' }}
+                      </span>
+                      &nbsp;&nbsp;
+                      <input type="number" id="convInput" step="0.001" min="0" value="0"
+                             placeholder="0.000" oninput="showConv()"
+                             style="width:100px;display:inline-block;padding:3px 8px;border:1px solid #e9d5ff;border-radius:7px;font-size:12px;"/>
+                      → <strong id="convResult" style="color:#7e22ce;">—</strong>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label-custom" id="lblRequired">
+                      {{ t.get('stone_required','الكمية المطلوبة') }}
+                      <span id="unitLblReq" style="color:var(--text-muted);">(ct)</span>
+                    </label>
+                    <input type="number" name="stone_required" id="stoneRequired"
+                           class="form-control-custom" step="0.001" min="0" value="0" placeholder="0.000"/>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label-custom" id="lblGiven">
+                      {{ t.get('stone_given','الكمية المسلَّمة للعامل') }}
+                      <span id="unitLblGiven" style="color:var(--text-muted);">(ct)</span>
+                    </label>
+                    <input type="number" name="stone_given" id="stoneGiven"
+                           class="form-control-custom" step="0.001" min="0" value="0"
+                           placeholder="0.000" oninput="calcStone()"/>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label-custom">
+                      {{ t.get('stone_weight_g','المكافئ بالجرام') }}
+                    </label>
+                    <div style="background:#f8fafc;border:1.5px solid var(--grey-border);border-radius:10px;
+                                padding:9px 13px;font-size:15px;font-weight:800;color:#7e22ce;">
+                      <span id="stoneGramPreview">0.0000</span> {{ t.grams }}
+                    </div>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label-custom">{{ t.notes }}</label>
+                    <input type="text" name="stone_notes" class="form-control-custom"
+                           placeholder="{{ t.get('stone_color','لون، جودة، ملاحظات...') }}"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {# ══ END STONE SECTION ══ #}
+
+            <div class="col-12">
+              <hr class="gold-divider"/>
+              <button type="submit" class="btn-gold btn-full" style="padding:12px;font-size:14px;">
+                <i class="fas fa-paper-plane"></i> {{ t.handover }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const SETTING = '{{ setting_stage }}';
+
+function toggleStoneSection(v) {
+  document.getElementById('stoneSection').style.display = (v === SETTING) ? 'block' : 'none';
+}
+
+function updateStoneLabels() {
+  const unit = document.getElementById('stoneUnit').value;
+  const lbl  = unit === 'carat'
+    ? '{{ "(ct)" }}'
+    : '{{ "(g)" }}';
+  ['unitLblReq','unitLblGiven'].forEach(id => {
+    document.getElementById(id).textContent = lbl;
+  });
+  calcStone();
+  showConv();
+}
+
+function calcStone() {
+  const unit  = document.getElementById('stoneUnit').value;
+  const given = parseFloat(document.getElementById('stoneGiven').value) || 0;
+  const grams = unit === 'carat' ? given * 0.2 : given;
+  document.getElementById('stoneGramPreview').textContent = grams.toFixed(4);
+}
+
+function showConv() {
+  const unit = document.getElementById('stoneUnit').value;
+  const val  = parseFloat(document.getElementById('convInput').value) || 0;
+  let result;
+  if (unit === 'carat') {
+    result = (val * 0.2).toFixed(4) + ' {{ t.grams }}';
+  } else {
+    result = (val * 5).toFixed(4) + ' ct';
+  }
+  document.getElementById('convResult').textContent = result;
+}
+
+// Init on page load
+const sel = document.querySelector('select[name=stage_name]');
+if (sel) toggleStoneSection(sel.value);
+</script>
+{% endblock %}

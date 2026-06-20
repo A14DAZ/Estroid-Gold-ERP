@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('work_orders','أمر مغلق') }} — {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center" style="margin-top:60px;">
+  <div class="col-lg-5 col-md-7">
+    <div class="gcard" style="border-color:rgba(212,175,55,.4);">
+      <div class="gcard-body" style="padding:36px;text-align:center;">
+
+        <div style="width:64px;height:64px;border-radius:50%;
+                    background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+                    display:inline-flex;align-items:center;justify-content:center;
+                    font-size:26px;color:var(--black);margin-bottom:20px;
+                    box-shadow:0 8px 24px rgba(212,175,55,.45);">
+          <i class="fas fa-lock"></i>
+        </div>
+
+        <h5 style="font-weight:800;color:var(--black);margin-bottom:8px;">
+          {{ t.get('status','هذا الأمر مغلق') }}
+        </h5>
+        <p style="color:var(--text-muted);font-size:13.5px;margin-bottom:6px;">
+          {{ t.get('work_orders','الأمر') }}
+          <strong style="color:var(--gold-dark);">{{ order.order_number }}</strong>
+          —
+          <span class="badge-custom {{ 'badge-green' if order.status=='completed' else 'badge-red' }}">
+            {{ t.get('completed','مكتمل') if order.status=='completed' else t.get('cancelled','ملغي') }}
+          </span>
+        </p>
+        <p style="color:#f87171;font-size:13px;margin-bottom:24px;">
+          {{ t.get('warning','التعديل قد يؤثر على الحسابات.') }}
+        </p>
+
+        <form method="POST"
+              action="{{ url_for('orders.order_detail', order_id=order.id) }}"
+              style="max-width:320px;margin:0 auto;">
+          <input type="hidden" name="_lock_action" value="unlock"/>
+          <div class="mb-3">
+            <label style="font-size:13px;font-weight:700;color:var(--text-muted);
+                          display:block;margin-bottom:8px;text-align:right;">
+              {{ t.get('password','أدخل كلمة المرور') }}
+            </label>
+            <input type="password" name="lock_password"
+                   class="form-control-custom"
+                   placeholder="••••••••"
+                   style="text-align:center;letter-spacing:4px;"
+                   autofocus required/>
+          </div>
+          <button type="submit" class="btn-gold btn-full"
+                  style="width:100%;margin-bottom:10px;">
+            <i class="fas fa-unlock-alt"></i>{{ t.get('activate','فتح الأمر') }}
+          </button>
+        </form>
+
+        <a href="{{ url_for('orders.list_orders') }}"
+           style="font-size:13px;color:var(--text-muted);text-decoration:none;
+                  display:inline-flex;align-items:center;gap:6px;margin-top:8px;">
+          <i class="fas fa-arrow-right"></i>{{ t.get('back','العودة') }}
+        </a>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

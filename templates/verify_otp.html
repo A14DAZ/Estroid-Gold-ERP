@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>{{ t.get('verify_phone','التحقق من رقم الجوال') }} — {{ platform_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <style>
+    .otp-inputs { display:flex; gap:10px; justify-content:center; margin:20px 0; }
+    .otp-inputs input {
+      width:52px; height:60px; text-align:center; font-size:26px; font-weight:900;
+      border:2px solid var(--grey-border); border-radius:12px;
+      font-family:'Cairo',sans-serif; color:var(--black);
+      transition:all 0.18s;
+    }
+    .otp-inputs input:focus {
+      border-color:var(--gold); outline:none;
+      box-shadow:0 0 0 3px rgba(212,175,55,0.2);
+      background:#fffef5;
+    }
+    .otp-timer { font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:12px; }
+    .otp-timer span { color:var(--gold-dark); font-weight:800; }
+  </style>
+</head>
+<body>
+<div class="auth-bg">
+  <div class="auth-card" style="max-width:440px;">
+    <div class="auth-logo">
+      <div class="auth-logo-icon" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+        <i class="fas fa-mobile-alt"></i>
+      </div>
+      <div class="auth-title">
+        {{ t.get('verify_phone','التحقق من رقم الجوال') }}
+      </div>
+      <div class="auth-sub">
+        {% if phone_display %}
+          {{ t.get('verify_phone','تم إرسال كود التحقق إلى') }}
+          <strong style="color:var(--black);direction:ltr;display:inline-block;">{{ phone_display }}</strong>
+        {% endif %}
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat,msg in messages %}
+        <div class="alert-custom alert-{{ 'success' if cat=='success' else ('info' if cat=='info' else 'danger') }}"
+             style="text-align:center;">
+          <i class="fas fa-{{ 'check-circle' if cat=='success' else ('info-circle' if cat=='info' else 'times-circle') }}"></i>
+          {{ msg|safe }}
+        </div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    {# Mock OTP notice #}
+    <div class="alert-custom alert-info" style="text-align:center;margin-bottom:18px;">
+      <i class="fas fa-info-circle"></i>
+      {{ 'وضع تجريبي: الكود يظهر في الرسائل أعلاه.' if lang=='ar' else 'Mock mode: OTP is shown in the message above.' }}
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.verify_otp') }}" id="otpForm">
+      {# 6 individual digit inputs — combined into hidden field on submit #}
+      <div class="otp-inputs" id="otpBoxes">
+        {% for i in range(6) %}
+        <input type="text" maxlength="1" pattern="[0-9]" inputmode="numeric"
+               class="otp-digit" id="d{{ i }}" autocomplete="off"/>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="otp_code" id="otp_hidden"/>
+
+      <div class="otp-timer">
+        {{ t.get('sub_expired','ينتهي الكود خلال') }}
+        <span id="countdown">15:00</span>
+      </div>
+
+      <button type="submit" class="btn-gold btn-full" style="padding:12px;font-size:15px;justify-content:center;"
+              id="verifyBtn" disabled>
+        <i class="fas fa-check-circle"></i>
+        {{ t.get('verify_phone','تحقق من الكود') }}
+      </button>
+    </form>
+
+    <hr class="gold-divider"/>
+
+    {# Resend #}
+    <form method="POST" action="{{ url_for('auth.resend_otp') }}" style="text-align:center;">
+      <button type="submit" class="btn-grey btn-sm" style="width:100%;justify-content:center;">
+        <i class="fas fa-redo"></i>
+        {{ t.get('resend_otp','إعادة إرسال الكود') }}
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:14px;font-size:12.5px;color:var(--text-muted);">
+      <a href="{{ url_for('auth.register') }}" style="color:var(--gold-dark);">
+        {{ t.get('phone','← تغيير رقم الجوال') }}
+      </a>
+    </p>
+  </div>
+</div>
+
+<script>
+// ── OTP digit navigation ──────────────────────────────────
+const digits  = document.querySelectorAll('.otp-digit');
+const hidden  = document.getElementById('otp_hidden');
+const btn     = document.getElementById('verifyBtn');
+
+digits.forEach((inp, idx) => {
+  inp.addEventListener('input', () => {
+    inp.value = inp.value.replace(/\D/g, '').slice(-1);
+    if (inp.value && idx < digits.length - 1) digits[idx + 1].focus();
+    syncHidden();
+  });
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && !inp.value && idx > 0) digits[idx - 1].focus();
+  });
+  inp.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    paste.split('').forEach((ch, i) => { if (digits[i]) digits[i].value = ch; });
+    syncHidden();
+    const last = Math.min(paste.length, digits.length - 1);
+    digits[last].focus();
+  });
+});
+
+function syncHidden() {
+  const val = Array.from(digits).map(d => d.value).join('');
+  hidden.value = val;
+  btn.disabled = val.length < 6;
+}
+
+// ── Countdown timer ───────────────────────────────────────
+let secs = 15 * 60;
+const el = document.getElementById('countdown');
+const timer = setInterval(() => {
+  secs--;
+  if (secs <= 0) {
+    clearInterval(timer);
+    el.textContent = window._T.expired;
+    el.style.color = 'var(--danger)';
+    btn.disabled = true;
+    return;
+  }
+  const m = String(Math.floor(secs / 60)).padStart(2, '0');
+  const s = String(secs % 60).padStart(2, '0');
+  el.textContent = `${m}:${s}`;
+}, 1000);
+
+// ── Auto-focus first digit ────────────────────────────────
+digits[0].focus();
+</script>
+
+    {# ── Language switcher ── #}
+    <div style="display:flex;justify-content:center;gap:6px;margin-top:14px;">
+      <a href="{{ url_for('lang', code='ar') }}"
+         style="padding:4px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;
+                background:{{ 'rgba(212,175,55,.2)' if lang=='ar' else 'transparent' }};
+                color:{{ 'var(--gold-dark)' if lang=='ar' else 'var(--text-muted)' }};
+                border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='ar' else 'rgba(255,255,255,.08)' }};">AR</a>
+      <a href="{{ url_for('lang', code='en') }}"
+         style="padding:4px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;
+                background:{{ 'rgba(212,175,55,.2)' if lang=='en' else 'transparent' }};
+                color:{{ 'var(--gold-dark)' if lang=='en' else 'var(--text-muted)' }};
+                border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='en' else 'rgba(255,255,255,.08)' }};">EN</a>
+      <a href="{{ url_for('lang', code='tr') }}"
+         style="padding:4px 14px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;
+                background:{{ 'rgba(212,175,55,.2)' if lang=='tr' else 'transparent' }};
+                color:{{ 'var(--gold-dark)' if lang=='tr' else 'var(--text-muted)' }};
+                border:1px solid {{ 'rgba(212,175,55,.4)' if lang=='tr' else 'rgba(255,255,255,.08)' }};">TR</a>
+    </div>
+
+{# WhatsApp Button #}
+{% if support_whatsapp %}
+<a href="https://wa.me/{{ support_whatsapp }}?text={{ t.get('whatsapp_msg','السلام عليكم، عندي استفسار بخصوص نظام مصنع الذهب')|urlencode }}"
+   target="_blank" rel="noopener"
+   style="position:fixed;bottom:28px;{{ 'left' if dir=='ltr' else 'right' }}:24px;
+          z-index:9990;display:flex;align-items:center;gap:10px;
+          background:#25D366;color:#fff;padding:12px 18px;border-radius:50px;
+          text-decoration:none;font-weight:800;font-size:13px;
+          box-shadow:0 4px 20px rgba(37,211,102,.45);">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.138.564 4.147 1.545 5.882L.057 23.636a.5.5 0 0 0 .61.61l5.754-1.488A11.942 11.942 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.693-.499-5.241-1.371l-.374-.217-3.875 1.002 1.002-3.875-.217-.374A9.953 9.953 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+  </svg>
+  {{ t.get('contact_support','تواصل معنا') }}
+</a>
+{% endif %}
+</body>
+</html>

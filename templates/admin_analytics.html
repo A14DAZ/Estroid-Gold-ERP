@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('analytics','التحليل المالي') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-chart-line" style="color:var(--gold);margin-left:10px;"></i>
+      {{ t.get('analytics','التحليل المالي') }}
+    </h4>
+    <div class="page-subtitle">{{ today }}</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <form method="POST" action="{{ url_for('admin.recalc_health') }}">
+      <button type="submit" class="btn-grey btn-sm">
+        <i class="fas fa-sync"></i> {{ t.get('recalc_health','تحديث مؤشر الصحة') }}
+      </button>
+    </form>
+    <a href="{{ url_for('admin.subscriptions') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i> {{ t.get('subscriptions','الاشتراكات') }}
+    </a>
+  </div>
+</div>
+
+{# ── KPI Row ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-coins"></i></div>
+      <div class="stat-value" style="font-size:20px;">{{ '%.0f'|format(total_rev) }}</div>
+      <div class="stat-label">{{ t.get('total_revenue','إجمالي الإيرادات') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ active_count }}</div>
+      <div class="stat-label">{{ t.get('active_subs','مصانع نشطة') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-clock"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ expired_count }}</div>
+      <div class="stat-label">{{ t.get('expired_subs','منتهية') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon ic-gold"><i class="fas fa-calculator"></i></div>
+      <div class="stat-value" style="font-size:20px;">{{ '%.0f'|format(avg_sub) }}</div>
+      <div class="stat-label">{{ t.get('avg_sub_value','متوسط قيمة الاشتراك') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  {# Revenue Chart #}
+  <div class="col-lg-8">
+    <div class="gcard h-100">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-chart-bar"></i></span>{{ t.get('monthly_revenue','الإيرادات الشهرية') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:20px;">
+        <canvas id="revenueChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+
+  {# Plan distribution #}
+  <div class="col-lg-4">
+    <div class="gcard h-100">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-chart-pie"></i></span>{{ t.get('plans','توزيع الباقات') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:20px;display:flex;flex-direction:column;align-items:center;">
+        <canvas id="planChart" height="180" style="max-width:200px;"></canvas>
+        <div style="margin-top:14px;width:100%;">
+          {% for plan, cnt in plan_dist.items() %}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:13px;font-weight:700;">{{ plan.title() }}</span>
+            <span class="badge-custom badge-gold">{{ cnt }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Top payers #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-trophy"></i></span>{{ t.get('top_payers','أكثر المصانع دفعاً') }}</div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="gtable">
+      <thead><tr>
+        <th>{{ t.get('factory_code_label','كود') }}</th>
+        <th>{{ t.factory_name }}</th>
+        <th>{{ t.plan }}</th>
+        <th style="text-align:center;">{{ t.get('health_score','الصحة') }}</th>
+        <th style="text-align:right;">{{ t.get('total_payments','إجمالي المدفوعات') }}</th>
+      </tr></thead>
+      <tbody>
+        {% for f, total in top_payers %}
+        <tr>
+          <td><code style="font-size:11px;font-weight:800;color:var(--gold-dark);background:rgba(212,175,55,.08);padding:2px 7px;border-radius:5px;">{{ f.factory_code or '—' }}</code></td>
+          <td><strong>{{ f.name }}</strong></td>
+          <td><span class="badge-custom badge-gold" style="font-size:11px;">{{ (f.plan or 'basic').title() }}</span></td>
+          <td style="text-align:center;">
+            {% set h = f.health_score or 0 %}
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+              <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                <div style="height:100%;width:{{ h }}%;background:{{ '#22c55e' if h>=70 else ('#f59e0b' if h>=40 else '#ef4444') }};border-radius:3px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:{{ '#22c55e' if h>=70 else ('#f59e0b' if h>=40 else '#ef4444') }};">{{ h }}%</span>
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:900;color:var(--gold-dark);">{{ '%.0f'|format(total) }} {{ t.sar }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const goldColor    = 'rgba(212,175,55,0.85)';
+const goldBorder   = 'rgba(212,175,55,1)';
+const goldFaint    = 'rgba(212,175,55,0.12)';
+
+/* ── Revenue Bar Chart ── */
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels: [{% for m in monthly %}"{{ m.month }}"{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      label: '{{ t.get("revenue","إيرادات") }}',
+      data: [{% for m in monthly %}{{ m.revenue }}{% if not loop.last %},{% endif %}{% endfor %}],
+      backgroundColor: goldFaint,
+      borderColor: goldBorder,
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 11 } } },
+      y: { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+/* ── Plan Doughnut Chart ── */
+const planLabels = [{% for p,c in plan_dist.items() %}"{{ p.title() }}"{% if not loop.last %},{% endif %}{% endfor %}];
+const planData   = [{% for p,c in plan_dist.items() %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}];
+new Chart(document.getElementById('planChart'), {
+  type: 'doughnut',
+  data: {
+    labels: planLabels,
+    datasets: [{
+      data: planData,
+      backgroundColor: ['rgba(107,114,128,.7)','rgba(59,130,246,.7)','rgba(212,175,55,.8)'],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    cutout: '68%',
+  }
+});
+</script>
+{% endblock %}

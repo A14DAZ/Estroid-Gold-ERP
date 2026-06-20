@@ -1,0 +1,895 @@
+{% extends "base.html" %}
+{% block title %}{{ t.reports }}{% endblock %}
+
+{% block content %}
+{% set titles = {
+    'orders':           t.get('per_order','تقرير حسب الأمر'),
+    'workers':          t.get('per_worker','تقرير حسب الموظف'),
+    'stages':           t.get('per_stage','تقرير حسب المرحلة'),
+    'production':       t.get('production_report','تقرير الإنتاج'),
+    'customers_report': t.get('customers_report','تقرير العملاء'),
+    'inventory_report': t.get('inventory_report','تقرير المخزون'),
+    'products_report':  t.get('reports_products','تقرير المنتجات'),
+    'purchases_report': t.get('reports_purchases','تقرير المشتريات'),
+    'sales_report':     t.get('reports_sales','تقرير المبيعات'),
+    'archive_index':    t.get('reports_archive','الأرشيف'),
+} %}
+{% set print_title = titles.get(report, t.get('reports','التقارير')) %}
+{% set print_ref = 'RPT-' + (fac.id|string) + '-' + today|replace('-','') %}
+<div class="page-header no-print">
+  <h4 class="page-title">
+    <i class="fas fa-chart-bar" style="color:var(--gold-dark);margin-left:10px;"></i>
+    {{ t.get('reports','التقارير') }}
+  </h4>
+</div>
+
+{% include '_rep_nav.html' %}
+
+{# ── PRINT HEADER (hidden on screen, shown on print) ── #}
+{% if report %}
+
+{# ── Header bar ── #}
+<div class="print-header" style="
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:2.5px solid #c8a84b;
+    padding-bottom:12px;
+    margin-bottom:18px;
+    gap:16px;">
+
+  {# Logo + Factory Name #}
+  <div style="display:flex;align-items:center;gap:14px;">
+    {% if fac.logo_data %}
+      <img src="{{ fac.logo_data }}" alt="logo"
+           style="height:60px;width:60px;object-fit:contain;border-radius:8px;"/>
+    {% else %}
+      <div style="width:60px;height:60px;border-radius:8px;
+                  background:var(--gold-pale, rgba(212,175,55,.08));display:flex;align-items:center;justify-content:center;">
+        <i class="fas fa-ring" style="font-size:28px;color:#c8a84b;"></i>
+      </div>
+    {% endif %}
+    <div>
+      <div style="font-size:20px;font-weight:900;color:var(--text-dark, #111);letter-spacing:.5px;">
+        {{ fac.name }}
+        {% if fac.factory_code %}
+        <span style="font-size:12px;font-weight:700;color:#c8a84b;background:var(--gold-pale, rgba(212,175,55,.06));
+                     padding:1px 8px;border-radius:5px;margin-right:8px;
+                     font-family:monospace;letter-spacing:2px;vertical-align:middle;">
+          {{ fac.factory_code }}
+        </span>
+        {% endif %}
+      </div>
+      {% if fac.city %}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+        <i class="fas fa-map-marker-alt"></i> {{ fac.city }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Report title + meta #}
+  <div style="text-align:{{ 'left' if lang in ('en','tr') else 'right' }};min-width:220px;">
+    <div style="font-size:17px;font-weight:800;color:#c8a84b;margin-bottom:4px;">
+      {{ titles.get(report, t.get('reports','تقرير')) }}
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);line-height:1.7;">
+      <span style="font-weight:700;">{{ t.get('date','التاريخ') }}:</span> {{ today }}<br/>
+      <span style="font-weight:700;">{{ t.get('operation_code','رقم التقرير') }}:</span>
+      RPT-{{ fac.id }}-{{ today|replace('-','') }}-{{ report[:3].upper() }}
+    </div>
+  </div>
+</div>
+
+{# ── Footer (CSS counter via JS injection on print) ── #}
+<div class="print-footer" style="
+    display:none;
+    position:fixed;bottom:0;left:0;right:0;
+    border-top:1.5px solid #c8a84b;
+    padding:6px 14px;
+    font-size:10px;color:var(--text-muted);
+    justify-content:space-between;
+    align-items:center;
+    background:var(--grey-card, #fff);">
+  <span>{{ fac.name }} — {{ titles.get(report, '') }}</span>
+  <span style="color:#c8a84b;font-weight:700;">
+    {{ today }}
+  </span>
+  <span class="print-footer-page"></span>
+</div>
+{% endif %}
+
+{# ═══════════════════════ ORDERS REPORT ═══════════════════════ #}
+{% if report == 'orders' %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('active_orders','عدد الأوامر') }}</div>
+      <div class="rt-value">{{ data|length }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('total_produced','إجمالي الناتج (24K)') }}</div>
+      <div class="rt-value" style="color:var(--success);">{{ '%.4f'|format(grand_output_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('total_loss_label','إجمالي الفاقد (24K)') }}</div>
+      <div class="rt-value" style="{{ 'color:#f87171;' if grand_loss_24 > 5 else '' }}">
+        {{ '%.4f'|format(grand_loss_24) }} {{ t.grams }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('scrap_weight','إجمالي الرجيع (24K)') }}</div>
+      <div class="rt-value" style="color:#86efac;">{{ '%.4f'|format(grand_scrap_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('order_number','رقم الأمر') }}</th><th>{{ t.get('customer','العميل') }}</th><th>{{ t.get('karat_label','العيار') }}</th>
+      <th>{{ t.get('stage','المراحل') }}</th>
+      <th>{{ t.get('produced_weight','الناتج (24K)') }}</th>
+      <th>{{ t.get('loss','الفاقد (24K)') }}</th>
+      <th>{{ t.get('scrap_weight','الرجيع (24K)') }}</th>
+      <th>{{ t.get('from_stone','كسب الأحجار (24K)') }}</th>
+      <th>{{ t.get('status','الحالة') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for d in data %}
+      <tr>
+        <td><a href="{{ url_for('orders.order_detail', order_id=d.order.id) }}"
+               style="color:var(--gold-dark);font-weight:800;">{{ d.order.order_number }}</a></td>
+        <td>{{ d.order.customer_name or '—' }}</td>
+        <td><span class="karat-badge">{{ d.order.karat }}K</span></td>
+        <td><span class="badge-custom badge-blue">{{ d.stages|length }}</span></td>
+        <td class="loss-ok"><strong>{{ '%.4f'|format(d.output_24) }}</strong></td>
+        <td class="{{ 'loss-bad' if d.loss_24 > 1 else 'loss-ok' }}">{{ '%.4f'|format(d.loss_24) }}</td>
+        <td style="color:#86efac;font-weight:700;">{{ '%.4f'|format(d.scrap_24) }}</td>
+        <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(d.stone_gain_24) }}</td>
+        <td>
+          <span class="badge-custom {{ 'badge-green' if d.order.status=='completed' else ('badge-red' if d.order.status=='cancelled' else 'badge-blue') }}">
+            {{ t.get('completed','مكتمل') if d.order.status=='completed' else (t.get('cancelled','ملغي') if d.order.status=='cancelled' else t.get('in_progress','نشط')) }}
+          </span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text-muted);">{{ t.get('view','لا توجد بيانات.') }}</td></tr>
+      {% endfor %}
+    </tbody>
+    <tfoot style="background:rgba(212,175,55,.06);border-top:2px solid rgba(212,175,55,.2);">
+      <tr>
+        <td colspan="4" style="font-weight:800;color:var(--gold-dark);">{{ t.get('net_24k','الإجمالي (24K)') }}</td>
+        <td style="font-weight:900;color:var(--success);">{{ '%.4f'|format(grand_output_24) }}</td>
+        <td style="font-weight:900;color:#f87171;">{{ '%.4f'|format(grand_loss_24) }}</td>
+        <td style="font-weight:900;color:#86efac;">{{ '%.4f'|format(grand_scrap_24) }}</td>
+        <td style="font-weight:900;color:#c4b5fd;">{{ '%.4f'|format(grand_stone_24) }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table></div>
+</div>
+
+{# ═══════════════════════ WORKERS REPORT ═══════════════════════ #}
+{% elif report == 'workers' %}
+
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('full_name','الاسم') }}</th><th>{{ t.get('specialty','التخصص') }}</th><th>{{ t.get('stage','المراحل') }}</th>
+      <th>{{ t.get('received_weight','المستلم (24K)') }}</th>
+      <th>{{ t.get('produced_weight','الإنتاج (24K)') }}</th>
+      <th>{{ t.get('loss','الفاقد (24K)') }}</th>
+      <th>{{ t.get('scrap_weight','الرجيع (24K)') }}</th>
+      <th>{{ t.get('from_stone','كسب الأحجار (24K)') }}</th>
+      <th>{{ t.get('loss_pct_label','نسبة الفاقد') }}</th>
+      <th>{{ t.get('salary','الراتب') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for d in data %}
+      <tr>
+        <td><a href="{{ url_for('workers.worker_detail', wid=d.worker.id) }}"
+               style="font-weight:800;color:var(--black);">{{ d.worker.name }}</a></td>
+        <td>{{ d.worker.specialty or '—' }}</td>
+        <td><span class="badge-custom badge-blue">{{ d.stage_count }}</span></td>
+        <td>{{ '%.4f'|format(d.received_24) }}</td>
+        <td class="loss-ok"><strong>{{ '%.4f'|format(d.produced_24) }}</strong></td>
+        <td class="{{ 'loss-bad' if d.loss_24 > 1 else 'loss-ok' }}">{{ '%.4f'|format(d.loss_24) }}</td>
+        <td style="color:#86efac;font-weight:700;">{{ '%.4f'|format(d.scrap_24) }}</td>
+        <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(d.stone_gain_24) }}</td>
+        <td class="{{ 'loss-bad' if d.loss_pct > 2 else 'loss-ok' }}">{{ '%.2f'|format(d.loss_pct) }}%</td>
+        <td><strong style="color:var(--gold-dark);">{{ '%.2f'|format(d.worker.monthly_salary or 0) }} ر.س</strong></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text-muted);">{{ t.get('view','لا توجد بيانات.') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{# ═══════════════════════ STAGES REPORT ═══════════════════════ #}
+{% elif report == 'stages' %}
+
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('stage','المرحلة') }}</th>
+      <th>{{ t.get('quantity','العدد') }}</th>
+      <th>{{ t.get('produced_weight','الإنتاج (24K)') }}</th>
+      <th>{{ t.get('scrap_weight','الرجيع (24K)') }}</th>
+      <th>{{ t.get('loss','الفاقد (24K)') }}</th>
+      <th>{{ t.get('loss_pct_label','نسبة الفاقد') }}</th>
+      <th>{{ t.get('from_stone','كسب الأحجار (24K)') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for row in data %}
+      <tr>
+        <td>
+          <strong>{{ row.stage_name }}</strong>
+          {% if row.stone_24 > 0 %}
+            <span class="badge-custom badge-purple" style="font-size:10px;margin-right:6px;">
+              <i class="fas fa-gem"></i>
+            </span>
+          {% endif %}
+        </td>
+        <td><span class="badge-custom badge-blue">{{ row.count }}</span></td>
+        <td style="font-weight:700;"><strong>{{ '%.4f'|format(row.produced_24) }}</strong></td>
+        <td style="color:#86efac;font-weight:700;">{{ '%.4f'|format(row.scrap_24) }}</td>
+        <td class="{{ 'loss-bad' if row.loss_24 > 2 else 'loss-ok' }}">{{ '%.4f'|format(row.loss_24) }}</td>
+        <td class="{{ 'loss-bad' if row.loss_pct > 2 else 'loss-ok' }}">{{ '%.2f'|format(row.loss_pct) }}%</td>
+        <td style="color:#c4b5fd;font-weight:700;">
+          {% if row.stone_24 > 0 %}{{ '%.4f'|format(row.stone_24) }}
+          {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">{{ t.get('view','لا توجد بيانات.') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{# ═══════════════════════ DEFAULT (no report) ═══════════════════════ #}
+{% elif report == 'production' %}
+
+{# ─── PRODUCTION REPORT ─── #}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('total_produced','إجمالي الإنتاج (24K)') }}</div>
+      <div class="rt-value" style="color:var(--success);">{{ '%.4f'|format(total_produced_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('total_loss_label','إجمالي الفاقد (24K)') }}</div>
+      <div class="rt-value" style="color:#f87171;">{{ '%.4f'|format(total_loss_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('scrap_weight','إجمالي الرجيع (24K)') }}</div>
+      <div class="rt-value" style="color:#86efac;">{{ '%.4f'|format(total_scrap_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="report-total">
+      <div class="rt-label">{{ t.get('efficiency','كفاءة الإنتاج') }}</div>
+      <div class="rt-value" style="color:{{ 'var(--success)' if efficiency >= 98 else '#f87171' }};">
+        {{ '%.2f'|format(efficiency) }}%
+      </div>
+    </div>
+  </div>
+</div>
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('order_number','رقم الأمر') }}</th><th>{{ t.get('model_name','المنتج') }}</th><th>{{ t.get('product_code','الكود') }}</th><th>{{ t.get('karat_label','العيار') }}</th>
+      <th>{{ t.get('produced_weight','الناتج (24K)') }}</th>
+      <th>{{ t.get('loss','الفاقد (24K)') }}</th>
+      <th>{{ t.get('scrap_weight','الرجيع (24K)') }}</th>
+      <th>{{ t.get('from_stone','كسب الأحجار (24K)') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for r in order_rows %}
+      <tr>
+        <td><a href="{{ url_for('orders.order_detail', order_id=r.order.id) }}"
+               style="color:var(--gold-dark);font-weight:800;">{{ r.order.order_number }}</a></td>
+        <td>{{ r.order.model_name or r.order.product_name or '—' }}</td>
+        <td><code style="font-size:11px;">{{ r.order.product_code or '—' }}</code></td>
+        <td><span class="karat-badge">{{ r.order.karat }}K</span></td>
+        <td class="loss-ok"><strong>{{ '%.4f'|format(r.out_24) }}</strong></td>
+        <td class="{{ 'loss-bad' if r.loss_24 > 1 else 'loss-ok' }}">{{ '%.4f'|format(r.loss_24) }}</td>
+        <td style="color:#86efac;font-weight:700;">{{ '%.4f'|format(r.scrap_24) }}</td>
+        <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(r.stone_24) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-muted);">{{ t.get('view','لا توجد بيانات.') }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% elif report == 'inventory_report' %}
+
+{# ─── INVENTORY REPORT (24K Normalized) ─── #}
+
+{# ── 3 primary 24K cards ── #}
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="report-total" style="border-color:#bbf7d0;">
+      <div class="rt-label">
+        <i class="fas fa-arrow-down" style="color:#86efac;margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+        {{ t.get('pure_in','إجمالي الوارد (24K)') }}
+      </div>
+      <div class="rt-value" style="color:#86efac;">{{ '%.4f'|format(total_in_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="report-total" style="border-color:#fecaca;">
+      <div class="rt-label">
+        <i class="fas fa-arrow-up" style="color:#f87171;margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+        {{ t.get('pure_out','إجمالي الصادر (24K)') }}
+      </div>
+      <div class="rt-value" style="color:#f87171;">{{ '%.4f'|format(total_out_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="report-total" style="border-color:var(--gold-border);background:linear-gradient(135deg,#fffef5,#fff);">
+      <div class="rt-label">
+        <i class="fas fa-balance-scale" style="color:var(--gold-dark);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+        {{ t.get('pure_balance','الرصيد الحالي (24K)') }}
+      </div>
+      <div class="rt-value" style="color:var(--gold-dark);">{{ '%.4f'|format(balance_24) }} {{ t.grams }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Karat analysis section ── #}
+{% if karat_analysis %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-layer-group"></i></span>
+      {{ t.get('karat_analysis','تحليل حسب العيار') }}
+    </div>
+  </div>
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('karat','العيار') }}</th>
+      <th>{{ t.get('incoming','الوارد (فعلي)') }}</th>
+      <th>{{ t.get('pure_in','الوارد (24K)') }}</th>
+      <th>{{ t.get('outgoing','الصادر (فعلي)') }}</th>
+      <th>{{ t.get('pure_out','الصادر (24K)') }}</th>
+      <th>{{ t.get('total_weight','الوزن الكلي (فعلي)') }}</th>
+      <th>{{ t.get('net_24k','الوزن الكلي (24K)') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for row in karat_analysis %}
+      <tr>
+        <td>
+          <span class="karat-badge" style="font-size:13px;padding:4px 10px;">{{ row.karat }}K</span>
+        </td>
+        <td style="color:#86efac;font-weight:700;">{{ '%.3f'|format(row.in_weight) }}</td>
+        <td style="color:#86efac;font-weight:900;">{{ '%.4f'|format(row.in_fine) }}</td>
+        <td style="color:#f87171;font-weight:700;">{{ '%.3f'|format(row.out_weight) }}</td>
+        <td style="color:#f87171;font-weight:900;">{{ '%.4f'|format(row.out_fine) }}</td>
+        <td style="font-weight:700;">{{ '%.3f'|format(row.total_weight) }}</td>
+        <td style="color:var(--gold-dark);font-weight:900;">
+          {{ '%.4f'|format(row.total_fine) }}
+          <span style="font-size:10px;color:var(--text-muted);font-weight:400;margin-{{ 'right' if dir=='rtl' else 'left' }}:3px;">24K</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+
+<div class="gcard">
+  <div style="overflow-x:auto;max-height:520px;overflow-y:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('sale_type','نوع الحركة') }}</th>
+      <th>{{ t.get('description','التصنيف') }}</th>
+      <th>{{ t.karat_label }}</th>
+      <th>{{ t.get('weight','الوزن') }}</th>
+      <th>{{ t.get('net_24k','الوزن الصافي 24K') }}</th>
+      <th>{{ t.description }}</th>
+      <th>{{ t.trans_date }}</th>
+    </tr></thead>
+    <tbody>
+      {% for row in txns %}
+      {% set txn = row.txn %}
+      <tr>
+        <td>
+          {% if txn.transaction_type == 'in' %}
+            <span class="badge-custom badge-green">
+              <i class="fas fa-arrow-down"></i> {{ t.incoming }}
+            </span>
+          {% else %}
+            <span class="badge-custom badge-red">
+              <i class="fas fa-arrow-up"></i> {{ t.outgoing }}
+            </span>
+          {% endif %}
+        </td>
+        <td>
+          {% set tt   = txn.transaction_type %}
+          {% set desc = (txn.description or '') %}
+          {% set is_work_order  = t.get('work_orders','أمر تشغيل') in desc %}
+          {% set is_product_add = t.get('products','من المنتجات') in desc %}
+          {% if is_work_order and tt == 'in' %}
+            <span class="badge-custom badge-green" style="font-size:10px;">
+              <i class="fas fa-industry"></i>{{ t.get('work_orders','من أمر تشغيل') }}
+            </span>
+          {% elif is_work_order and tt == 'out' %}
+            <span class="badge-custom badge-purple" style="font-size:10px;">
+              <i class="fas fa-tools"></i>{{ t.get('work_orders','إلى أمر تشغيل') }}
+            </span>
+          {% elif is_product_add %}
+            <span class="badge-custom badge-gold" style="font-size:10px;">
+              <i class="fas fa-store"></i>{{ t.get('products','من المنتجات') }}
+            </span>
+          {% elif tt == 'in' %}
+            <span class="badge-custom badge-blue" style="font-size:10px;">
+              <i class="fas fa-user"></i>{{ t.get('customer','من عميل') }}
+            </span>
+          {% else %}
+            <span class="badge-custom badge-gold" style="font-size:10px;">
+              <i class="fas fa-user"></i>{{ t.get('customer','إلى عميل') }}
+            </span>
+          {% endif %}
+        </td>
+        <td><span class="karat-badge">{{ txn.karat }}K</span></td>
+        <td><strong>{{ '%.3f'|format(txn.weight) }}</strong></td>
+        <td style="color:var(--gold-dark);font-weight:700;">
+          {{ '%.4f'|format(row.fine_weight) }}
+          <span style="font-size:10px;color:var(--text-muted);font-weight:400;"> 24K</span>
+        </td>
+        <td style="font-size:12px;color:var(--text-muted);">{{ txn.description or '—' }}</td>
+        <td style="font-size:11.5px;color:var(--text-muted);">{{ txn.transaction_date }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">—</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% elif report == 'customers_report' %}
+
+{# ─── CUSTOMERS REPORT ─── #}
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('customer_name','اسم العميل') }}</th>
+      <th>{{ t.get('customer_type','النوع') }}</th>
+      <th>{{ t.get('pure_in','الوارد (24K)') }}</th>
+      <th>{{ t.get('pure_out','الصادر (24K)') }}</th>
+      <th>{{ t.get('pure_balance','الرصيد (24K)') }}</th>
+      <th>{{ t.get('labor_total','إجمالي الأجور') }}</th>
+      <th>{{ t.get('description','المعاملات') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for d in data %}
+      <tr>
+        <td>
+          <a href="{{ url_for('customers.customer_profile', cid=d.customer.id) }}"
+             style="font-weight:800;color:var(--black);text-decoration:none;">
+            {{ d.customer.name }}
+          </a>
+        </td>
+        <td>
+          <span class="badge-custom {{ 'badge-blue' if d.customer.type=='client' else 'badge-gold' }}">
+            {{ t.get('client','عميل') if d.customer.type=='client' else t.get('supplier','مورد') }}
+          </span>
+        </td>
+        <td style="color:#86efac;font-weight:700;">
+          {{ '%.4f'|format(d.total_in_24) }} <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+        </td>
+        <td style="color:#f87171;font-weight:700;">
+          {{ '%.4f'|format(d.total_out_24) }} <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+        </td>
+        <td>
+          <strong style="color:{{ 'var(--success)' if d.balance_24 >= 0 else 'var(--danger)' }};">
+            {{ '%+.4f'|format(d.balance_24) }}
+          </strong>
+          <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+        </td>
+        <td><strong style="color:var(--gold-dark);">{{ '%.2f'|format(d.total_wages) }}</strong>{{ t.get('sar','ر.س') }}</td>
+        <td><span class="badge-custom badge-blue">{{ d.txn_count }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">
+        {{ t.get('customers','لا توجد بيانات عملاء.') }}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% else %}
+{# Index: tabs above are sufficient — no cards needed #}
+{% endif %}
+
+{# ═══════════════════ PRODUCTS REPORT ═══════════════════ #}
+{% if report == 'products_report' %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-box"></i></span>{{ t.get('reports_products','تقرير المنتجات') }}</div>
+  </div>
+  <div class="row g-3 mb-3" style="padding:0 16px;">
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:var(--gold-border);">
+        <div class="stat-icon ic-gold"><i class="fas fa-boxes"></i></div>
+        <div class="stat-value">{{ rows|length }}</div>
+        <div class="stat-label">{{ t.get('products','عدد المنتجات') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#bbf7d0;">
+        <div class="stat-icon ic-green"><i class="fas fa-weight-hanging"></i></div>
+        <div class="stat-value" style="color:#86efac;">{{ '%.3f'|format(grand_w) }}</div>
+        <div class="stat-label">{{ t.get('total_weight','إجمالي الوزن') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#e9d5ff;">
+        <div class="stat-icon" style="background:rgba(139,92,246,.1);"><i class="fas fa-gem" style="color:#7e22ce;"></i></div>
+        <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(grand_24) }}</div>
+        <div class="stat-label">{{ t.get('net_24k','صافي 24K') }}</div>
+      </div>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.07);">
+        <tr>
+          <th>{{ t.get('product_code','الكود') }}</th><th>{{ t.get('product_name','اسم المنتج') }}</th><th style="text-align:center;">{{ t.get('karat_label','العيار') }}</th>
+          <th style="text-align:center;">{{ t.get('quantity','الكمية') }}</th><th style="text-align:center;">{{ t.get('unit_weight','وزن الوحدة') }} ({{ t.get('grams','جم') }})</th>
+          <th style="text-align:center;">{{ t.get('total_weight','الإجمالي (جم)') }}</th><th style="text-align:center;color:#c4b5fd;">{{ t.get('net_24k','صافي 24K') }}</th>
+          <th style="text-align:center;">{{ t.get('status','الوضع') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td><code style="font-size:11px;font-weight:800;color:var(--gold-dark);">{{ r.product.product_code or '—' }}</code></td>
+          <td><strong>{{ r.product.product_name }}</strong></td>
+          <td style="text-align:center;"><span class="karat-badge">{{ r.product.karat }}K</span></td>
+          <td style="text-align:center;"><strong>{{ '%.2f'|format(r.product.quantity) }}</strong></td>
+          <td style="text-align:center;">{{ '%.4f'|format(r.product.unit_weight) }}</td>
+          <td style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.4f'|format(r.total_w) }}</strong></td>
+          <td style="text-align:center;"><strong style="color:#c4b5fd;">{{ '%.4f'|format(r.pure_24) }}</strong></td>
+          <td style="text-align:center;">
+            {% if r.mode == 'bulk' %}
+              <span style="font-size:10px;padding:2px 8px;border-radius:5px;background:rgba(59,130,246,.1);color:#1d4ed8;">{{ t.get('total','إجمالي') }}</span>
+            {% elif r.mode == 'single' %}
+              <span style="font-size:10px;padding:2px 8px;border-radius:5px;background:rgba(139,92,246,.1);color:#7c3aed;">{{ t.get('input_mode_single','قطعة') }}</span>
+            {% else %}
+              <span style="font-size:10px;padding:2px 8px;border-radius:5px;background:rgba(22,163,74,.1);color:#15803d;">{{ t.get('input_mode_unit','وحدة') }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">{{ t.get('products','لا توجد منتجات.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ═══════════════════ PURCHASES REPORT ══════════════════ #}
+{% if report == 'purchases_report' %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-arrow-down"></i></span>{{ t.get('reports_purchases','تقرير المشتريات') }}</div>
+  </div>
+  <form method="GET" style="padding:12px 16px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div><label class="form-label-custom" style="font-size:11px;">{{ t.get('date_from','من') }}</label>
+    <input type="date" name="date_from" class="form-control-custom" value="{{ date_from }}" style="height:36px;"/></div>
+    <div><label class="form-label-custom" style="font-size:11px;">{{ t.get('date_to','إلى') }}</label>
+    <input type="date" name="date_to" class="form-control-custom" value="{{ date_to }}" style="height:36px;"/></div>
+    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-filter"></i>{{ t.get('filter','تصفية') }}</button>
+  </form>
+  <div class="row g-3 mb-3" style="padding:12px 16px 0;">
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#bbf7d0;">
+        <div class="stat-icon ic-green"><i class="fas fa-list"></i></div>
+        <div class="stat-value" style="color:#86efac;">{{ txns|length }}</div>
+        <div class="stat-label">{{ t.get('purchases','عدد عمليات الشراء') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#e9d5ff;">
+        <div class="stat-icon" style="background:rgba(139,92,246,.1);"><i class="fas fa-weight-hanging" style="color:#7e22ce;"></i></div>
+        <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(total_weight_24) }}</div>
+        <div class="stat-label">{{ t.get('net_24k','صافي 24K') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:var(--gold-border);">
+        <div class="stat-icon ic-gold"><i class="fas fa-coins"></i></div>
+        <div class="stat-value" style="color:var(--gold-dark);">{{ '%.2f'|format(total_price) }}</div>
+        <div class="stat-label">{{ t.get('total_value','إجمالي القيمة') }}</div>
+      </div>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.07);">
+        <tr>
+          <th>{{ t.get('operation_code','رقم العملية') }}</th><th>{{ t.get('supplier','المورد') }}</th><th style="text-align:center;">{{ t.get('customer_type','النوع') }}</th>
+          <th style="text-align:center;">{{ t.get('weight','الوزن') }}</th><th style="text-align:center;">{{ t.get('karat_label','العيار') }}</th>
+          <th style="text-align:center;color:#c4b5fd;">24K</th>
+          <th style="text-align:center;">{{ t.get('price_per_gram','سعر الجرام') }}</th><th style="text-align:center;">{{ t.get('total','الإجمالي') }}</th>
+          <th style="text-align:center;">{{ t.get('trans_date','التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn_row in txns %}
+        <tr>
+          <td><code style="font-size:11px;font-weight:800;color:var(--success);">{{ txn_row.op_code or '—' }}</code></td>
+          <td>{% if txn_row.customer %}<strong>{{ txn_row.customer.name }}</strong>{% else %}—{% endif %}</td>
+          <td style="text-align:center;">
+            <span style="font-size:10px;padding:2px 7px;border-radius:5px;
+                         background:{{ 'rgba(59,130,246,.1)' if txn_row.sale_type=='product' else 'rgba(212,175,55,.1)' }};
+                         color:{{ '#1d4ed8' if txn_row.sale_type=='product' else 'var(--gold-dark)' }};">
+              {{ t.get('sale_type_product','منتج') if txn_row.sale_type=='product' else t.get('sale_type_gold','ذهب') }}
+            </span>
+          </td>
+          <td style="text-align:center;white-space:nowrap;"><strong>{{ '%.3f'|format(txn_row.weight or 0) }}</strong> {{ t.get('grams','جم') }}</td>
+          <td style="text-align:center;"><span class="karat-badge" style="font-size:10px;">{{ txn_row.karat }}K</span></td>
+          <td style="text-align:center;color:#c4b5fd;">{{ '%.4f'|format(fine_txn(txn_row)) }}</td>
+          <td style="text-align:center;">{{ '%.2f'|format(txn_row.price_per_gram or 0) }}</td>
+          <td style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.2f'|format(txn_row.total_price or 0) }}</strong></td>
+          <td style="text-align:center;font-size:11px;color:var(--text-muted);">{{ txn_row.transaction_date }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">{{ t.get('purchases','لا توجد مشتريات.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════ SALES REPORT ═════════════════════ #}
+{% if report == 'sales_report' %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-arrow-up"></i></span>{{ t.get('reports_sales','تقرير المبيعات') }}</div>
+  </div>
+  <form method="GET" style="padding:12px 16px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div><label class="form-label-custom" style="font-size:11px;">{{ t.get('date_from','من') }}</label>
+    <input type="date" name="date_from" class="form-control-custom" value="{{ date_from }}" style="height:36px;"/></div>
+    <div><label class="form-label-custom" style="font-size:11px;">{{ t.get('date_to','إلى') }}</label>
+    <input type="date" name="date_to" class="form-control-custom" value="{{ date_to }}" style="height:36px;"/></div>
+    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-filter"></i>{{ t.get('filter','تصفية') }}</button>
+  </form>
+  <div class="row g-3 mb-3" style="padding:12px 16px 0;">
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#fecaca;">
+        <div class="stat-icon ic-red"><i class="fas fa-list"></i></div>
+        <div class="stat-value" style="color:#f87171;">{{ txns|length }}</div>
+        <div class="stat-label">{{ t.get('sales','عدد عمليات البيع') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:#e9d5ff;">
+        <div class="stat-icon" style="background:rgba(139,92,246,.1);"><i class="fas fa-weight-hanging" style="color:#7e22ce;"></i></div>
+        <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(total_weight_24) }}</div>
+        <div class="stat-label">{{ t.get('net_24k','صافي 24K') }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card" style="border-color:var(--gold-border);">
+        <div class="stat-icon ic-gold"><i class="fas fa-coins"></i></div>
+        <div class="stat-value" style="color:var(--gold-dark);">{{ '%.2f'|format(total_price) }}</div>
+        <div class="stat-label">{{ t.get('total_value','إجمالي القيمة') }}</div>
+      </div>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.07);">
+        <tr>
+          <th>{{ t.get('operation_code','رقم العملية') }}</th><th>{{ t.get('customer','العميل') }}</th><th style="text-align:center;">{{ t.get('customer_type','النوع') }}</th>
+          <th style="text-align:center;">{{ t.get('weight','الوزن') }}</th><th style="text-align:center;">{{ t.get('karat_label','العيار') }}</th>
+          <th style="text-align:center;color:#c4b5fd;">24K</th>
+          <th style="text-align:center;">{{ t.get('price_per_gram','سعر الجرام') }}</th><th style="text-align:center;">{{ t.get('total','الإجمالي') }}</th>
+          <th style="text-align:center;">{{ t.get('trans_date','التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn_row in txns %}
+        <tr>
+          <td><code style="font-size:11px;font-weight:800;color:#f87171;">{{ txn_row.op_code or '—' }}</code></td>
+          <td>{% if txn_row.customer %}<strong>{{ txn_row.customer.name }}</strong>{% else %}—{% endif %}</td>
+          <td style="text-align:center;">
+            <span style="font-size:10px;padding:2px 7px;border-radius:5px;
+                         background:{{ 'rgba(59,130,246,.1)' if t.sale_type=='product' else 'rgba(212,175,55,.1)' }};
+                         color:{{ '#1d4ed8' if t.sale_type=='product' else 'var(--gold-dark)' }};">
+              {{ t.get('sale_type_product','منتج') if t.sale_type=='product' else t.get('sale_type_gold','ذهب') }}
+            </span>
+          </td>
+          <td style="text-align:center;white-space:nowrap;"><strong>{{ '%.3f'|format(t.weight or 0) }}</strong>{{ t.get('grams','جم') }}</td>
+          <td style="text-align:center;"><span class="karat-badge" style="font-size:10px;">{{ t.karat }}K</span></td>
+          <td style="text-align:center;color:#c4b5fd;">{{ '%.4f'|format(fine_txn(t)) }}</td>
+          <td style="text-align:center;">{{ '%.2f'|format(t.price_per_gram or 0) }}</td>
+          <td style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.2f'|format(t.total_price or 0) }}</strong></td>
+          <td style="text-align:center;font-size:11px;color:var(--text-muted);">{{ t.transaction_date }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:36px;color:var(--text-muted);">{{ t.get('sales','لا توجد مبيعات.') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════ ARCHIVE INDEX ════════════════════ #}
+{% if report == 'archive_index' %}
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-archive"></i></span>{{ t.get('reports_archive','الأرشيف') }}</div>
+    <button onclick="document.getElementById('archiveModal').style.display='flex'"
+            class="btn-gold btn-sm"><i class="fas fa-plus"></i>{{ t.get('archive_new','أرشفة جديدة') }}</button>
+  </div>
+  {% if archives %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.07);">
+        <tr>
+          <th>{{ t.get('archive_label','العنوان') }}</th><th style="text-align:center;">{{ t.get('date_from','من') }}</th><th style="text-align:center;">{{ t.get('date_to','إلى') }}</th>
+          <th style="text-align:center;">{{ t.get('date','تاريخ الأرشفة') }}</th><th style="text-align:center;">{{ t.get('archive_view','عرض') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in archives %}
+        <tr>
+          <td><strong>{{ a.label }}</strong></td>
+          <td style="text-align:center;font-size:12px;color:var(--text-muted);">{{ a.date_from or '—' }}</td>
+          <td style="text-align:center;font-size:12px;color:var(--text-muted);">{{ a.date_to   or '—' }}</td>
+          <td style="text-align:center;font-size:12px;color:var(--text-muted);">{{ a.created_at.strftime('%Y-%m-%d') if a.created_at else '—' }}</td>
+          <td style="text-align:center;">
+            <a href="{{ url_for('reports.archive_view', aid=a.id) }}"
+               class="btn-gold btn-xs"><i class="fas fa-eye"></i>{{ t.get('archive_view','عرض') }}</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:48px;color:var(--text-muted);">
+    <i class="fas fa-archive" style="font-size:36px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('reports_archive','لا يوجد أرشيف بعد.') }}
+  </div>
+  {% endif %}
+</div>
+
+{# Archive create modal #}
+<div id="archiveModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+            z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--black-soft);border:1.5px solid rgba(212,175,55,.3);
+              border-radius:14px;padding:28px;max-width:440px;width:90%;
+              box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="font-size:16px;font-weight:900;margin-bottom:18px;">
+      <i class="fas fa-archive" style="color:var(--gold-dark);margin-left:8px;"></i>
+      {{ t.get('archive_new','إنشاء أرشيف جديد') }}
+    </div>
+    <form method="POST" action="{{ url_for('reports.create_archive') }}">
+      <div class="row g-3 mb-3">
+        <div class="col-12">
+          <label class="form-label-custom">{{ t.get('archive_label','عنوان الأرشيف') }} *</label>
+          <input type="text" name="archive_label" class="form-control-custom"
+                 placeholder="{{ t.get('archive_label','الربع الأول') }}" required/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('archive_from','من تاريخ') }}</label>
+          <input type="date" name="arch_date_from" class="form-control-custom"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('archive_to','إلى تاريخ') }}</label>
+          <input type="date" name="arch_date_to" class="form-control-custom"/>
+        </div>
+        <div class="col-12">
+          <label class="form-label-custom" style="font-weight:800;color:#f87171;">
+            <i class="fas fa-lock" style="margin-left:5px;"></i>{{ t.get('archive_confirm_pw','كلمة المرور للتأكيد') }} *
+          </label>
+          <input type="password" name="archive_password" class="form-control-custom"
+                 placeholder="{{ t.get('password','كلمة المرور') }}" required
+                 style="border-color:rgba(212,175,55,.4);"/>
+        </div>
+      </div>
+      <div style="background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.2);
+                  border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        <i class="fas fa-info-circle" style="color:var(--gold-dark);margin-left:5px;"></i>
+        {{ t.get('notes','لقطة من البيانات — لا حذف') }}
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn-grey"
+                onclick="document.getElementById('archiveModal').style.display='none'">
+          <i class="fas fa-times"></i>{{ t.get('cancel','إلغاء') }}</button>
+        <button type="submit" class="btn-gold">
+          <i class="fas fa-archive"></i>{{ t.get('archive_save','حفظ الأرشيف') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('archiveModal').addEventListener('click',function(e){
+  if(e.target===this)this.style.display='none';
+});
+</script>
+{% endif %}
+
+{# ════════════════════ ARCHIVE VIEW ═════════════════════ #}
+{% if report == 'archive_view' %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-file-archive"></i></span>
+      {{ arch.label }}
+    </div>
+    <a href="{{ url_for('reports.archive_index') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('reports_archive','الأرشيف') }}</a>
+  </div>
+  <div class="gcard-body">
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+      الفترة: {{ arch.date_from or t.get('never','غير محدد') }} — {{ arch.date_to or t.get('never','غير محدد') }}
+      | {{ t.get("date","أُرشف في") }}: {{ arch.created_at.strftime('%Y-%m-%d %H:%M') if arch.created_at else '' }}
+    </div>
+    <div class="row g-3">
+      {# Purchases #}
+      <div class="col-md-4">
+        <div class="gcard" style="border-color:#bbf7d0;">
+          <div class="gcard-body" style="text-align:center;padding:20px;">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">{{ t.get('purchases','المشتريات') }}</div>
+            <div style="font-size:22px;font-weight:900;color:#86efac;">{{ snap.get('purchases_count',0) }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ t.get('operation_code','عملية') }}</div>
+            <div style="font-size:13px;font-weight:700;color:#c4b5fd;margin-top:6px;">{{ '%.4f'|format(snap.get('purchases_24',0)) }} {{ t.get('notes','جم') }} (24K)</div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('purchases_value',0)) }} ر.س</div>
+          </div>
+        </div>
+      </div>
+      {# Sales #}
+      <div class="col-md-4">
+        <div class="gcard" style="border-color:#fecaca;">
+          <div class="gcard-body" style="text-align:center;padding:20px;">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">{{ t.get('sales','المبيعات') }}</div>
+            <div style="font-size:22px;font-weight:900;color:#f87171;">{{ snap.get('sales_count',0) }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ t.get('operation_code','عملية') }}</div>
+            <div style="font-size:13px;font-weight:700;color:#c4b5fd;margin-top:6px;">{{ '%.4f'|format(snap.get('sales_24',0)) }} {{ t.get('notes','جم') }} (24K)</div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('sales_value',0)) }} ر.س</div>
+          </div>
+        </div>
+      </div>
+      {# Inventory #}
+      <div class="col-md-4">
+        <div class="gcard" style="border-color:var(--gold-border);">
+          <div class="gcard-body" style="text-align:center;padding:20px;">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">{{ t.get('inventory','المخزون') }}</div>
+            <div style="font-size:13px;font-weight:700;color:#86efac;">{{ t.get('incoming','وارد') }}: {{ '%.3f'|format(snap.get('inventory_in',0)) }} جم</div>
+            <div style="font-size:13px;font-weight:700;color:#f87171;">{{ t.get('outgoing','صادر') }}: {{ '%.3f'|format(snap.get('inventory_out',0)) }} جم</div>
+            {% set bal = snap.get('inventory_in',0) - snap.get('inventory_out',0) %}
+            <div style="font-size:16px;font-weight:900;color:var(--gold-dark);margin-top:8px;">{{ t.get('balance','رصيد') }}: {{ '%.3f'|format(bal) }} جم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

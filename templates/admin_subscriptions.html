@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('subscriptions','إدارة الاشتراكات') }} — {{ t.admin_panel }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-credit-card" style="color:var(--gold);margin-left:10px;"></i>
+      {{ t.get('subscriptions','إدارة الاشتراكات') }}
+    </h4>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{{ url_for('admin.add_payment') }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i> {{ t.get('add_payment','تسجيل دفعة') }}
+    </a>
+    <a href="{{ url_for('admin.payments') }}" class="btn-grey btn-sm">
+      <i class="fas fa-history"></i> {{ t.get('payment_history','سجل المدفوعات') }}
+    </a>
+    <a href="{{ url_for('admin.subscription_plans') }}" class="btn-grey btn-sm">
+      <i class="fas fa-boxes"></i> {{ t.get('plans','الباقات') }}
+    </a>
+  </div>
+</div>
+
+{# ── Financial KPIs ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-coins"></i></div>
+      <div class="stat-value" style="font-size:20px;">{{ '%.0f'|format(kpis.total_revenue) }}</div>
+      <div class="stat-label">{{ t.get('total_revenue','إجمالي الإيرادات') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-calendar-check"></i></div>
+      <div class="stat-value" style="color:var(--success);font-size:20px;">{{ '%.0f'|format(kpis.month_revenue) }}</div>
+      <div class="stat-label">{{ t.get('month_revenue','هذا الشهر') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card" style="border-color:#bfdbfe;">
+      <div class="stat-icon ic-blue"><i class="fas fa-check-circle"></i></div>
+      <div class="stat-value" style="color:#1d4ed8;">{{ kpis.active_count }}</div>
+      <div class="stat-label">{{ t.get('active_subs','اشتراكات نشطة') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card" style="border-color:#fde68a;">
+      <div class="stat-icon ic-gold"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-value" style="color:#d97706;">{{ kpis.expiring_count }}</div>
+      <div class="stat-label">{{ t.get('expiring_soon','تنتهي قريباً') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-clock"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ kpis.expired_count }}</div>
+      <div class="stat-label">{{ t.get('expired_subs','اشتراكات منتهية') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-icon ic-gold"><i class="fas fa-receipt"></i></div>
+      <div class="stat-value">{{ kpis.payment_count }}</div>
+      <div class="stat-label">{{ t.get('total_payments','إجمالي الدفعات') }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Alerts ── #}
+{% if expiring_f or expired_f %}
+<div class="row g-3 mb-4">
+  {% if expired_f %}
+  <div class="col-md-6">
+    <div class="gcard" style="border-color:#fecaca;">
+      <div class="gcard-header" style="background:rgba(220,38,38,.04);">
+        <div class="gcard-title">
+          <i class="fas fa-times-circle" style="color:#dc2626;"></i>
+          {{ t.get('expired_factories','اشتراكات منتهية') }}
+          <span style="background:#dc2626;color:#fff;border-radius:8px;padding:1px 8px;font-size:11px;margin-right:6px;">{{ expired_f|length }}</span>
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:12px 16px;">
+        {% for f in expired_f %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(220,38,38,.08);">
+          <div>
+            <strong style="font-size:13px;">{{ f.name }}</strong>
+            <code style="font-size:10px;color:var(--text-muted);margin-right:6px;">{{ f.factory_code or '' }}</code>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span style="font-size:11px;color:#dc2626;">{{ f.subscription_expiry or '—' }}</span>
+            <a href="{{ url_for('admin.manage_subscription', fid=f.id) }}" class="btn-gold btn-xs">
+              <i class="fas fa-cog"></i>
+            </a>
+            <a href="{{ url_for('admin.add_payment') }}?fid={{ f.id }}" class="btn-grey btn-xs">
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% if expiring_f %}
+  <div class="col-md-6">
+    <div class="gcard" style="border-color:#fde68a;">
+      <div class="gcard-header" style="background:rgba(245,158,11,.04);">
+        <div class="gcard-title">
+          <i class="fas fa-exclamation-triangle" style="color:#d97706;"></i>
+          {{ t.get('expiring_soon','تنتهي خلال 7 أيام') }}
+          <span style="background:#d97706;color:#fff;border-radius:8px;padding:1px 8px;font-size:11px;margin-right:6px;">{{ expiring_f|length }}</span>
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:12px 16px;">
+        {% for f in expiring_f %}
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(245,158,11,.08);">
+          <div>
+            <strong style="font-size:13px;">{{ f.name }}</strong>
+            <code style="font-size:10px;color:var(--text-muted);margin-right:6px;">{{ f.factory_code or '' }}</code>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            {% set days = f.days_remaining %}
+            <span class="badge-custom" style="background:{{ 'rgba(239,68,68,.15)' if days<=3 else 'rgba(245,158,11,.15)' }};color:{{ '#ef4444' if days<=3 else '#d97706' }};">
+              {{ days }} {{ t.days }}
+            </span>
+            <a href="{{ url_for('admin.add_payment') }}?fid={{ f.id }}" class="btn-gold btn-xs">
+              <i class="fas fa-plus"></i>
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+
+{# ── Quick Filter Bar ── #}
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;" id="filterBar">
+  <button onclick="filterTable('all')" class="btn-grey btn-sm filter-btn active" data-f="all">
+    {{ t.get('all','الكل') }} <span id="cnt-all" style="margin-right:4px;"></span>
+  </button>
+  <button onclick="filterTable('active')" class="btn-grey btn-sm filter-btn" data-f="active">
+    <i class="fas fa-circle" style="color:#22c55e;font-size:8px;"></i> {{ t.sub_active }}
+  </button>
+  <button onclick="filterTable('expiring')" class="btn-grey btn-sm filter-btn" data-f="expiring">
+    <i class="fas fa-exclamation-triangle" style="color:#d97706;"></i> {{ t.get('expiring_soon','قرب ينتهي') }}
+  </button>
+  <button onclick="filterTable('expired')" class="btn-grey btn-sm filter-btn" data-f="expired">
+    <i class="fas fa-clock" style="color:#f87171;"></i> {{ t.sub_expired }}
+  </button>
+  <button onclick="filterTable('basic')" class="btn-grey btn-sm filter-btn" data-f="basic">🥉 Basic</button>
+  <button onclick="filterTable('pro')" class="btn-grey btn-sm filter-btn" data-f="pro">🥈 Pro</button>
+  <button onclick="filterTable('enterprise')" class="btn-grey btn-sm filter-btn" data-f="enterprise">🥇 Enterprise</button>
+  <input type="text" id="tableSearch" class="form-control-custom"
+         style="width:180px;padding:6px 12px;font-size:12px;"
+         placeholder="{{ t.search }}..."
+         oninput="searchTable(this.value)"/>
+</div>
+
+{# ── Full Factories Table ── #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-list"></i></span>{{ t.factories }}</div>
+    <form method="GET" style="display:flex;gap:8px;">
+      <input type="text" name="q" class="form-control-custom" style="width:180px;padding:6px 10px;font-size:12px;"
+             placeholder="{{ t.search }}..." value="{{ request.args.get('q','') }}"/>
+    </form>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="gtable" id="subscriptionsTable">
+      <thead><tr>
+        <th>{{ t.get('factory_code_label','كود') }}</th>
+        <th>{{ t.factory_name }}</th>
+        <th>{{ t.plan }}</th>
+        <th style="text-align:center;">{{ t.get('health_score','الصحة') }}</th>
+        <th style="text-align:center;">{{ t.get('subscription_status','حالة الاشتراك') }}</th>
+        <th style="text-align:center;">{{ t.get('days_remaining','أيام') }}</th>
+        <th style="text-align:center;">{{ t.get('subscription_price','قيمة') }}</th>
+        <th style="text-align:center;">{{ t.actions }}</th>
+      </tr></thead>
+      <tbody>
+        {% for f in factories %}
+        <tr data-plan="{{ f.plan or 'basic' }}" data-status="{{ f.subscription_status }}" data-days="{{ f.days_remaining if f.days_remaining is not none else 9999 }}" data-name="{{ f.name.lower() }}" data-code="{{ (f.factory_code or '').lower() }}">
+          <td><code style="font-size:11px;font-weight:800;color:var(--gold-dark);background:rgba(212,175,55,.08);padding:2px 7px;border-radius:5px;">{{ f.factory_code or '—' }}</code></td>
+          <td><strong>{{ f.name }}</strong></td>
+          <td>
+            <span class="badge-custom" style="background:{{ 'rgba(212,175,55,.15)' if f.plan=='enterprise' else ('rgba(59,130,246,.1)' if f.plan=='pro' else 'rgba(107,114,128,.1)') }};color:{{ 'var(--gold-dark)' if f.plan=='enterprise' else ('#1d4ed8' if f.plan=='pro' else '#6b7280') }};">
+              {{ f.plan.title() if f.plan else '—' }}
+            </span>
+          </td>
+          <td style="text-align:center;">
+            {% set h = f.health_score or 100 %}
+            <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
+              <div style="width:36px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;">
+                <div style="height:100%;width:{{ h }}%;background:{{ '#22c55e' if h>=70 else ('#f59e0b' if h>=40 else '#ef4444') }};border-radius:3px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:{{ '#22c55e' if h>=70 else ('#f59e0b' if h>=40 else '#ef4444') }};">{{ h }}%</span>
+            </div>
+          </td>
+          <td style="text-align:center;">
+            {% if f.subscription_status == 'active' %}
+              <span class="badge-custom badge-green"><i class="fas fa-circle" style="font-size:7px;"></i> {{ t.sub_active }}</span>
+            {% elif f.subscription_status == 'expired' %}
+              <span class="badge-custom badge-red"><i class="fas fa-clock"></i> {{ t.sub_expired }}</span>
+            {% else %}
+              <span class="badge-custom badge-grey"><i class="fas fa-ban"></i> {{ t.sub_suspended }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if f.days_remaining is none %}<span style="color:var(--gold);">∞</span>
+            {% elif f.days_remaining <= 0 %}<span style="color:#f87171;font-weight:800;">{{ t.sub_expired }}</span>
+            {% elif f.days_remaining <= 3 %}<span class="badge-custom" style="background:rgba(239,68,68,.15);color:#ef4444;font-weight:800;">{{ f.days_remaining }}</span>
+            {% elif f.days_remaining <= 7 %}<span class="badge-custom" style="background:rgba(245,158,11,.15);color:#d97706;font-weight:800;">{{ f.days_remaining }}</span>
+            {% else %}<span class="badge-custom badge-green">{{ f.days_remaining }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-size:12px;color:var(--text-muted);">
+            {{ '%.0f'|format(f.subscription_price or 0) }} {{ t.sar }}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <a href="{{ url_for('admin.manage_subscription', fid=f.id) }}" class="btn-gold btn-xs"><i class="fas fa-cog"></i></a>
+              <a href="{{ url_for('admin.add_payment') }}?fid={{ f.id }}" class="btn-grey btn-xs" title="{{ t.get('add_payment','دفعة') }}"><i class="fas fa-plus"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted);">{{ t.get('no_data','لا توجد بيانات') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% block extra_js %}
+<script>
+function filterTable(f) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  document.querySelectorAll('#subscriptionsTable tbody tr[data-plan]').forEach(function(row) {
+    var show = true;
+    if (f === 'active')    show = row.dataset.status === 'active' && parseInt(row.dataset.days) > 7;
+    if (f === 'expiring')  show = parseInt(row.dataset.days) <= 7 && parseInt(row.dataset.days) > 0;
+    if (f === 'expired')   show = row.dataset.status === 'expired' || parseInt(row.dataset.days) <= 0;
+    if (['basic','pro','enterprise'].includes(f)) show = row.dataset.plan === f;
+    row.style.display = show || f === 'all' ? '' : 'none';
+  });
+}
+function searchTable(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#subscriptionsTable tbody tr[data-plan]').forEach(function(row) {
+    row.style.display = (!q || row.dataset.name.includes(q) || row.dataset.code.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}
+{% endblock %}

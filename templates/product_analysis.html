@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('product_analysis','تحليل المنتجات') }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">
+    <i class="fas fa-chart-pie" style="color:var(--gold-dark);margin-left:10px;"></i>
+    {{ t.get('product_analysis','تحليل المنتجات') }}
+  </h4>
+  <a href="{{ url_for('prod_inv.list_products') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('inventory','المخزون') }}
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-boxes"></i></div>
+      <div class="stat-value">{{ products|length }}</div>
+      <div class="stat-label">{{ t.get('products','أنواع المنتجات') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-cubes"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ '%.2f'|format(total_qty) }}</div>
+      <div class="stat-label">{{ t.get('quantity','إجمالي الوحدات') }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="gcard" style="padding:10px 14px;margin-bottom:0;">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:8px;">
+        {{ t.get('karat_analysis','الوزن حسب العيار') }}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% for grp in karat_groups %}
+        <div style="background:rgba(212,175,55,.07);border:1.5px solid rgba(212,175,55,.25);
+                    border-radius:8px;padding:6px 12px;min-width:90px;text-align:center;">
+          <div style="font-size:18px;font-weight:900;color:var(--gold-dark);">
+            {{ '%.3f'|format(grp.weight) }}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ grp.karat }}K — {{ t.get('grams','جم') }}</div>
+          <div style="font-size:10px;color:#c4b5fd;">
+            {{ '%.4f'|format(grp.pure24) }} {{ t.get('net_24k','24K') }}
+          </div>
+        </div>
+        {% else %}
+        <span style="font-size:12px;color:var(--text-muted);">—</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#e9d5ff;background:linear-gradient(135deg,#fff,#faf5ff);">
+      <div class="stat-icon ic-purple"><i class="fas fa-star"></i></div>
+      <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(total_pure24) }}</div>
+      <div class="stat-label">{{ t.get('net_24k','إجمالي الصافي (24K)') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">
+        {{ t.get('pure_formula','Σ وزن × (عيار ÷ 24)') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% for grp in karat_groups %}
+<div class="gcard mb-3">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="karat-badge" style="font-size:14px;padding:4px 12px;">{{ grp.karat }}K</span>
+    </div>
+    <div style="font-size:13px;color:var(--text-muted);">
+      {{ '%.2f'|format(grp.qty) }} {{ t.get('input_mode_unit','وحدة') }} |
+      <span style="color:var(--gold-dark);font-weight:700;">{{ '%.3f'|format(grp.weight) }} {{ t.get('grams','جم') }}</span> |
+      <span style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(grp.pure24) }} {{ t.get('grams','جم') }} 24K</span>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);">
+        <tr>
+          <th>{{ t.get('product_name','اسم المنتج') }}</th><th>{{ t.get('product_code','الكود') }}</th>
+          <th>{{ t.get('unit_weight','وزن الوحدة') }}</th><th>{{ t.get('quantity','الكمية') }}</th>
+          <th>{{ t.get('total_weight','الوزن الإجمالي') }}</th><th>{{ t.get('net_24k','الوزن الصافي 24K') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products if p.karat == grp.karat %}
+        <tr>
+          <td><strong>{{ p.product_name or '—' }}</strong></td>
+          <td><code style="font-size:11px;">{{ p.product_code }}</code></td>
+          <td>
+            {{ '%.3f'|format(p.unit_weight) }} {{ t.get('grams','جم') }}
+            {% if p.input_mode == 'bulk' %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(59,130,246,.12);color:#1d4ed8;margin-right:3px;">{{ t.get('total','إجمالي') }}</span>
+            {% elif p.input_mode == 'single' %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(139,92,246,.12);color:#7c3aed;margin-right:3px;">{{ t.get('input_mode_single','قطعة') }}</span>
+            {% else %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(22,163,74,.12);color:#15803d;margin-right:3px;">{{ t.get('input_mode_unit','وحدة') }}</span>
+            {% endif %}
+          </td>
+          <td><strong style="color:var(--success);">{{ '%.2f'|format(p.quantity) }}</strong></td>
+          <td style="color:var(--gold-dark);font-weight:700;">{{ '%.3f'|format(p.total_weight) }} {{ t.get('grams','جم') }}</td>
+          <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(p.pure_24_weight) }} {{ t.get('grams','جم') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

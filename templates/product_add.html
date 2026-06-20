@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('product_add','إضافة منتج') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-plus-circle" style="color:var(--gold-dark);margin-left:10px;"></i>
+      {{ t.get('product_add','إضافة منتج') }}
+    </h4>
+    <div class="page-subtitle">
+      {{ t.get('gold_balance','رصيد الذهب المتاح') }}:
+      <strong style="color:var(--gold-dark);">{{ '%.4f'|format(balance) }} {{ t.get('grams','جم') }}</strong>
+    </div>
+  </div>
+  <a href="{{ url_for('prod_inv.list_products') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('inventory','المخزون') }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-7">
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-box"></i></span>
+      {{ t.get('product_name','بيانات المنتج') }}
+    </div>
+  </div>
+  <div class="gcard-body">
+    <form method="POST" action="{{ url_for('prod_inv.add_product') }}" id="addForm">
+
+      {# ── Base info ── #}
+      <div class="row g-3 mb-3">
+        <div class="col-md-7">
+          <label class="form-label-custom">{{ t.get('product_name','اسم المنتج') }}</label>
+          <input type="text" name="product_name" class="form-control-custom"
+                 placeholder="{{ t.get('product_name','مثال: خاتم') }}"/>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label-custom">{{ t.get('product_code','كود المنتج *') }}</label>
+          <input type="text" name="product_code" class="form-control-custom"
+                 placeholder="{{ t.get('product_code','RNG-001') }}" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label-custom">{{ t.get('karat','العيار') }}</label>
+          <select name="karat" class="form-select-custom" id="karat_sel"
+                  onchange="calcPreview()">
+            {% for k in karats %}
+            <option value="{{ k }}" {{ 'selected' if k==18 }}>{{ k }}K</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      {# ── Entry mode ── #}
+      <div class="mb-3">
+        <label class="form-label-custom">{{ t.get('notes','طريقة الإدخال') }}</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          {% for val, lbl in [ ('per_unit', t.get('unit_weight','وزن الوحدة')), ('bulk', t.get('input_mode_bulk','وزن إجمالي')), ('single', t.get('input_mode_single','قطعة واحدة')) ] %}
+          <label style="cursor:pointer;display:flex;align-items:center;gap:7px;
+                        padding:8px 16px;border:2px solid var(--border);border-radius:9px;
+                        font-size:13px;font-weight:700;background:#fff;color:#212529;
+                        transition:all .15s;">
+            <input type="radio" name="input_mode" value="{{ val }}"
+                   {{ 'checked' if val=='per_unit' }}/>
+            {{ lbl }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# ── Unified weight input block ── #}
+      <div class="row g-3 mb-3">
+
+        {# Weight label + fields #}
+        <div class="col-md-4">
+          <label class="form-label-custom" id="weight_label">{{ t.get('unit_weight','وزن الوحدة') }}</label>
+
+          <div id="wrap_unit_weight">
+            <input type="number" id="f_unit_weight"
+                   class="form-control-custom" step="0.001" min="0" placeholder="0.000"/>
+          </div>
+
+          <div id="wrap_total_weight" style="display:none;">
+            <input type="number" id="f_total_weight"
+                   class="form-control-custom" step="0.001" min="0" placeholder="0.000"/>
+          </div>
+
+          <div id="wrap_single_weight" style="display:none;">
+            <input type="number" id="f_weight_single"
+                   class="form-control-custom" step="0.001" min="0" placeholder="0.000"/>
+          </div>
+        </div>
+
+        {# Quantity + single badge #}
+        <div class="col-md-3">
+          <label class="form-label-custom">{{ t.get('quantity','الكمية') }}</label>
+          <div id="qty_container">
+            <input type="number" id="f_quantity" name="quantity"
+                   class="form-control-custom" step="1" min="1" value="1"/>
+          </div>
+          <span id="single_badge"
+                style="display:none;padding:10px 14px;border-radius:10px;
+                       background:rgba(212,175,55,.08);border:1.5px solid rgba(212,175,55,.3);
+                       font-size:18px;font-weight:900;color:var(--gold-dark);
+                       display_:block;">
+            1 {{ t.get('input_mode_single','قطعة') }}
+          </span>
+        </div>
+
+        {# Preview #}
+        <div class="col-md-5 d-flex align-items-end">
+          <div style="background:rgba(212,175,55,.08);border:1.5px solid rgba(212,175,55,.3);
+                      border-radius:10px;padding:10px 14px;width:100%;">
+            <div style="font-size:11px;color:var(--text-muted);" id="preview_label">{{ t.get('total_weight','الوزن الإجمالي') }}</div>
+            <div style="font-size:18px;font-weight:900;color:var(--gold-dark);" id="preview_total">0.000 {{ t.get('notes','جم') }}</div>
+            <div style="font-size:11px;color:#c4b5fd;margin-top:2px;" id="preview_pure">{{ t.get('net_24k','صافي 24K') }}: 0.0000 جم</div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" name="resolved_unit_weight" id="h_unit_weight" value="0"/>
+      <input type="hidden" name="resolved_quantity"    id="h_quantity"    value="1"/>
+
+      {# ── Stones section ── #}
+      <div class="mb-3">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;
+                      font-size:13.5px;font-weight:700;color:var(--black);">
+          <input type="checkbox" name="has_stones" id="has_stones_cb"
+                 onchange="toggleStones()"
+                 style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold);">
+          {{ t.get('stone_section','أحجار كريمة؟') }}
+        </label>
+      </div>
+      <div id="stone_fields" class="row g-3 mb-3" style="display:none;">
+        <div class="col-md-5">
+          <label class="form-label-custom">{{ t.get('stone_type','نوع الحجر') }}</label>
+          <input type="text" name="stone_type" class="form-control-custom"
+                 placeholder="{{ t.get('stone_type','ألماس، ياقوت') }}"/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label-custom">{{ t.get('stone_weight_g','وزن الأحجار (جم)') }}</label>
+          <input type="number" name="stone_weight" class="form-control-custom"
+                 step="0.001" min="0" placeholder="0.000"/>
+        </div>
+      </div>
+
+      <hr style="border-color:rgba(212,175,55,.2);margin:20px 0;"/>
+      <button type="submit" class="btn-gold" style="min-width:180px;">
+        <i class="fas fa-plus-circle"></i> {{ t.get('product_add','إضافة للمخزون') }}
+      </button>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Toggle stone fields ─────────────────────────────────────────────
+function toggleStones() {
+  const cb = document.getElementById('has_stones_cb');
+  const fields = document.getElementById('stone_fields');
+  if (cb && fields) {
+    fields.style.display = cb.checked ? 'flex' : 'none';
+  }
+}
+// Run on page load in case checkbox is pre-checked
+document.addEventListener('DOMContentLoaded', function() {
+  toggleStones();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const modeInputs       = document.querySelectorAll('input[name="input_mode"]');
+  const unitWeightInput  = document.getElementById("f_unit_weight");
+  const totalWeightInput = document.getElementById("f_total_weight");
+  const singleWeightInput= document.getElementById("f_weight_single");
+  const qtyInput         = document.getElementById("f_quantity");
+  const label            = document.getElementById("weight_label");
+  const qtyContainer     = document.getElementById("qty_container");
+  const singleBadge      = document.getElementById("single_badge");
+
+  function resetFields() {
+    unitWeightInput.value  = "";
+    totalWeightInput.value = "";
+    singleWeightInput.value= "";
+    qtyInput.value         = "";
+  }
+
+  // ── Shared preview — reads active mode each call ─────────────
+  function updatePreview() {
+    const selected = document.querySelector('input[name="input_mode"]:checked');
+    const mode = selected ? selected.value : "per_unit";
+    const k    = parseFloat(document.getElementById("karat_sel").value) || 18;
+    let total  = 0;
+    if (mode === "per_unit") {
+      total = (parseFloat(unitWeightInput.value) || 0)
+            * (parseFloat(qtyInput.value)        || 0);
+    } else if (mode === "bulk") {
+      total = parseFloat(totalWeightInput.value)  || 0;  // AS-IS
+    } else {
+      total = parseFloat(singleWeightInput.value) || 0;
+    }
+    const net = total * (k / 24);
+    const el  = document.getElementById("preview_total");
+    const pe  = document.getElementById("preview_pure");
+    if (el) el.textContent = total.toFixed(3) + " " + window._T.grams;
+    if (pe) pe.textContent = window._T.net24k + ": " + net.toFixed(4) + " " + window._T.grams;
+  }
+
+  function switchMode(mode) {
+    resetFields();
+    // hide all weight wrappers first
+    document.getElementById("wrap_unit_weight").style.display   = "none";
+    document.getElementById("wrap_total_weight").style.display  = "none";
+    document.getElementById("wrap_single_weight").style.display = "none";
+    qtyContainer.style.display  = "none";
+    singleBadge.style.display   = "none";
+
+    if (mode === "per_unit") {
+      label.innerText = window._T.unit_weight + " ("+window._T.grams+")";
+      document.getElementById("wrap_unit_weight").style.display = "";
+      qtyContainer.style.display = "";
+      qtyInput.disabled = false;
+    }
+
+    if (mode === "bulk") {
+      label.innerText = window._T.total_weight + " ("+window._T.grams+")";
+      document.getElementById("wrap_total_weight").style.display = "";
+      qtyContainer.style.display = "";   // visible but NOT used in calc
+      qtyInput.disabled = false;
+    }
+
+    if (mode === "single") {
+      label.innerText = window._T.single_weight + " ("+window._T.grams+")";
+      document.getElementById("wrap_single_weight").style.display = "";
+      qtyInput.value    = 1;
+      qtyInput.disabled = true;
+      singleBadge.style.display = "inline-block";
+    }
+
+    updatePreview();   // reset summary box on mode change
+  }
+
+  // Wire mode radio buttons
+  modeInputs.forEach(function(input) {
+    input.addEventListener("change", function() {
+      switchMode(input.value);
+    });
+  });
+
+  // ── Shared preview function — reads active mode each time ────
+  function updatePreview() {
+    const selected = document.querySelector('input[name="input_mode"]:checked');
+    const mode = selected ? selected.value : "per_unit";
+    const k    = parseFloat(document.getElementById("karat_sel").value) || 18;
+    let total  = 0;
+
+    if (mode === "per_unit") {
+      const uw  = parseFloat(unitWeightInput.value)  || 0;
+      const qty = parseFloat(qtyInput.value)         || 0;
+      total = uw * qty;                                 // unit × quantity
+
+    } else if (mode === "bulk") {
+      total = parseFloat(totalWeightInput.value) || 0;  // AS-IS — no multiply
+
+    } else {
+      total = parseFloat(singleWeightInput.value) || 0; // weight only
+    }
+
+    const net = total * (k / 24);
+    const el  = document.getElementById("preview_total");
+    const pe  = document.getElementById("preview_pure");
+    if (el) el.textContent = total.toFixed(3) + " " + window._T.grams;
+    if (pe) pe.textContent = window._T.net24k + ": " + net.toFixed(4) + " " + window._T.grams;
+  }
+
+  // Wire all inputs to updatePreview
+  unitWeightInput.addEventListener("input",  updatePreview);
+  totalWeightInput.addEventListener("input", updatePreview);
+  singleWeightInput.addEventListener("input",updatePreview);
+  qtyInput.addEventListener("input",         updatePreview);
+  document.getElementById("karat_sel").addEventListener("change", updatePreview);
+
+  // Before submit: write resolved values to hidden fields
+  document.getElementById("addForm").addEventListener("submit", function(e) {
+    const selected = document.querySelector('input[name="input_mode"]:checked');
+    const mode = selected ? selected.value : "per_unit";
+    let uw = 0, qty = 1;
+
+    if (mode === "per_unit") {
+      uw  = parseFloat(unitWeightInput.value)  || 0;
+      qty = parseFloat(qtyInput.value)         || 1;   // user's qty
+
+    } else if (mode === "bulk") {
+      uw  = parseFloat(totalWeightInput.value) || 0;   // AS-IS
+      qty = parseFloat(qtyInput.value)         || 1;   // stored but NOT multiplied
+
+    } else {
+      uw  = parseFloat(singleWeightInput.value) || 0;
+      qty = 1;                                          // always 1
+    }
+
+    if (uw <= 0) {
+      e.preventDefault();
+      alert(window._T.weight_invalid);
+      return;
+    }
+
+    document.getElementById("h_unit_weight").value = uw.toFixed(6);
+    document.getElementById("h_quantity").value    = qty;
+  });
+
+  // Init on page load
+  const initMode = document.querySelector('input[name="input_mode"]:checked');
+  if (initMode) switchMode(initMode.value);
+});
+</script>
+{% endblock %}

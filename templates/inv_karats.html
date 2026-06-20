@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('karat_analysis','تحليل العيارات') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-layer-group" style="color:var(--gold-dark);margin-left:10px;"></i>{{ t.get('notes','تحليل') }} {{ t.get('karat_analysis','العيارات') }}</h4>
+</div>
+
+{% include '_inv_nav.html' %}
+
+{# ── ملاحظة المحاسبة ── #}
+<div class="alert-custom alert-warning mb-4" style="font-size:13px;">
+  <i class="fas fa-exclamation-triangle"></i>
+  <span><strong>{{ t.get('pure_formula','قاعدة المحاسبة') }}:</strong> {{ t.get('pure_formula','الوزن الصافي = الوزن × (العيار ÷ 24)') }}</span>
+</div>
+
+{# ── جدول تحليل العيارات ── #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-table"></i></span>
+      {{ t.get('karat_analysis','تحليل حسب العيار') }}
+    </div>
+  </div>
+  {% if karat_breakdown %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.08);">
+        <tr>
+          <th>{{ t.get('karat_label','العيار') }}</th>
+          <th style="color:#86efac;">{{ t.get('pure_in','الوارد الفعلي (جم)') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('pure_in','الوارد صافي (24K)') }}</th>
+          <th style="color:#f87171;">{{ t.get('pure_out','الصادر الفعلي (جم)') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('pure_out','الصادر صافي (24K)') }}</th>
+          <th style="color:var(--gold);">{{ t.get('pure_balance','الرصيد (24K)') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in karat_breakdown %}
+        <tr>
+          <td><span class="karat-badge" style="font-size:14px;padding:4px 12px;">{{ row.karat }}K</span></td>
+          <td>
+            <strong style="color:#86efac;">{{ '%.3f'|format(row.in_weight) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.4f'|format(row.in_fine) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            <strong style="color:#f87171;">{{ '%.3f'|format(row.out_weight) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.4f'|format(row.out_fine) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            <strong style="color:{{ 'var(--success)' if row.balance_fine >= 0 else 'var(--danger)' }};font-size:14px;">
+              {{ '%+.4f'|format(row.balance_fine) }}
+            </strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {# الصف الختامي: مجموع الأوزان الصافية فقط — لا مجموع للأوزان الفعلية #}
+      <tfoot style="background:rgba(212,175,55,.07);border-top:2px solid rgba(212,175,55,.3);">
+        <tr>
+          <td style="font-weight:900;color:var(--gold-dark);">{{ t.get('net_24k','الإجمالي الصافي') }}</td>
+          <td style="color:var(--text-muted);font-size:11px;font-style:italic;">{{ t.get('notes','غير قابل للجمع') }}</td>
+          <td style="font-weight:900;color:var(--gold);">{{ '%.4f'|format(total_in_24) }} {{ t.get('grams','جم') }}</td>
+          <td style="color:var(--text-muted);font-size:11px;font-style:italic;">{{ t.get('notes','غير قابل للجمع') }}</td>
+          <td style="font-weight:900;color:var(--gold);">{{ '%.4f'|format(total_out_24) }} {{ t.get('grams','جم') }}</td>
+          <td style="font-weight:900;color:var(--gold);">{{ '%+.4f'|format(balance_24) }} {{ t.get('grams','جم') }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:40px;color:var(--text-muted);">
+    <i class="fas fa-layer-group" style="font-size:32px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('karat','لا توجد بيانات عيارات.') }}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

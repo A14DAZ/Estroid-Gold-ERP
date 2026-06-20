@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ t.work_orders }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">{{ t.work_orders }}
+      <span style="color:var(--text-muted);font-size:16px;font-weight:600;">({{ pagination.total }})</span>
+    </h4>
+  </div>
+  <a href="{{ url_for('orders.create_order') }}" class="btn-gold">
+    <i class="fas fa-plus"></i> {{ t.new_order }}
+  </a>
+</div>
+
+{# Search & filter #}
+<div class="search-bar">
+  <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%;">
+    <input type="text" name="q" class="form-control-custom" style="flex:1;min-width:200px;"
+           placeholder="{{ t.search }}..." value="{{ q }}"/>
+    <select name="status" class="form-select-custom" style="width:160px;" onchange="this.form.submit()">
+      <option value="">{{ t.all }}</option>
+      <option value="active"    {{ 'selected' if status=='active' }}>{{ t.active }}</option>
+      <option value="completed" {{ 'selected' if status=='completed' }}>{{ t.completed }}</option>
+      <option value="cancelled" {{ 'selected' if status=='cancelled' }}>{{ t.cancelled }}</option>
+    </select>
+    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-search"></i> {{ t.search }}</button>
+    {% if q or status %}
+      <a href="{{ url_for('orders.list_orders') }}" class="btn-grey btn-sm">
+        <i class="fas fa-times"></i>
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;">
+    <table class="gtable">
+      <thead><tr>
+        <th>#</th><th>{{ t.order_number }}</th><th>{{ t.model_name }}</th>
+        <th>{{ t.customer }}</th><th>{{ t.karat }}</th>
+        <th>{{ t.initial_weight }}</th><th>{{ t.status }}</th>
+        <th>{{ t.total_loss }}</th><th>{{ t.date }}</th><th>{{ t.actions }}</th>
+      </tr></thead>
+      <tbody>
+        {% for o in pagination.items %}
+        {% set tloss = o.total_loss %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ loop.index }}</td>
+          <td><a href="{{ url_for('orders.order_detail', order_id=o.id) }}"
+                 style="color:var(--gold-dark);font-weight:800;">{{ o.order_number }}</a></td>
+          <td>{{ o.model_name or '—' }}</td>
+          <td>{{ o.customer_name or '—' }}</td>
+          <td><span class="karat-badge">{{ o.karat }}K</span></td>
+          <td>{{ '%.3f'|format(o.initial_weight) }} {{ t.grams }}</td>
+          <td>
+            {% if o.status == 'active' %}
+              <span class="badge-custom badge-blue"><i class="fas fa-circle fa-xs"></i>{{ t.active }}</span>
+            {% elif o.status == 'completed' %}
+              <span class="badge-custom badge-green"><i class="fas fa-check"></i>{{ t.completed }}</span>
+            {% else %}
+              <span class="badge-custom badge-grey">{{ t.cancelled }}</span>
+            {% endif %}
+          </td>
+          <td class="{{ 'loss-bad' if tloss > 1 else 'loss-ok' }}">{{ '%.3f'|format(tloss) }}</td>
+          <td style="font-size:11.5px;color:var(--text-muted);">{{ o.created_at.strftime('%Y-%m-%d') }}</td>
+          <td style="display:flex;gap:4px;flex-wrap:nowrap;">
+            <a href="{{ url_for('orders.order_detail', order_id=o.id) }}" class="btn-outline-gold btn-xs">
+              <i class="fas fa-eye"></i>
+            </a>
+            <a href="{{ url_for('orders.edit_order', order_id=o.id) }}" class="btn-grey btn-xs">
+              <i class="fas fa-edit"></i>
+            </a>
+            <button onclick="askConfirm('Delete Order','Delete order {{ o.order_number }}?','{{ url_for('orders.delete_order', order_id=o.id) }}','POST')"
+                    class="btn-danger-soft btn-xs">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
+          <i class="fas fa-search" style="font-size:28px;display:block;margin-bottom:10px;opacity:.3;"></i>
+          No orders found.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="gcard-body d-flex justify-content-center gap-2 pt-3">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('orders.list_orders', page=pagination.prev_num, q=q, status=status) }}"
+         class="btn-grey btn-sm">← Prev</a>
+    {% endif %}
+    <span style="font-size:13px;color:var(--text-muted);padding:6px 12px;">
+      {{ pagination.page }} / {{ pagination.pages }}
+    </span>
+    {% if pagination.has_next %}
+      <a href="{{ url_for('orders.list_orders', page=pagination.next_num, q=q, status=status) }}"
+         class="btn-grey btn-sm">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

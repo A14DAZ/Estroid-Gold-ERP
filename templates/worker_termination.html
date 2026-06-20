@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('employee_terminate','تسوية إنهاء خدمة') }} — {{ worker.name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center" style="margin-top:20px;">
+<div class="col-lg-6">
+
+<div class="page-header no-print">
+  <h4 class="page-title">
+    <i class="fas fa-user-times" style="color:#f87171;margin-left:10px;"></i>
+    {{ t.get('employee_terminate','تسوية إنهاء الخدمة') }}
+  </h4>
+  <div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn-grey btn-sm">
+      <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+    </button>
+    <a href="{{ url_for('workers.list_workers') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('employees','الموظفون') }}
+    </a>
+  </div>
+</div>
+
+<div class="gcard"
+     style="border-color:rgba(248,113,113,.3);">
+  <div class="gcard-body" style="padding:28px;">
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:56px;height:56px;border-radius:50%;
+                  background:rgba(248,113,113,.1);margin:0 auto 12px;
+                  display:flex;align-items:center;justify-content:center;">
+        <i class="fas fa-user-slash" style="color:#f87171;font-size:24px;"></i>
+      </div>
+      <div style="font-size:20px;font-weight:900;">{{ worker.name }}</div>
+      <code style="font-size:13px;color:var(--gold-dark);">{{ worker.code }}</code>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+        {{ worker.specialty or '' }}
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;font-family:'Cairo',sans-serif;font-size:14px;">
+      {% macro row(label, value, color='') %}
+      <tr style="border-bottom:1px solid rgba(0,0,0,.05);">
+        <td style="padding:10px 8px;color:var(--text-muted);font-weight:600;">{{ label }}</td>
+        <td style="padding:10px 8px;font-weight:800;text-align:left;{{ 'color:'+color+';' if color }}">{{ value }}</td>
+      </tr>
+      {% endmacro %}
+      {{ row('تاريخ إنهاء الخدمة', worker.termination_date|string if worker.termination_date else '—') }}
+      {{ row('أيام العمل',          worked_days|string + ' يوم') }}
+      {{ row('الراتب الشهري',        '%.2f ر.س'|format(worker.monthly_salary or 0)) }}
+      {{ row('مستحق الراتب',         '%.2f ر.س'|format(salary_due), '#f87171') }}
+      {{ row('إجمالي المراحل',        stats.count|string + ' مرحلة مكتملة') }}
+      {{ row('إجمالي المنتج',         '%.3f جم'|format(stats.total_prod), 'var(--gold-dark)') }}
+      {{ row('إجمالي الفاقد',         '%.3f جم'|format(stats.total_loss), '#f87171') }}
+      {{ row('نسبة الفاقد',           '%.1f%%'|format(stats.loss_pct)) }}
+      {{ row('الكفاءة الإجمالية',     '%.1f%%'|format(stats.efficiency)) }}
+    </table>
+
+    {% if worker.termination_notes %}
+    <div style="background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.15);
+                border-radius:9px;padding:12px 16px;margin-top:16px;font-size:13px;
+                color:var(--text-muted);">
+      <i class="fas fa-sticky-note" style="margin-left:5px;color:#f87171;"></i>
+      {{ worker.termination_notes }}
+    </div>
+    {% endif %}
+
+    <div style="background:rgba(248,113,113,.08);border:1.5px solid rgba(248,113,113,.3);
+                border-radius:10px;padding:16px;margin-top:20px;text-align:center;">
+      <div style="font-size:12px;color:var(--text-muted);">{{ t.get('salary_due','إجمالي المستحق') }}</div>
+      <div style="font-size:32px;font-weight:900;color:#f87171;">
+        {{ '%.2f'|format(salary_due) }} ر.س
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</div>
+{% endblock %}

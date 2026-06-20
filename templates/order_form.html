@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ t.create_order if not order else t.edit }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">{{ t.create_order if not order else t.edit ~ ' ' ~ order.order_number }}</h4>
+  <a href="{{ url_for('orders.list_orders') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-{{ 'plus-circle' if not order else 'edit' }}"></i></span>
+          {{ t.create_order if not order else t.edit }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST" action="{{ url_for('orders.edit_order', order_id=order.id) if order else url_for('orders.create_order') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.model_name }}</label>
+              <input type="text" name="model_name" class="form-control-custom"
+                     value="{{ order.model_name if order else '' }}"
+                     placeholder="{{ t.get('model_name','خاتم، سوار...') }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.product_name }}</label>
+              <input type="text" name="product_name" class="form-control-custom"
+                     value="{{ order.product_name if order else '' }}"
+                     placeholder="{{ t.get('product_name','اسم المنتج') }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.product_code }}</label>
+              <input type="text" name="product_code" class="form-control-custom"
+                     value="{{ order.product_code if order else '' }}"
+                     placeholder="{{ 'SKU-001' }}"
+                     style="direction:ltr;"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.get('customer','العميل') }}</label>
+              <select name="client_id" id="client_select" class="form-select-custom"
+                      onchange="showClientPhone(this)">
+                <option value="">— {{ t.get('customer','بدون عميل') }} —</option>
+                {% for c in (clients or []) %}
+                  <option value="{{ c.id }}"
+                          data-phone="{{ c.phone or '' }}"
+                          {{ 'selected' if (order and order.client_id == c.id) }}>
+                    {{ c.name }}{% if c.phone %} — {{ c.phone }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              {# Live phone display #}
+              <div id="client_phone_display"
+                   style="margin-top:6px;font-size:12.5px;color:var(--gold-dark);
+                          display:{{ 'flex' if (order and order.client_id and order.client) else 'none' }};
+                          align-items:center;gap:6px;">
+                <i class="fas fa-phone" style="font-size:11px;"></i>
+                <span id="client_phone_val">
+                  {{ order.client.phone if (order and order.client and order.client.phone) else '' }}
+                </span>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.initial_weight }} ({{ t.grams }}) *</label>
+              <input type="number" name="initial_weight" class="form-control-custom"
+                     step="0.001" min="0.001" required
+                     value="{{ order.initial_weight if order else '' }}" placeholder="0.000"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label-custom">{{ t.karat }} *</label>
+              <div class="karat-group">
+                {% for k in karats %}
+                <div class="karat-opt">
+                  <input type="radio" name="karat" id="k{{ k }}" value="{{ k }}"
+                         {{ 'checked' if (order and order.karat == k) or (not order and k == 18) }}>
+                  <label for="k{{ k }}">{{ k }}K</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label-custom">{{ t.notes }}</label>
+              <textarea name="notes" class="form-control-custom">{{ order.notes if order else '' }}</textarea>
+            </div>
+            <div class="col-12">
+              <hr class="gold-divider"/>
+              <button type="submit" class="btn-gold btn-full" style="padding:12px;font-size:14px;">
+                <i class="fas fa-save"></i> {{ t.save }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showClientPhone(sel) {
+  const opt   = sel.options[sel.selectedIndex];
+  const phone = opt ? opt.getAttribute('data-phone') : '';
+  const box   = document.getElementById('client_phone_display');
+  const val   = document.getElementById('client_phone_val');
+  if (phone) {
+    val.textContent  = phone;
+    box.style.display = 'flex';
+  } else {
+    box.style.display = 'none';
+    val.textContent  = '';
+  }
+}
+</script>
+{% endblock %}

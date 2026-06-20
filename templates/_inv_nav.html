@@ -1,0 +1,17 @@
+{# Inventory sub-navigation bar — included in all 4 inventory pages #}
+<div class="mb-4" style="background:var(--black-soft);border:1px solid var(--border);
+     border-radius:12px;padding:6px 8px;display:flex;gap:6px;flex-wrap:wrap;">
+  {% set pages = [
+    ('factory.inventory',           'fa-tachometer-alt', t.get('gold_balance','لوحة المخزون')),
+    ('factory.inventory_karats',    'fa-layer-group',    t.get('karat_analysis','تحليل العيارات')),
+    ('factory.inventory_movements', 'fa-exchange-alt',   t.get('inventory_movements','حركة الذهب')),
+    ('factory.inventory_products',  'fa-boxes',          t.get('product_inventory','مخزون المنتجات')),
+  ] %}
+  {% for ep, ico, label in pages %}
+  <a href="{{ url_for(ep) }}"
+     class="{{ 'btn-gold' if request.endpoint == ep else 'btn-grey' }} btn-sm"
+     style="font-size:12.5px;">
+    <i class="fas {{ ico }}"></i> {{ label }}
+  </a>
+  {% endfor %}
+</div>

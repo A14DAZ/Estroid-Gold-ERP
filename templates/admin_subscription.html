@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block title %}{{ t.manage_subscription }} — {{ factory.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">{{ t.manage_subscription }}</h4>
+    <div class="page-subtitle">
+      {{ factory.name }}
+      {% if factory.factory_code %}
+      <code style="font-size:12px;color:var(--gold-dark);background:rgba(212,175,55,.1);
+                   padding:1px 8px;border-radius:5px;margin-{{ "right" if dir=="rtl" else "left" }}:8px;
+                   font-weight:800;letter-spacing:1px;">{{ factory.factory_code }}</code>
+      {% endif %}
+      — {{ factory.user.email if factory.user else "—" }}
+    </div>
+  </div>
+  <a href="{{ url_for('admin.factories') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+{# ── Status summary ── #}
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon {{ 'ic-green' if factory.subscription_status=='active' else ('ic-red' if factory.subscription_status=='expired' else 'ic-red') }}">
+        <i class="fas fa-{{ 'check-circle' if factory.subscription_status=='active' else 'times-circle' }}"></i>
+      </div>
+      <div class="stat-value" style="font-size:18px;">
+        {% if factory.subscription_status == 'active' %}{{ t.sub_active }}
+        {% elif factory.subscription_status == 'expired' %}{{ t.sub_expired }}
+        {% else %}{{ t.sub_suspended }}{% endif %}
+      </div>
+      <div class="stat-label">{{ t.subscription_status }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon ic-gold"><i class="fas fa-calendar-alt"></i></div>
+      <div class="stat-value" style="font-size:16px;">
+        {{ factory.subscription_expiry or t.never }}
+      </div>
+      <div class="stat-label">{{ t.subscription_expiry }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon ic-blue"><i class="fas fa-clock"></i></div>
+      <div class="stat-value">
+        {% if factory.days_remaining is not none %}
+          {{ factory.days_remaining }}
+        {% else %}∞{% endif %}
+      </div>
+      <div class="stat-label">{{ t.days_remaining }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-barcode"></i></div>
+      <div class="stat-value" style="font-size:16px;font-weight:900;color:var(--gold-dark);letter-spacing:2px;">
+        {{ factory.factory_code or '—' }}
+      </div>
+      <div class="stat-label">{{ t.get('factory_code_label','كود المصنع') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  {# ── Extend subscription ── #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-plus-circle"></i></span>{{ t.extend_subscription }}</div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="extend"/>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.extend_days }}</label>
+            <div class="d-flex gap-2 flex-wrap mb-2">
+              {% for d in [30, 90, 180, 365] %}
+              <button type="submit" name="days" value="{{ d }}" class="btn-outline-gold btn-sm">
+                {{ d }} {{ t.days }}
+              </button>
+              {% endfor %}
+            </div>
+            <div class="d-flex gap-2">
+              <input type="number" name="days" class="form-control-custom" min="1" max="3650"
+                     placeholder="{{ t.extend_days }}..." style="flex:1;"/>
+              <button type="submit" class="btn-gold">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Set exact expiry date ── #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-calendar-check"></i></span>{{ t.set_expiry }}</div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST">
+          <input type="hidden" name="action" value="set_expiry"/>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.subscription_expiry }}</label>
+            <input type="date" name="expiry_date" class="form-control-custom"
+                   value="{{ factory.subscription_expiry.isoformat() if factory.subscription_expiry else today.isoformat() }}"
+                   min="{{ today.isoformat() }}"/>
+          </div>
+          <button type="submit" class="btn-gold btn-full">
+            <i class="fas fa-save"></i> {{ t.save }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Generate activation code ── #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-key"></i></span>{{ t.activation_code }}</div>
+      </div>
+      <div class="gcard-body">
+        {% if factory.activation_code %}
+        <div style="background:#f8fafc;border:1.5px solid var(--grey-border);border-radius:9px;padding:12px;margin-bottom:14px;text-align:center;">
+          <div style="font-family:monospace;font-size:14px;font-weight:800;letter-spacing:2px;color:var(--black);">
+            {{ factory.activation_code }}
+          </div>
+          <button onclick="navigator.clipboard.writeText('{{ factory.activation_code }}');this.textContent='✓ {{ t.confirm }}'" 
+                  class="btn-grey btn-xs mt-2">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>
+        {% endif %}
+        <form method="POST">
+          <input type="hidden" name="action" value="gen_code"/>
+          <button type="submit" class="btn-gold btn-full">
+            <i class="fas fa-sync-alt"></i> {{ t.gen_code }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Factory Code Edit ── #}
+  <div class="col-md-4">
+    <div class="gcard" style="border-color:var(--gold-border);">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-barcode"></i></span>
+          {{ t.get('factory_code_label','كود المصنع') }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <div style="background:rgba(212,175,55,.06);border:1.5px solid rgba(212,175,55,.2);
+                    border-radius:9px;padding:12px;margin-bottom:14px;text-align:center;">
+          <div style="font-family:monospace;font-size:18px;font-weight:900;
+                      letter-spacing:3px;color:var(--gold-dark);">
+            {{ factory.factory_code or '—' }}
+          </div>
+          {% if factory.factory_code %}
+          <button type="button"
+                  onclick="navigator.clipboard.writeText('{{ factory.factory_code }}');this.innerHTML='<i class=\'fas fa-check\'></i> {{ t.confirm }}';"
+                  class="btn-grey btn-xs mt-2" style="font-size:11px;">
+            <i class="fas fa-copy"></i> {{ t.get('copy','نسخ') }}
+          </button>
+          {% endif %}
+        </div>
+        <form method="POST">
+          <input type="hidden" name="action" value="update_factory_code"/>
+          <div class="mb-3">
+            <label class="form-label-custom" style="font-size:11px;">
+              {{ t.get('factory_code_new','كود جديد (FAC-XXXX)') }}
+            </label>
+            <input type="text" name="factory_code" class="form-control-custom"
+                   value="{{ factory.factory_code or '' }}"
+                   placeholder="FAC-0001"
+                   style="font-family:monospace;font-weight:800;letter-spacing:2px;direction:ltr;"
+                   maxlength="20"/>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">
+              {{ t.get('notes','يجب أن يكون الكود فريداً') }}
+            </div>
+          </div>
+          <button type="submit" class="btn-gold btn-full">
+            <i class="fas fa-save"></i> {{ t.save }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Reset password ── #}
+  <div class="col-md-6">
+    <div class="gcard" style="border-color:#fecaca;">
+      <div class="gcard-header" style="background:#fff5f5;">
+        <div class="gcard-title" style="color:var(--danger);">
+          <span class="ti"><i class="fas fa-lock-open"></i></span>{{ t.reset_password }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <div class="alert-custom alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle"></i>
+          {{ 'كلمة المرور لن تُعرض — استخدم هذا فقط لإعادة الضبط.' if lang=='ar' else 'Password is never displayed. Use this only to reset access.' }}
+        </div>
+        <form method="POST">
+          <input type="hidden" name="action" value="reset_password"/>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.new_password }} *</label>
+            <input type="password" name="new_password" class="form-control-custom"
+                   placeholder="••••••••" minlength="8" required/>
+          </div>
+          <button type="submit" class="btn-danger-soft btn-full">
+            <i class="fas fa-key"></i> {{ t.reset_password }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Suspend / Activate ── #}
+  <div class="col-md-6">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-toggle-on"></i></span>{{ t.subscription_status }}</div>
+      </div>
+      <div class="gcard-body">
+        <p style="font-size:13.5px;color:var(--text-muted);margin-bottom:16px;">
+          {{ t.sub_active if factory.is_active else t.sub_suspended }}:
+          <strong>{{ factory.name }}</strong>
+        </p>
+        <form method="POST" action="{{ url_for('admin.toggle_factory', fid=factory.id) }}">
+          <button type="submit"
+                  class="{{ 'btn-danger-soft' if factory.is_active else 'btn-success-soft' }} btn-full">
+            <i class="fas fa-{{ 'ban' if factory.is_active else 'check-circle' }}"></i>
+            {{ t.deactivate if factory.is_active else t.activate }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ══ Factory Stats — shown inside settings page ══ #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);
+            text-transform:uppercase;letter-spacing:.6px;margin:28px 0 12px;">
+  <i class="fas fa-chart-bar" style="color:var(--gold);margin-left:6px;"></i>
+  {{ t.get('factory_stats','إحصائيات المصنع') }}
+</div>
+<div class="row g-3">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-blue" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;">{{ factory.orders.count() }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.work_orders }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:#bbf7d0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-green" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-user-tie"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:var(--success);">{{ factory.workers.count() }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('employees_count','الموظفون') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:#bfdbfe;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-blue" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-address-book"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#1d4ed8;">
+            {{ customer_count }}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.customers }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:var(--gold-border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-gold" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-balance-scale"></i>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:900;color:var(--gold-dark);">
+            {{ '%.3f'|format(factory.total_pure_gold if factory else 0) }}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('net_24k','صافي 24K') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── Factory Notes ── #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin:28px 0 10px;">
+  <i class="fas fa-sticky-note" style="color:var(--gold);margin-left:6px;"></i>
+  {{ t.get('factory_notes','ملاحظات داخلية') }}
+</div>
+<div class="gcard mb-3">
+  <div class="gcard-body" style="padding:16px;">
+    <form method="POST" action="{{ url_for('admin.add_factory_note') }}" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input type="hidden" name="factory_id" value="{{ factory.id }}"/>
+      <input type="text" name="body" class="form-control-custom" style="flex:1;min-width:200px;padding:8px 12px;font-size:13px;"
+             placeholder="{{ t.get('add_note','أضف ملاحظة...') }}" required/>
+      <select name="tag" class="form-control-custom" style="width:150px;padding:8px;font-size:12px;">
+        <option value="general">📝 {{ t.get('note_general','عام') }}</option>
+        <option value="payment">💰 {{ t.get('note_payment','دفع') }}</option>
+        <option value="contacted">📞 {{ t.get('note_contacted','تم التواصل') }}</option>
+        <option value="discount">🏷️ {{ t.get('note_discount','خصم') }}</option>
+        <option value="issue">⚠️ {{ t.get('note_issue','مشكلة') }}</option>
+      </select>
+      <button type="submit" class="btn-gold btn-sm"><i class="fas fa-plus"></i> {{ t.get('add','إضافة') }}</button>
+    </form>
+    <div style="margin-top:14px;">
+      {% for note in factory_notes %}
+      <div style="padding:10px 12px;border-radius:8px;margin-bottom:6px;
+                  background:{{ 'rgba(239,68,68,.05)' if note.tag=='issue' else ('rgba(212,175,55,.05)' if note.tag=='payment' else 'rgba(0,0,0,.02)') }};
+                  border-{{ 'right' if dir=='rtl' else 'left' }}:3px solid {{ '#ef4444' if note.tag=='issue' else ('var(--gold)' if note.tag=='payment' else '#e2e8f0') }};">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span class="badge-custom" style="font-size:10px;padding:1px 7px;background:rgba(0,0,0,.05);">
+            {% if note.tag == 'payment' %}💰{% elif note.tag == 'issue' %}⚠️{% elif note.tag == 'contacted' %}📞{% elif note.tag == 'discount' %}🏷️{% else %}📝{% endif %}
+            {{ note.tag }}
+          </span>
+          <span style="font-size:10px;color:var(--text-muted);">
+            {{ note.created_at.strftime('%Y-%m-%d %H:%M') if note.created_at else '' }}
+            {% if note.author %} · {{ note.author.full_name }}{% endif %}
+          </span>
+        </div>
+        <div style="font-size:13px;">{{ note.body }}</div>
+      </div>
+      {% else %}
+      <div style="text-align:center;color:var(--text-muted);font-size:13px;padding:16px;">
+        {{ t.get('no_notes','لا توجد ملاحظات بعد') }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('customers','العملاء') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      {{ t.get('customers','العملاء') }}
+      <span style="color:var(--text-muted);font-size:15px;font-weight:600;">({{ customers|length }})</span>
+    </h4>
+  </div>
+  <a href="{{ url_for('customers.create_customer') }}" class="btn-gold">
+    <i class="fas fa-user-plus"></i>{{ t.get('add_customer','إضافة عميل') }}</a>
+</div>
+
+{# ── بحث ── #}
+<div class="search-bar">
+  <form method="GET" style="display:flex;gap:10px;align-items:center;width:100%;">
+    <input type="text" name="q" class="form-control-custom" style="flex:1;min-width:180px;"
+           placeholder="{{ t.get('search','بحث') }}..." value="{{ q }}"/>
+    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-search"></i></button>
+    {% if q %}
+      <a href="{{ url_for('customers.list_customers') }}" class="btn-grey btn-sm">
+        <i class="fas fa-times"></i>
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0"
+           style="font-family:'Cairo',sans-serif;table-layout:fixed;width:100%;">
+      <colgroup>
+        <col style="width:40px;"/>    {# # #}
+        <col style="width:100px;"/>   {# كود #}
+        <col style="width:180px;"/>   {# اسم #}
+        <col style="width:130px;"/>   {# هاتف #}
+        <col style="width:120px;"/>   {# صادر #}
+        <col style="width:120px;"/>   {# وارد #}
+        <col style="width:110px;"/>   {# رجيع #}
+        <col style="width:130px;"/>   {# رصيد #}
+        <col style="width:130px;"/>   {# إجراءات #}
+      </colgroup>
+      <thead style="background:rgba(212,175,55,.08);">
+        <tr>
+          <th style="color:var(--text-muted);font-size:12px;text-align:center;">#</th>
+          <th>{{ t.get('customer_code','الكود') }}</th>
+          <th>{{ t.get('full_name','الاسم') }}</th>
+          <th style='text-align:center;'>{{ t.get('phone','الهاتف') }}</th>
+          <th style='color:#f87171;text-align:center;'>{{ t.get('total_sent','الصادر (24K)') }}</th>
+          <th style='color:#86efac;text-align:center;'>{{ t.get('total_recv','الوارد (24K)') }}</th>
+          <th style='color:#f59e0b;text-align:center;'>{{ t.get('total_ret','الرجيع (24K)') }}</th>
+          <th style="color:var(--gold);text-align:center;">{{ t.get('balance','الرصيد') }}</th>
+          <th style="text-align:center;">{{ t.get('actions','الإجراءات') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in customers %}
+        {% set s   = stats.get(c.id, {}) %}
+        {% set bal = s.get('balance', 0) %}
+        <tr>
+          {# # #}
+          <td style="color:var(--text-muted);font-size:12px;text-align:center;">
+            {{ loop.index }}
+          </td>
+
+          {# كود #}
+          <td>
+            <code style="font-size:11px;font-weight:800;color:var(--gold-dark);
+                         white-space:nowrap;">
+              {{ c.code or '—' }}
+            </code>
+          </td>
+
+          {# اسم #}
+          <td>
+            <a href="{{ url_for('customers.customer_profile', cid=c.id) }}"
+               style="font-weight:800;color:var(--black);text-decoration:none;
+                      display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ c.name }}
+            </a>
+            {% if c.notes %}
+              <div style="font-size:11px;color:var(--text-muted);
+                          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                {{ c.notes[:40] }}
+              </div>
+            {% endif %}
+          </td>
+
+          {# هاتف — محاذاة وسط، اتجاه LTR للرقم فقط #}
+          <td style="text-align:center;">
+            <span style="direction:ltr;display:inline-block;
+                         color:var(--text-muted);font-size:13px;letter-spacing:.3px;">
+              {{ c.phone or '—' }}
+            </span>
+          </td>
+
+          {# صادر #}
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#f87171;">{{ '%.3f'|format(s.get('total_sent',0)) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+
+          {# وارد #}
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#86efac;">{{ '%.3f'|format(s.get('total_recv',0)) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+
+          {# رجيع #}
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#f59e0b;">{{ '%.3f'|format(s.get('total_ret',0)) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+
+          {# رصيد #}
+          <td style="text-align:center;white-space:nowrap;">
+            {% if bal > 0.0001 %}
+              <div style="color:#f87171;font-weight:800;">{{ '%.3f'|format(bal) }}</div>
+              <span class="badge-custom"
+                    style="font-size:9px;background:rgba(248,113,113,.12);
+                           color:#f87171;padding:2px 7px;">{{ t.get('debtor','مدين') }}</span>
+            {% elif bal < -0.0001 %}
+              <div style="color:var(--success);font-weight:800;">{{ '%.3f'|format(bal|abs) }}</div>
+              <span class="badge-custom"
+                    style="font-size:9px;background:rgba(22,163,74,.12);
+                           color:var(--success);padding:2px 7px;">{{ t.get('creditor','دائن') }}</span>
+            {% else %}
+              <div style="color:var(--gold-dark);font-weight:800;">0.000</div>
+              <span class="badge-custom"
+                    style="font-size:9px;background:rgba(212,175,55,.12);
+                           color:var(--gold-dark);padding:2px 7px;">{{ t.get('balanced','متوازن') }}</span>
+            {% endif %}
+          </td>
+
+          {# إجراءات #}
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;">
+              <a href="{{ url_for('customers.customer_profile', cid=c.id) }}"
+                 class="btn-gold btn-xs" title="{{ t.get('view','ملف') }}">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ url_for('customers.edit_customer', cid=c.id) }}"
+                 class="btn-grey btn-xs" title="{{ t.get('edit','تعديل') }}">
+                <i class="fas fa-edit"></i>
+              </a>
+              <button onclick="askConfirm('{{ t.get('confirm_delete','تأكيد الحذف') }}','{{ t.get('are_you_sure','هل أنت متأكد؟') }}','{{ url_for('customers.delete_customer', cid=c.id) }}','POST')"
+                      class="btn-danger-soft btn-xs" title="{{ t.get('delete','حذف') }}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center;padding:48px;color:var(--text-muted);">
+            <i class="fas fa-address-book"
+               style="font-size:36px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            {{ t.get('customers','لا يوجد عملاء بعد.') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('new_purchase','شراء جديد') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-arrow-down" style="color:#86efac;margin-left:10px;"></i>{{ t.get('new_purchase','شراء جديد') }}</h4>
+  </div>
+  <a href="{{ url_for('exports.list_purchases') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('purchase_list','كشف المشتريات') }}</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-7">
+<div class="gcard">
+  <div class="gcard-body" style="padding:24px;">
+    <form method="POST" action="{{ url_for('exports.create_import') }}" id="importForm">
+
+      {# ── Purchase type tabs ── #}
+      <div class="mb-4">
+        <label class="form-label-custom">{{ t.get('sale_type','نوع الشراء') }}</label>
+        <div style="display:flex;gap:8px;">
+          <label id="tab_product"
+                 style="cursor:pointer;flex:1;padding:12px;border:2px solid var(--border);
+                        border-radius:10px;text-align:center;font-size:13px;font-weight:700;
+                        background:#fff;color:#212529;transition:all .15s;"
+                 onclick="setPurchaseType('product')">
+            <input type="radio" name="purchase_type" value="product" style="display:none;"/>
+            <i class="fas fa-box" style="display:block;font-size:22px;margin-bottom:5px;"></i>
+            {{ t.get('sale_type_product','منتج جاهز') }}
+          </label>
+          <label id="tab_raw_gold"
+                 style="cursor:pointer;flex:1;padding:12px;border:2px solid var(--gold);
+                        border-radius:10px;text-align:center;font-size:13px;font-weight:700;
+                        background:rgba(212,175,55,.08);color:var(--gold-dark);transition:all .15s;"
+                 onclick="setPurchaseType('raw_gold')">
+            <input type="radio" name="purchase_type" value="raw_gold" checked style="display:none;"/>
+            <i class="fas fa-coins" style="display:block;font-size:22px;margin-bottom:5px;"></i>
+            {{ t.get('sale_type_gold','ذهب خام') }}
+          </label>
+        </div>
+      </div>
+
+      {# ── SECTION A: Product Purchase — manual entry from supplier ── #}
+      <div id="section_product" style="display:none;">
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label-custom">{{ t.get('product_name','اسم المنتج *') }}</label>
+            <input type="text" name="product_name" class="form-control-custom"
+                   placeholder="{{ t.get('product_name','مثال: خاتم') }}"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label-custom">{{ t.get('product_code','كود المنتج *') }}</label>
+            <input type="text" name="product_code" class="form-control-custom"
+                   placeholder="{{ t.get('product_code','مثال: RNG-001') }}"/>
+          </div>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('karat','العيار') }}</label>
+            <select name="buy_karat" class="form-select-custom">
+              {% for k in karats %}
+              <option value="{{ k }}" {{ 'selected' if k==18 }}>{{ k }}K</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-custom">
+              {{ t.get('total_weight','الوزن الإجمالي') }} *
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(59,130,246,.12);color:#1d4ed8;margin-right:3px;">{{ t.get('total','إجمالي') }}</span>
+            </label>
+            <input type="number" name="buy_weight" id="buy_weight"
+                   class="form-control-custom" step="0.001" min="0" placeholder="0.000"
+                   oninput="calcTotal()"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('quantity','الكمية (اختياري)') }}</label>
+            <input type="number" name="buy_qty"
+                   class="form-control-custom" step="1" min="1" value="1"/>
+          </div>
+        </div>
+        <div style="background:rgba(212,175,55,.07);border:1px solid rgba(212,175,55,.2);
+                    border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text-muted);
+                    margin-bottom:8px;">
+          <i class="fas fa-info-circle" style="color:var(--gold-dark);margin-left:5px;"></i>
+          {{ t.get('notes','سيتم إضافة المنتج تلقائياً.') }}
+        </div>
+
+        {# ── Stone fields ── #}
+        <div class="mb-2" style="padding:10px 4px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;font-size:13px;">
+            <input type="checkbox" name="has_stones" id="buy_has_stones_cb"
+                   onchange="buyToggleStones()" style="width:16px;height:16px;accent-color:var(--gold);">
+            <i class="fas fa-gem" style="color:var(--gold-dark);"></i>
+            {{ t.get('stone_section','يحتوي على أحجار كريمة؟') }}
+          </label>
+        </div>
+        <div id="buy_stone_fields" class="row g-3 mb-3" style="display:none;">
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('stone_type','نوع الحجر') }}</label>
+            <input type="text" name="stone_type" class="form-control-custom"
+                   placeholder="{{ t.get('stone_type','ألماس، ياقوت...') }}"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('stone_weight_g','وزن الأحجار (جم)') }}</label>
+            <input type="number" name="stone_weight" class="form-control-custom"
+                   step="0.001" min="0" placeholder="0.000"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('stone_color','لون / ملاحظات') }}</label>
+            <input type="text" name="stone_color" class="form-control-custom"
+                   placeholder="{{ t.get('stone_color','اختياري') }}"/>
+          </div>
+        </div>
+      </div>
+
+      {# ── SECTION B: Raw Gold Purchase ── #}
+      <div id="section_raw_gold">
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label class="form-label-custom">{{ t.get('weight','الوزن (جم) *') }}</label>
+            <input type="number" name="weight" id="raw_weight"
+                   class="form-control-custom" step="0.001" min="0" placeholder="0.000"
+                   oninput="calcTotal()"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label-custom">{{ t.get('karat','العيار') }}</label>
+            <select name="karat" class="form-select-custom">
+              {% for k in karats %}
+              <option value="{{ k }}" {{ 'selected' if k==24 }}>{{ k }}K</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label-custom">{{ t.get('supplier','المورد') }}</label>
+            <input type="text" name="product_name" class="form-control-custom" placeholder="{{ t.get('notes','اختياري') }}"/>
+          </div>
+        </div>
+      </div>
+
+      {# ── Common fields ── #}
+      <div class="row g-3 mb-3">
+        <div class="col-md-5">
+          {# Customer is MANDATORY #}
+          <label class="form-label-custom">
+            {{ t.get('supplier','المورد') }} *
+            <span style="color:#f87171;font-size:10px;font-weight:700;margin-right:4px;">{{ t.get('confirm','مطلوب') }}</span>
+          </label>
+          <select name="customer_id" id="customer_sel" class="form-select-custom"
+                  onchange="calcTotal()" required>
+            <option value="">— {{ t.get('supplier','اختر مورداً') }} —</option>
+            {% for c in customers %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-custom">{{ t.get('price_per_gram','سعر الجرام (ر.س)') }}</label>
+          <input type="number" name="price_per_gram" id="ppg"
+                 class="form-control-custom" step="0.01" min="0" placeholder="0.00"
+                 oninput="calcTotal()"/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label-custom">{{ t.get('date','التاريخ') }}</label>
+          <input type="date" name="transaction_date" class="form-control-custom"
+                 value="{{ today }}"/>
+        </div>
+      </div>
+
+      {# Live total price preview #}
+      <div id="price_preview"
+           style="background:rgba(212,175,55,.08);border:1.5px solid rgba(212,175,55,.25);
+                  border-radius:9px;padding:10px 16px;margin-bottom:12px;
+                  align-items:center;justify-content:space-between;display:none;">
+        <span style="font-size:13px;color:var(--text-muted);">{{ t.get('total','الإجمالي المتوقع') }}</span>
+        <span style="font-size:20px;font-weight:900;color:var(--gold-dark);" id="total_preview">
+          0.00 ر.س
+        </span>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label-custom">{{ t.get('notes','ملاحظات') }}</label>
+        <input type="text" name="description" class="form-control-custom" placeholder="{{ t.get('notes','اختياري') }}"/>
+      </div>
+
+      <button type="submit" class="btn-gold" style="min-width:180px;">
+        <i class="fas fa-check"></i> {{ t.get('new_purchase','تسجيل الشراء') }}
+      </button>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function buyToggleStones() {
+  const cb = document.getElementById('buy_has_stones_cb');
+  const fields = document.getElementById('buy_stone_fields');
+  if (cb && fields) {
+    fields.style.display = cb.checked ? 'flex' : 'none';
+    fields.style.flexWrap = 'wrap';
+  }
+}
+// Track active mode to avoid reliance on :checked with hidden radios
+let activePurchaseMode = 'raw_gold';
+
+function calcTotal() {
+  let weight = 0;
+  if (activePurchaseMode === 'product') {
+    weight = parseFloat(document.getElementById('buy_weight')?.value) || 0;
+  } else {
+    weight = parseFloat(document.getElementById('raw_weight')?.value) || 0;
+  }
+  const ppg   = parseFloat(document.getElementById('ppg')?.value) || 0;
+  const total = weight * ppg;
+  const box   = document.getElementById('price_preview');
+  const el    = document.getElementById('total_preview');
+  if (ppg > 0 && weight > 0) {
+    if (box) box.style.display = 'flex';
+    if (el)  el.textContent    = total.toFixed(2) + ' ر.س';
+  } else {
+    if (box) box.style.display = 'none';
+  }
+}
+
+function setPurchaseType(type) {
+  activePurchaseMode = type;   // track explicitly
+  document.querySelector('input[name="purchase_type"][value="product"]').checked  = (type === 'product');
+  document.querySelector('input[name="purchase_type"][value="raw_gold"]').checked = (type === 'raw_gold');
+  document.getElementById('section_product').style.display  = type === 'product'  ? '' : 'none';
+  document.getElementById('section_raw_gold').style.display = type === 'raw_gold' ? '' : 'none';
+  const active   = type === 'product' ? 'tab_product'  : 'tab_raw_gold';
+  const inactive = type === 'product' ? 'tab_raw_gold' : 'tab_product';
+  document.getElementById(active).style.borderColor   = 'var(--gold)';
+  document.getElementById(active).style.background    = 'rgba(212,175,55,.08)';
+  document.getElementById(active).style.color         = 'var(--gold-dark)';
+  document.getElementById(inactive).style.borderColor = 'var(--border)';
+  document.getElementById(inactive).style.background  = '#fff';
+  document.getElementById(inactive).style.color       = '#212529';
+  calcTotal();   // recalc when mode changes
+}
+</script>
+{% endblock %}

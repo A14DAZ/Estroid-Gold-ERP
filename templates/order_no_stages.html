@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('warning','تحذير') }} — {{ t.get('production_stages','لا توجد مراحل') }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center" style="margin-top:60px;">
+  <div class="col-lg-5 col-md-7">
+
+    <div class="gcard" style="border-color:#fcd34d;background:linear-gradient(135deg,#fff,#fffef5);">
+      <div class="gcard-body" style="padding:36px;text-align:center;">
+
+        {# Warning icon #}
+        <div style="width:68px;height:68px;border-radius:50%;
+                    background:linear-gradient(135deg,#f59e0b,#d97706);
+                    display:inline-flex;align-items:center;justify-content:center;
+                    font-size:30px;color:#fff;margin-bottom:20px;
+                    box-shadow:0 8px 24px rgba(245,158,11,.4);">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+
+        <h5 style="font-weight:800;color:var(--black);margin-bottom:10px;">
+          {{ t.get('warning','لا يمكن إتمام الأمر بدون مراحل') }}
+        </h5>
+
+        <p style="color:var(--text-muted);font-size:14px;margin-bottom:6px;">
+          {{ t.get('work_orders','الأمر') }}
+          <strong style="color:var(--gold-dark);">{{ order.order_number }}</strong>
+          {{ t.get('completed_stages','لا يحتوي على مراحل مكتملة.') }}
+        </p>
+        <p style="color:var(--text-muted);font-size:13.5px;margin-bottom:28px;">
+          {{ t.get('are_you_sure','هل تريد إلغاء الأمر؟') }}
+        </p>
+
+        {# Summary line #}
+        <div style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);
+                    border-radius:10px;padding:12px 18px;margin-bottom:28px;font-size:13.5px;">
+          {{ t.get('description','سيتم إعادة') }}
+          <strong style="color:var(--gold-dark);">{{ '%.3f'|format(order.initial_weight) }} {{ t.get('grams','جم') }}</strong>
+          ({{ t.get('karat','عيار') }} {{ order.karat }}K) {{ t.get('inventory','إلى المخزون') }}.
+        </div>
+
+        {# Two buttons #}
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+
+          {# Button 1: Cancel order (POST) #}
+          <form method="POST"
+                action="{{ url_for('orders.cancel_from_no_stages', order_id=order.id) }}">
+            <button type="submit"
+                    style="padding:11px 24px;background:linear-gradient(135deg,#dc2626,#b91c1c);
+                           color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;
+                           font-size:14px;font-weight:800;cursor:pointer;
+                           box-shadow:0 4px 14px rgba(220,38,38,.4);
+                           display:flex;align-items:center;gap:8px;">
+              <i class="fas fa-times-circle"></i>{{ t.get('cancel','إلغاء الأمر') }}
+            </button>
+          </form>
+
+          {# Button 2: Go back #}
+          <a href="{{ url_for('orders.order_detail', order_id=order.id) }}"
+             style="padding:11px 24px;background:var(--black-soft);
+                    color:var(--text-light);border:1px solid var(--border);
+                    border-radius:10px;font-family:'Cairo',sans-serif;
+                    font-size:14px;font-weight:700;text-decoration:none;
+                    display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-arrow-right"></i>{{ t.get('back','الرجوع') }}
+          </a>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

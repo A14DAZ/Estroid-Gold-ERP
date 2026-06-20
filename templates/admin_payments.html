@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('payment_history','سجل المدفوعات') }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title"><i class="fas fa-history" style="color:var(--gold);margin-left:10px;"></i>{{ t.get('payment_history','سجل المدفوعات') }}</h4>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('admin.add_payment') }}" class="btn-gold btn-sm"><i class="fas fa-plus"></i> {{ t.get('add_payment','تسجيل دفعة') }}</a>
+    <a href="{{ url_for('admin.subscriptions') }}" class="btn-grey btn-sm"><i class="fas fa-arrow-right"></i> {{ t.get('subscriptions','الاشتراكات') }}</a>
+  </div>
+</div>
+
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-receipt"></i></span>{{ t.get('all_payments','جميع الدفعات') }}</div>
+    <form method="GET" style="display:flex;gap:8px;">
+      <input name="q" class="form-control-custom" style="width:180px;padding:6px 10px;font-size:12px;"
+             placeholder="{{ t.search }}..." value="{{ q }}"/>
+    </form>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="gtable">
+      <thead><tr>
+        <th>{{ t.get('invoice_no','رقم الفاتورة') }}</th>
+        <th>{{ t.factory_name }}</th>
+        <th>{{ t.plan }}</th>
+        <th style="text-align:center;">{{ t.get('amount','المبلغ') }}</th>
+        <th style="text-align:center;">{{ t.get('payment_method','طريقة الدفع') }}</th>
+        <th style="text-align:center;">{{ t.get('period','المدة') }}</th>
+        <th style="text-align:center;">{{ t.get('payment_status','الحالة') }}</th>
+        <th style="text-align:center;">{{ t.get('recorded_by','سجّل بواسطة') }}</th>
+        <th style="text-align:center;">{{ t.date }}</th>
+        <th style="text-align:center;">{{ t.actions }}</th>
+      </tr></thead>
+      <tbody>
+        {% for p in pagination.items %}
+        <tr>
+          <td><code style="font-size:11px;font-weight:800;color:var(--gold-dark);background:rgba(212,175,55,.08);padding:2px 7px;border-radius:5px;">{{ p.invoice_number }}</code></td>
+          <td>
+            <strong>{{ p.factory.name if p.factory else '—' }}</strong>
+            {% if p.factory and p.factory.factory_code %}
+            <code style="font-size:10px;color:var(--text-muted);margin-right:4px;">{{ p.factory.factory_code }}</code>
+            {% endif %}
+          </td>
+          <td><span class="badge-custom badge-gold" style="font-size:11px;">{{ p.plan_slug.title() if p.plan_slug else '—' }}</span></td>
+          <td style="text-align:center;font-weight:800;color:var(--gold-dark);">{{ '%.0f'|format(p.amount) }} {{ p.currency }}</td>
+          <td style="text-align:center;font-size:12px;">
+            {% if p.method == 'bank_transfer' %}<i class="fas fa-university"></i> {{ t.get('bank_transfer','تحويل بنكي') }}
+            {% elif p.method == 'cash' %}<i class="fas fa-money-bill"></i> {{ t.get('cash','نقدي') }}
+            {% elif p.method == 'stripe' %}<i class="fab fa-stripe"></i> Stripe
+            {% elif p.method == 'paypal' %}<i class="fab fa-paypal"></i> PayPal
+            {% else %}<i class="fas fa-hand-holding-usd"></i> {{ t.get('manual','يدوي') }}
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-size:12px;">{{ p.period_days }} {{ t.days }}</td>
+          <td style="text-align:center;">
+            {% if p.status == 'paid' %}<span class="badge-custom badge-green">{{ t.get('paid','مدفوع') }}</span>
+            {% elif p.status == 'pending' %}<span class="badge-custom" style="background:rgba(245,158,11,.1);color:#d97706;">{{ t.get('pending','معلق') }}</span>
+            {% elif p.status == 'refunded' %}<span class="badge-custom badge-grey">{{ t.get('refunded','مسترجع') }}</span>
+            {% else %}<span class="badge-custom badge-red">{{ t.get('failed','فشل') }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">{{ p.recorded_by.full_name if p.recorded_by else '—' }}</td>
+          <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">{{ p.paid_at.strftime('%Y-%m-%d') if p.paid_at else '—' }}</td>
+          <td style="text-align:center;">
+            <a href="{{ url_for('admin.payment_invoice', pid=p.id) }}" class="btn-grey btn-xs" title="{{ t.get('print','طباعة') }}">
+              <i class="fas fa-print"></i>
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" style="text-align:center;padding:36px;color:var(--text-muted);">{{ t.get('no_payments_yet','لا توجد دفعات بعد') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagination.pages > 1 %}
+  <div class="gcard-body d-flex justify-content-center gap-2">
+    {% if pagination.has_prev %}<a href="{{ url_for('admin.payments', page=pagination.prev_num, q=q) }}" class="btn-grey btn-sm">←</a>{% endif %}
+    <span style="font-size:13px;color:var(--text-muted);padding:6px 12px;">{{ pagination.page }} / {{ pagination.pages }}</span>
+    {% if pagination.has_next %}<a href="{{ url_for('admin.payments', page=pagination.next_num, q=q) }}" class="btn-grey btn-sm">→</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

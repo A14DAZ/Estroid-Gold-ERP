@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('customer_analysis','تحليل العملاء') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title">
+    <i class="fas fa-chart-bar" style="color:var(--gold-dark);margin-left:10px;"></i>{{ t.get('customer_analysis','تحليل العملاء') }}</h4>
+  <a href="{{ url_for('customers.list_customers') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('customer_list','قائمة العملاء') }}
+  </a>
+</div>
+
+{# ── Top KPI cards ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-users"></i></div>
+      <div class="stat-value">{{ total_customers }}</div>
+      <div class="stat-label">{{ t.get('total_workers','إجمالي العملاء') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-arrow-up"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ '%.4f'|format(total_sent_all) }}</div>
+      <div class="stat-label">{{ t.get('total_sent','إجمالي الصادر (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-arrow-down"></i></div>
+      <div class="stat-value" style="color:#86efac;">{{ '%.4f'|format(total_recv_all) }}</div>
+      <div class="stat-label">{{ t.get('total_recv','إجمالي الوارد (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card"
+         style="border-color:{{ '#fecaca' if net_balance_all > 0 else '#bbf7d0' }};">
+      <div class="stat-icon {{ 'ic-red' if net_balance_all > 0 else 'ic-green' }}">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+      <div class="stat-value"
+           style="color:{{ '#f87171' if net_balance_all > 0 else 'var(--success)' }};">
+        {{ '%+.4f'|format(net_balance_all) }}
+      </div>
+      <div class="stat-label">{{ t.get('balance','صافي الرصيد (24K)') }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Top 5 rankings ── #}
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(248,113,113,.1);">
+            <i class="fas fa-trophy" style="color:#f87171;"></i>
+          </span>
+          {{ t.get('total_sent','أعلى عملاء بالمبيعات') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:16px;">
+        {% for r in top_by_sent %}
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;
+                    border-bottom:1px solid rgba(0,0,0,.05);">
+          <div style="width:26px;height:26px;border-radius:50%;
+                      background:{{ 'var(--gold)' if loop.index==1 else 'var(--border)' }};
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:12px;font-weight:900;color:{{ '#fff' if loop.index==1 else 'var(--text-muted)' }};">
+            {{ loop.index }}
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">{{ r.customer.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ r.customer.code or '' }}</div>
+          </div>
+          <strong style="color:#f87171;">{{ '%.3f'|format(r.total_sent) }} {{ t.get('grams','جم') }}</strong>
+        </div>
+        {% else %}
+        <div style="color:var(--text-muted);text-align:center;">{{ t.get('view','لا توجد بيانات') }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(248,113,113,.1);">
+            <i class="fas fa-exclamation-triangle" style="color:#f87171;"></i>
+          </span>
+          {{ t.get('debtor','أعلى أرصدة مدينة') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:16px;">
+        {% for r in top_by_balance if r.balance > 0 %}
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;
+                    border-bottom:1px solid rgba(0,0,0,.05);">
+          <div style="width:26px;height:26px;border-radius:50%;
+                      background:rgba(248,113,113,.15);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:12px;font-weight:900;color:#f87171;">
+            {{ loop.index }}
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:700;">{{ r.customer.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ r.customer.code or '' }}</div>
+          </div>
+          <strong style="color:#f87171;">{{ '%.3f'|format(r.balance) }} {{ t.get('grams','جم') }}</strong>
+        </div>
+        {% else %}
+        <div style="color:var(--success);text-align:center;padding:12px;">
+          <i class="fas fa-check-circle" style="margin-left:5px;"></i>
+          {{ t.get('balanced','لا يوجد عملاء بأرصدة مدينة') }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

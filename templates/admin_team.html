@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('system_team','فريق النظام') }} — {{ t.admin_panel }}{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-user-shield" style="color:#9333ea;margin-left:8px;"></i>
+      {{ t.get('system_team','فريق النظام') }}
+    </h4>
+    <div class="page-subtitle">{{ t.get('system_team_desc','موظفو إدارة المنصة — مستقل عن المصانع') }}</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    {% if current_user.is_superadmin %}
+    <a href="{{ url_for('admin.add_team_member') }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i> {{ t.get('add_team_member','+ إضافة موظف') }}
+    </a>
+    {% endif %}
+    <a href="{{ url_for('admin.dashboard') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+    </a>
+  </div>
+</div>
+
+{# Role legend #}
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+  <span class="badge-custom badge-purple"><i class="fas fa-crown"></i> Super Admin</span>
+  <span class="badge-custom badge-blue"><i class="fas fa-headset"></i> {{ t.get('role_support','دعم فني') }}</span>
+  <span class="badge-custom" style="background:rgba(20,184,166,.1);color:#0d9488;"><i class="fas fa-calculator"></i> {{ t.get('role_accountant','محاسبة') }}</span>
+  <span class="badge-custom" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="fas fa-tasks"></i> {{ t.get('role_manager','مدير') }}</span>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;">
+    <table class="gtable">
+      <thead><tr>
+        <th>{{ t.get('employee_code','كود الموظف') }}</th>
+        <th>{{ t.full_name }}</th>
+        <th>{{ t.email }}</th>
+        <th>{{ t.get('system_role_label','الدور') }}</th>
+        <th style="text-align:center;">{{ t.get('status','الحالة') }}</th>
+        <th style="text-align:center;">{{ t.get('last_login','آخر دخول') }}</th>
+        <th style="text-align:center;">{{ t.date }}</th>
+        <th style="text-align:center;">{{ t.actions }}</th>
+      </tr></thead>
+      <tbody>
+        {% for u in members %}
+        <tr>
+          {# Employee Code #}
+          <td>
+            <code style="font-size:11px;font-weight:800;color:var(--gold-dark);
+                         background:rgba(212,175,55,.08);padding:2px 8px;
+                         border-radius:5px;letter-spacing:1px;">
+              {{ u.employee_code or '—' }}
+            </code>
+          </td>
+
+          {# Name #}
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;font-weight:900;
+                          font-size:13px;display:flex;align-items:center;justify-content:center;
+                          background:{{ 'linear-gradient(135deg,#9333ea,#7e22ce)' if u.role=='superadmin' else 'linear-gradient(135deg,#3b82f6,#1d4ed8)' }};
+                          color:#fff;">
+                {{ u.full_name[0].upper() if u.full_name else '?' }}
+              </div>
+              <strong>{{ u.full_name }}</strong>
+            </div>
+          </td>
+
+          {# Email #}
+          <td style="font-size:12px;color:var(--text-muted);">{{ u.email }}</td>
+
+          {# Role badge #}
+          <td>
+            {% set sr = u.system_role or u.role %}
+            {% if sr == 'superadmin' %}
+              <span class="badge-custom badge-purple"><i class="fas fa-crown"></i> Super Admin</span>
+            {% elif sr == 'support' %}
+              <span class="badge-custom badge-blue"><i class="fas fa-headset"></i> {{ t.get('role_support','دعم فني') }}</span>
+            {% elif sr == 'accountant' %}
+              <span class="badge-custom" style="background:rgba(20,184,166,.1);color:#0d9488;"><i class="fas fa-calculator"></i> {{ t.get('role_accountant','محاسبة') }}</span>
+            {% elif sr == 'manager' %}
+              <span class="badge-custom" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="fas fa-tasks"></i> {{ t.get('role_manager','مدير') }}</span>
+            {% else %}
+              <span class="badge-custom badge-grey">{{ sr }}</span>
+            {% endif %}
+          </td>
+
+          {# Status #}
+          <td style="text-align:center;">
+            {% if u.is_active %}
+              <span class="badge-custom badge-green"><i class="fas fa-circle" style="font-size:7px;"></i> {{ t.sub_active }}</span>
+            {% else %}
+              <span class="badge-custom badge-grey"><i class="fas fa-circle" style="font-size:7px;"></i> {{ t.sub_suspended }}</span>
+            {% endif %}
+          </td>
+
+          {# Last login #}
+          <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">
+            {{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '—' }}
+          </td>
+
+          {# Created at #}
+          <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">
+            {{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}
+          </td>
+
+          {# Actions #}
+          <td style="text-align:center;white-space:nowrap;">
+            <div style="display:flex;gap:5px;justify-content:center;">
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('admin.toggle_team_member', uid=u.id) }}" style="display:inline;">
+                <button type="submit"
+                        class="{{ 'btn-danger-soft' if u.is_active else 'btn-success-soft' }} btn-xs"
+                        title="{{ t.deactivate if u.is_active else t.activate }}">
+                  <i class="fas fa-{{ 'ban' if u.is_active else 'check' }}"></i>
+                </button>
+              </form>
+              {% endif %}
+              <button onclick="openResetModal({{ u.id }}, '{{ u.email }}')"
+                      class="btn-grey btn-xs" title="{{ t.reset_password }}">
+                <i class="fas fa-key"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">
+            <i class="fas fa-users-slash" style="font-size:28px;display:block;margin-bottom:10px;opacity:.3;"></i>
+            {{ t.get('no_team_members','لا يوجد موظفون بعد') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# Reset password modal #}
+<div class="gmodal-overlay" id="resetModal">
+  <div class="gmodal-box">
+    <div class="gmodal-icon" style="background:#fff9e6;color:var(--gold-dark);"><i class="fas fa-key"></i></div>
+    <div class="gmodal-title">{{ t.reset_password }}</div>
+    <div class="gmodal-msg" id="resetModalEmail" style="color:var(--gold-dark);font-weight:700;"></div>
+    <form method="POST" id="resetForm">
+      <div class="mb-3">
+        <label class="form-label-custom">{{ t.new_password }} * (min 8)</label>
+        <input type="password" name="new_password" class="form-control-custom"
+               required minlength="8" placeholder="••••••••"/>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button type="submit" class="btn-gold"><i class="fas fa-save"></i> {{ t.save }}</button>
+        <button type="button" onclick="document.getElementById('resetModal').classList.remove('show')"
+                class="btn-grey"><i class="fas fa-times"></i> {{ t.cancel }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openResetModal(uid, email) {
+  document.getElementById('resetModalEmail').textContent = email;
+  document.getElementById('resetForm').action = '/admin/team/' + uid + '/reset-password';
+  document.getElementById('resetModal').classList.add('show');
+}
+</script>
+{% endblock %}

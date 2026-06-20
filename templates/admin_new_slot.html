@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}{{ t.gen_code }} — {{ t.admin_panel }}{% endblock %}
+
+{% block content %}
+
+{# ══ HEADER ══ #}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-key" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:10px;"></i>
+      {{ t.gen_code }}
+    </h4>
+    <div class="page-subtitle">{{ t.get('slot_desc','أنشئ أكواد تفعيل وشاركها مع المصانع للتسجيل') }}</div>
+  </div>
+  <a href="{{ url_for('admin.dashboard') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+{# ══ STATS — 4 mini cards ══ #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:var(--gold-border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-gold" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-layer-group"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:var(--gold-dark);">{{ stats.total }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('total_codes','إجمالي الأكواد') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:#bbf7d0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-green" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:var(--success);">{{ stats.unused }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('unused_codes','غير مستخدمة') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:#bfdbfe;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-blue" style="width:36px;height:36px;font-size:14px;flex-shrink:0;">
+          <i class="fas fa-building"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#1d4ed8;">{{ stats.used }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('used_codes','مستخدمة') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="min-height:0;border-color:#e5e7eb;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon" style="width:36px;height:36px;font-size:14px;flex-shrink:0;
+                                       background:rgba(107,114,128,.1);border-radius:10px;
+                                       display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-ban" style="color:#6b7280;"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#6b7280;">{{ stats.disabled }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('disabled_codes','معطلة') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ══ GENERATE FORM ══ #}
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="gcard h-100">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(212,175,55,.15);"><i class="fas fa-plus-circle" style="color:var(--gold-dark);"></i></span>
+          {{ t.get('generate_code','إنشاء كود جديد') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:20px;">
+
+        <div class="alert-custom alert-info mb-4" style="font-size:12.5px;">
+          <i class="fas fa-info-circle" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:7px;"></i>
+          {{ t.get('slot_desc','أنشئ كود تفعيل وشاركه مع المصنع للتسجيل في /auth/register') }}
+        </div>
+
+        <form method="POST" id="genForm">
+          <input type="hidden" name="action" value="generate"/>
+
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-box" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.plan }}
+            </label>
+            <select name="plan" class="form-control-custom" id="planSelect">
+              <option value="basic">🥉 Basic</option>
+              <option value="pro">🥈 Pro</option>
+              <option value="enterprise">🥇 Enterprise</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-calendar-alt" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.subscription_expiry }}
+              <span style="font-size:10px;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:6px;">
+                ({{ t.get('optional','اختياري') }})
+              </span>
+            </label>
+            <input type="date" name="expiry_date" id="expiryDate"
+                   class="form-control-custom" min="{{ today }}"/>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+              <i class="fas fa-infinity"></i> {{ t.get('never','اتركه فارغاً = غير محدود') }}
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-custom">
+              <i class="fas fa-hashtag" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.get('quantity','عدد الأكواد') }}
+            </label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              {% for n in [1,3,5,10,20] %}
+              <label style="cursor:pointer;">
+                <input type="radio" name="count" value="{{ n }}"
+                       {{ 'checked' if n==1 else '' }} style="display:none;"
+                       onchange="document.querySelectorAll('.qty-btn').forEach(b=>b.classList.remove('active'));this.nextElementSibling.classList.add('active')"/>
+                <span class="qty-btn {{ 'active' if n==1 else '' }}"
+                      style="display:inline-block;padding:6px 16px;border-radius:8px;font-weight:800;
+                             font-size:14px;border:2px solid var(--border);cursor:pointer;
+                             transition:all .15s;">
+                  {{ n }}
+                </span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+
+          <button type="submit" class="btn-gold btn-full"
+                  style="padding:14px;font-size:15px;font-weight:800;">
+            <i class="fas fa-magic"></i>
+            {{ t.get('generate_code','توليد الكود') }}
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  {# Print preview card #}
+  <div class="col-lg-7">
+    <div class="gcard h-100" style="border-color:var(--gold-border);">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-eye"></i></span>
+          {{ t.get('print_preview','معاينة الطباعة') }}
+        </div>
+        <button onclick="printCode()" class="btn-grey btn-sm" id="printBtn" disabled>
+          <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+        </button>
+      </div>
+      <div class="gcard-body" style="padding:20px;">
+        <div id="previewArea" style="opacity:.4;text-align:center;padding:30px 20px;">
+          <i class="fas fa-key" style="font-size:40px;color:var(--gold);margin-bottom:12px;display:block;opacity:.3;"></i>
+          <div style="color:var(--text-muted);font-size:13px;">{{ t.get('generate_to_preview','ولّد كوداً لرؤية المعاينة') }}</div>
+        </div>
+        <div id="codeCard" style="display:none;">
+          <div style="border:2px dashed rgba(212,175,55,.3);border-radius:14px;padding:24px;text-align:center;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+              {{ t.get('slot_desc','كود التفعيل') }}
+            </div>
+            <div id="previewCode" style="font-family:monospace;font-size:20px;font-weight:900;
+                                          letter-spacing:3px;color:var(--gold-dark);margin-bottom:12px;"></div>
+            <div id="previewPlan" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;"></div>
+            <div id="previewExpiry" style="font-size:12px;color:var(--text-muted);"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(212,175,55,.15);
+                        font-size:10px;color:var(--text-muted);">
+              {{ t.get('register_at','التسجيل عبر') }}: /auth/register
+            </div>
+          </div>
+          <button onclick="copyCodes()" id="copyBtn"
+                  class="btn-grey btn-full mt-2" style="font-size:13px;">
+            <i class="fas fa-copy"></i> {{ t.get('copy','نسخ الكود') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ══ CODES TABLE ══ #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-list-alt"></i></span>
+      {{ t.get('all_codes','جميع الأكواد') }}
+      <span style="font-size:13px;font-weight:600;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:8px;">
+        ({{ slots|length }})
+      </span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button onclick="filterSlots('all')" class="btn-grey btn-xs filter-btn active" data-filter="all">
+        {{ t.get('all','الكل') }}
+      </button>
+      <button onclick="filterSlots('unused')" class="btn-grey btn-xs filter-btn" data-filter="unused">
+        {{ t.get('unused_codes','غير مستخدمة') }}
+      </button>
+      <button onclick="filterSlots('used')" class="btn-grey btn-xs filter-btn" data-filter="used">
+        {{ t.get('used_codes','مستخدمة') }}
+      </button>
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="gtable" id="slotsTable">
+      <thead><tr>
+        <th style="width:200px;">{{ t.activation_code }}</th>
+        <th style="width:80px;">{{ t.get('factory_code_label','كود المصنع') }}</th>
+        <th>{{ t.plan }}</th>
+        <th style="text-align:center;">{{ t.get('status','الحالة') }}</th>
+        <th style="text-align:center;">{{ t.date }}</th>
+        <th style="text-align:center;">{{ t.get('subscription_expiry','انتهاء') }}</th>
+        <th>{{ t.factory_name }}</th>
+        <th style="text-align:center;width:120px;">{{ t.actions }}</th>
+      </tr></thead>
+      <tbody>
+        {% for s in slots %}
+        <tr data-used="{{ '1' if s.user_id else '0' }}"
+            data-active="{{ '1' if s.is_active else '0' }}">
+
+          {# Activation code #}
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <code id="code-{{ s.id }}"
+                    style="font-size:11px;font-weight:800;letter-spacing:1px;
+                           color:var(--gold-dark);background:rgba(212,175,55,.08);
+                           padding:3px 8px;border-radius:6px;">
+                {{ s.activation_code }}
+              </code>
+              <button onclick="copyText('{{ s.activation_code }}')"
+                      class="btn-grey btn-xs" title="{{ t.get('copy','نسخ') }}"
+                      style="padding:2px 6px;font-size:10px;">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </td>
+
+          {# Factory code #}
+          <td>
+            <code style="font-size:11px;color:var(--gold-dark);">{{ s.factory_code or '—' }}</code>
+          </td>
+
+          {# Plan #}
+          <td>
+            <span class="badge-custom"
+                  style="background:{{ 'rgba(212,175,55,.15)' if s.plan=='enterprise' else ('rgba(59,130,246,.1)' if s.plan=='pro' else 'rgba(107,114,128,.1)') }};
+                         color:{{ 'var(--gold-dark)' if s.plan=='enterprise' else ('#1d4ed8' if s.plan=='pro' else '#6b7280') }};">
+              {{ s.plan.title() if s.plan else '—' }}
+            </span>
+          </td>
+
+          {# Status #}
+          <td style="text-align:center;">
+            {% if s.user_id %}
+              <span class="badge-custom badge-blue"><i class="fas fa-check"></i> {{ t.get('used_codes','مستخدم') }}</span>
+            {% elif not s.is_active %}
+              <span class="badge-custom badge-grey"><i class="fas fa-ban"></i> {{ t.get('disabled_codes','معطّل') }}</span>
+            {% else %}
+              <span class="badge-custom badge-green"><i class="fas fa-circle" style="font-size:7px;"></i> {{ t.get('unused_codes','متاح') }}</span>
+            {% endif %}
+          </td>
+
+          {# Created #}
+          <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">
+            {{ s.created_at.strftime('%Y-%m-%d') if s.created_at else '—' }}
+          </td>
+
+          {# Expiry #}
+          <td style="text-align:center;font-size:12px;">
+            {% if s.subscription_expiry is none %}
+              <span style="color:var(--gold);font-weight:800;">∞</span>
+            {% else %}
+              {{ s.subscription_expiry }}
+            {% endif %}
+          </td>
+
+          {# Factory name #}
+          <td>
+            {% if s.user_id and s.name != '(unclaimed)' %}
+              <strong style="font-size:13px;">{{ s.name }}</strong>
+            {% elif s.user_id %}
+              <span style="color:var(--text-muted);font-size:12px;">
+                <i class="fas fa-clock"></i> {{ t.get('pending','في انتظار التفعيل') }}
+              </span>
+            {% else %}
+              <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+
+          {# Actions #}
+          <td style="text-align:center;white-space:nowrap;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              {# Print #}
+              <button onclick="printSingle('{{ s.activation_code }}','{{ s.plan or '' }}','{{ s.subscription_expiry or '∞' }}','{{ s.factory_code or '' }}')"
+                      class="btn-grey btn-xs" title="{{ t.get('print','طباعة') }}">
+                <i class="fas fa-print"></i>
+              </button>
+              {# Copy #}
+              <button onclick="copyText('{{ s.activation_code }}')"
+                      class="btn-grey btn-xs" title="{{ t.get('copy','نسخ') }}">
+                <i class="fas fa-copy"></i>
+              </button>
+              {# Disable (only unclaimed) #}
+              {% if not s.user_id and s.is_active and current_user.is_superadmin %}
+              <form method="POST" style="display:inline;">
+                <input type="hidden" name="action" value="disable"/>
+                <input type="hidden" name="fid" value="{{ s.id }}"/>
+                <button type="submit" class="btn-danger-soft btn-xs"
+                        title="{{ t.get('disabled_codes','تعطيل') }}">
+                  <i class="fas fa-ban"></i>
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
+            <i class="fas fa-key" style="font-size:30px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            {{ t.get('no_codes_yet','لا توجد أكواد بعد — ابدأ بتوليد كود') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# ══ Print-only section ══ #}
+<div id="printArea" style="display:none;">
+  <div style="text-align:center;padding:40px 30px;font-family:Arial,sans-serif;">
+    <div style="font-size:13px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">
+      {{ t.get('gold_factory','نظام مصنع الذهب') }}
+    </div>
+    <div style="font-size:28px;font-weight:900;color:#c8a84b;letter-spacing:1px;margin-bottom:8px;">
+      Gold Factory v5.0
+    </div>
+    <hr style="border:1.5px solid #c8a84b;width:60px;margin:16px auto;"/>
+    <div style="font-size:13px;color:#666;margin-bottom:16px;" id="printPlanExpiry"></div>
+    <div style="background:#fffbee;border:2px solid #c8a84b;border-radius:12px;
+                padding:20px 30px;display:inline-block;min-width:260px;">
+      <div style="font-size:11px;color:#999;letter-spacing:1px;margin-bottom:8px;">
+        {{ t.activation_code }}
+      </div>
+      <div id="printCodeText"
+           style="font-family:monospace;font-size:22px;font-weight:900;
+                  letter-spacing:4px;color:#c8a84b;margin-bottom:8px;"></div>
+      <div id="printFacCodeText" style="font-size:11px;color:#aaa;margin-bottom:4px;"></div>
+    </div>
+    <div style="margin-top:20px;font-size:12px;color:#888;">
+      {{ t.get('register_at','التسجيل عبر') }}: <strong>/auth/register</strong>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.qty-btn { transition: all .15s; }
+.qty-btn.active {
+  background: rgba(212,175,55,.2);
+  border-color: var(--gold) !important;
+  color: var(--gold-dark);
+}
+.filter-btn.active {
+  background: rgba(212,175,55,.15);
+  color: var(--gold-dark);
+  border-color: rgba(212,175,55,.4);
+}
+@media print {
+  /* Hide everything */
+  body * { visibility: hidden !important; }
+  /* Show only printArea and its children */
+  #printArea,
+  #printArea * { visibility: visible !important; }
+  /* Position printArea at top-left */
+  #printArea {
+    display: block !important;
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #fff !important;
+    z-index: 99999;
+  }
+}
+</style>
+<script>
+// ── Copy helper ──────────────────────────────────────────────
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('{{ t.get("copy","تم النسخ") }} ✓');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('{{ t.get("copy","تم النسخ") }} ✓');
+  });
+}
+function copyCodes() {
+  const code = document.getElementById('previewCode').textContent.trim();
+  if (code) copyText(code);
+}
+
+// ── Toast notification ───────────────────────────────────────
+function showToast(msg) {
+  const d = document.createElement('div');
+  d.textContent = msg;
+  Object.assign(d.style, {
+    position:'fixed', bottom:'24px',
+    [document.documentElement.dir==='rtl'?'right':'left']: '24px',
+    background:'var(--gold)', color:'var(--black)',
+    padding:'10px 20px', borderRadius:'10px', fontWeight:'800',
+    fontSize:'13px', zIndex:'9999', transition:'opacity .3s'
+  });
+  document.body.appendChild(d);
+  setTimeout(() => { d.style.opacity='0'; setTimeout(()=>d.remove(),300); }, 2000);
+}
+
+// ── Filter rows ──────────────────────────────────────────────
+function filterSlots(type) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter===type));
+  document.querySelectorAll('#slotsTable tbody tr[data-used]').forEach(row => {
+    if (type === 'all') { row.style.display = ''; return; }
+    if (type === 'used')   { row.style.display = row.dataset.used   === '1' ? '' : 'none'; return; }
+    if (type === 'unused') { row.style.display = row.dataset.used   === '0' && row.dataset.active === '1' ? '' : 'none'; return; }
+  });
+}
+
+// ── Show preview after generated codes flash ─────────────────
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for cat, msg in messages %}
+{% if cat == 'success' %}
+(function(){
+  const raw = {{ msg|tojson }};
+  const match = raw.match(/[A-Z0-9]{5}-[A-Z0-9]{4,5}-[A-Z0-9]{4,5}-[A-Z0-9]{4,5}/g);
+  if (match && match.length > 0) {
+    const code = match[0];
+    const plan = document.getElementById('planSelect')?.value || 'basic';
+    const expiry = document.getElementById('expiryDate')?.value || '∞';
+    showCodePreview(code, plan, expiry);
+  }
+})();
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+function showCodePreview(code, plan, expiry) {
+  document.getElementById('previewArea').style.display = 'none';
+  document.getElementById('codeCard').style.display = 'block';
+  document.getElementById('previewCode').textContent = code;
+  document.getElementById('previewPlan').textContent = '{{ t.plan }}: ' + plan.charAt(0).toUpperCase() + plan.slice(1);
+  document.getElementById('previewExpiry').textContent = '{{ t.subscription_expiry }}: ' + (expiry || '∞');
+  document.getElementById('printBtn').disabled = false;
+  window._lastCode = code; window._lastPlan = plan; window._lastExpiry = expiry;
+}
+
+// ── Print single code ────────────────────────────────────────
+function printCode() {
+  printSingle(window._lastCode||'', window._lastPlan||'', window._lastExpiry||'∞', '');
+}
+function printSingle(code, plan, expiry, facCode) {
+  document.getElementById('printCodeText').textContent = code;
+  document.getElementById('printPlanExpiry').textContent =
+    '{{ t.plan }}: ' + plan.toUpperCase() + '  |  {{ t.subscription_expiry }}: ' + expiry;
+  document.getElementById('printFacCodeText').textContent =
+    facCode ? '{{ t.get("factory_code_label","كود المصنع") }}: ' + facCode : '';
+  document.getElementById('printArea').style.display = 'block';
+  window.print();
+  document.getElementById('printArea').style.display = 'none';
+}
+</script>
+{% endblock %}

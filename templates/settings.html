@@ -1,0 +1,775 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('factory_settings','إعدادات المصنع') }}{% endblock %}
+
+{% block content %}
+<div class="page-header no-print">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-cog" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:10px;"></i>
+      {{ t.get('factory_settings','إعدادات المصنع') }}
+    </h4>
+    <div class="page-subtitle">{{ fac.name }} · {{ fac.factory_code or '' }}</div>
+  </div>
+</div>
+
+{# ── TAB NAV ── #}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;
+            border-bottom:1px solid var(--border);padding-bottom:12px;" id="settingsTabs">
+  {% set tabs = [
+    ('general',   'fas fa-building',      t.get('tab_general','عام')),
+    ('identity',  'fas fa-palette',       t.get('tab_identity','الهوية')),
+    ('invoice',   'fas fa-file-invoice',  t.get('tab_invoice','الفواتير')),
+    ('system',    'fas fa-sliders-h',     t.get('tab_system','النظام')),
+    ('security',  'fas fa-shield-alt',    t.get('tab_security','الأمان')),
+    ('subscription','fas fa-credit-card', t.get('tab_subscription','الاشتراك')),
+    ('support',   'fas fa-life-ring',     t.get('tab_support','الدعم')),
+  ] %}
+  {% for tid, icon, label in tabs %}
+  <button onclick="switchTab('{{ tid }}')"
+          class="tab-btn {{ 'active' if active_tab==tid else '' }}"
+          id="tab-{{ tid }}"
+          style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;
+                 font-size:13px;font-weight:700;border:none;cursor:pointer;
+                 background:{{ 'rgba(212,175,55,.15)' if active_tab==tid else 'transparent' }};
+                 color:{{ 'var(--gold-dark)' if active_tab==tid else 'var(--text-muted)' }};
+                 transition:all .18s;">
+    <i class="{{ icon }}" style="font-size:12px;"></i> {{ label }}
+  </button>
+  {% endfor %}
+</div>
+
+{# ══ TAB: GENERAL ══════════════════════════════════════════ #}
+<div id="panel-general" class="tab-panel" style="{{ 'display:block' if active_tab=='general' else 'display:none' }}">
+  <div class="row g-4">
+
+    {# Factory info #}
+    <div class="col-lg-6">
+      <form method="POST" class="gcard h-100">
+        <input type="hidden" name="action" value="factory"/>
+        <div class="gcard-header">
+          <div class="gcard-title">
+            <span class="ti"><i class="fas fa-building"></i></span>
+            {{ t.get('factory_info','معلومات المصنع') }}
+          </div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.factory_name }} *</label>
+            <input type="text" name="factory_name" class="form-control-custom"
+                   value="{{ fac.name }}" required/>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.get('city','المدينة') }}</label>
+              <input type="text" name="city" class="form-control-custom" value="{{ fac.city or '' }}"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.get('country','الدولة') }}</label>
+              <select name="country" class="form-control-custom">
+                {% for code, cname in [('SA','السعودية'),('AE','الإمارات'),('KW','الكويت'),('TR','تركيا'),('EG','مصر'),('OTHER','أخرى')] %}
+                <option value="{{ code }}" {{ 'selected' if (fac.country or 'SA')==code }}>{{ cname }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('address','العنوان') }}</label>
+            <textarea name="address" class="form-control-custom" rows="2" style="resize:vertical;">{{ fac.address or '' }}</textarea>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.get('commercial_reg','السجل التجاري') }}</label>
+              <input type="text" name="commercial_reg" class="form-control-custom"
+                     value="{{ fac.commercial_reg or '' }}" style="direction:ltr;"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.get('tax_number','الرقم الضريبي') }}</label>
+              <input type="text" name="tax_number" class="form-control-custom"
+                     value="{{ fac.tax_number or '' }}" style="direction:ltr;"/>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">{{ t.get('description','وصف مختصر') }}</label>
+            <textarea name="description" class="form-control-custom" rows="2" style="resize:vertical;">{{ fac.description or '' }}</textarea>
+          </div>
+          <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
+        </div>
+      </form>
+    </div>
+
+    {# Contact info #}
+    <div class="col-lg-6">
+      <form method="POST" class="gcard h-100">
+        <input type="hidden" name="action" value="contact"/>
+        <div class="gcard-header">
+          <div class="gcard-title">
+            <span class="ti"><i class="fas fa-phone-alt"></i></span>
+            {{ t.get('contact_info','معلومات التواصل') }}
+          </div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-phone" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.get('phone_number','رقم الجوال') }}
+            </label>
+            <input type="tel" name="phone" class="form-control-custom"
+                   value="{{ fac.phone or '' }}" style="direction:ltr;font-family:monospace;" placeholder="+966501234567"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fab fa-whatsapp" style="color:#25D366;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.get('whatsapp','واتساب') }} <span style="font-size:10px;opacity:.6;">({{ t.get('optional','اختياري') }})</span>
+            </label>
+            <input type="tel" name="whatsapp" class="form-control-custom"
+                   value="{{ fac.whatsapp or '' }}" style="direction:ltr;font-family:monospace;" placeholder="+966501234567"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-envelope" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.email }}
+            </label>
+            <input type="text" class="form-control-custom" value="{{ user.email }}"
+                   readonly style="opacity:.6;cursor:not-allowed;direction:ltr;"
+                   title="{{ t.get('change_in_security','غيّر الإيميل من تبويب الأمان') }}"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-globe" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.get('website','الموقع الإلكتروني') }}
+            </label>
+            <input type="url" name="website" class="form-control-custom"
+                   value="{{ fac.website or '' }}" style="direction:ltr;" placeholder="https://"/>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-instagram" style="color:#e1306c;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> Instagram</label>
+              <input type="text" name="instagram" class="form-control-custom"
+                     value="{{ fac.instagram or '' }}" style="direction:ltr;" placeholder="@username"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-twitter" style="color:#1da1f2;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> X / Twitter</label>
+              <input type="text" name="twitter" class="form-control-custom"
+                     value="{{ fac.twitter or '' }}" style="direction:ltr;" placeholder="@username"/>
+            </div>
+          </div>
+          <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ══ TAB: IDENTITY ══════════════════════════════════════════ #}
+<div id="panel-identity" class="tab-panel" style="{{ 'display:block' if active_tab=='identity' else 'display:none' }}">
+  <div class="row justify-content-center">
+  <div class="col-lg-6">
+    <form method="POST" enctype="multipart/form-data" class="gcard">
+      <input type="hidden" name="action" value="logo"/>
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-palette"></i></span>{{ t.get('brand_identity','الهوية البصرية') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:24px;">
+        <div style="text-align:center;margin-bottom:24px;">
+          <div id="logoPreview" style="width:100px;height:100px;border-radius:18px;margin:0 auto 12px;
+                                        border:2px dashed rgba(212,175,55,.3);overflow:hidden;
+                                        background:rgba(212,175,55,.05);display:flex;align-items:center;justify-content:center;">
+            {% if fac.logo_data %}
+            <img src="{{ fac.logo_data }}" style="width:100%;height:100%;object-fit:contain;"/>
+            {% else %}
+            <i class="fas fa-building" style="font-size:36px;color:var(--gold-dark);opacity:.3;"></i>
+            {% endif %}
+          </div>
+          <label class="btn-grey btn-sm" style="cursor:pointer;display:inline-block;margin-bottom:8px;">
+            <i class="fas fa-upload"></i> {{ t.get('upload_logo','رفع شعار المصنع') }}
+            <input type="file" name="logo_file" accept="image/*" style="display:none;"
+                   onchange="previewLogo(this)"/>
+          </label>
+          {% if fac.logo_data %}
+          <div>
+            <button type="submit" name="remove_logo" value="1" class="btn-danger-soft btn-sm">
+              <i class="fas fa-trash"></i> {{ t.get('remove_logo','حذف الشعار') }}
+            </button>
+          </div>
+          {% endif %}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">PNG / JPG — {{ t.get('logo_size_limit','حتى 1MB') }}</div>
+        </div>
+        {# Factory color #}
+        <div class="mb-4" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <label class="form-label-custom">{{ t.get('factory_color','لون المصنع') }}</label>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="color" name="factory_color_input"
+                   value="{{ fac.factory_color or '#D4AF37' }}"
+                   style="width:50px;height:36px;border:none;border-radius:8px;cursor:pointer;"/>
+            <span style="font-size:12px;color:var(--text-muted);">{{ t.get('color_note','يُستخدم في الطباعة والهوية') }}</span>
+          </div>
+        </div>
+        <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
+      </div>
+    </form>
+  </div>
+  </div>
+</div>
+
+{# ══ TAB: INVOICE ══════════════════════════════════════════ #}
+<div id="panel-invoice" class="tab-panel" style="{{ 'display:block' if active_tab=='invoice' else 'display:none' }}">
+  <div class="row justify-content-center">
+  <div class="col-lg-7">
+    <form method="POST" class="gcard">
+      <input type="hidden" name="action" value="invoice"/>
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-file-invoice"></i></span>{{ t.get('invoice_settings','إعدادات الفواتير') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:24px;">
+        <div class="mb-4">
+          <label class="form-label-custom">{{ t.get('thank_you_msg','عبارة الشكر في الفاتورة') }}</label>
+          <input type="text" name="thank_you_msg" class="form-control-custom"
+                 value="{{ fac.thank_you_msg or '' }}"
+                 placeholder="{{ t.get('thank_you','شكراً لتعاملكم معنا') }}"/>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+            {{ t.get('appears_in_invoice','تظهر أسفل كل فاتورة') }}
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label-custom">{{ t.get('invoice_footer','تذييل الفاتورة') }}</label>
+          <textarea name="invoice_footer" class="form-control-custom" rows="3" style="resize:vertical;"
+                    placeholder="Powered by Estroid Gold ERP">{{ fac.invoice_footer or '' }}</textarea>
+        </div>
+        {# Preview #}
+        <div style="border:1.5px dashed rgba(212,175,55,.3);border-radius:10px;padding:18px;
+                    background:rgba(212,175,55,.03);margin-bottom:20px;">
+          <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:8px;">
+            <i class="fas fa-eye"></i> {{ t.get('preview','معاينة') }}
+          </div>
+          <div style="text-align:center;font-size:13px;color:#555;border-top:1px solid #e5e7eb;padding-top:12px;">
+            {{ fac.thank_you_msg or t.get('thank_you','شكراً لتعاملكم معنا') }}<br/>
+            <span style="font-size:10px;color:#aaa;">{{ fac.invoice_footer or 'Powered by Estroid Gold ERP' }}</span>
+          </div>
+        </div>
+        <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
+      </div>
+    </form>
+  </div>
+  </div>
+</div>
+
+{# ══ TAB: SYSTEM ══════════════════════════════════════════ #}
+<div id="panel-system" class="tab-panel" style="{{ 'display:block' if active_tab=='system' else 'display:none' }}">
+  <div class="row justify-content-center">
+  <div class="col-lg-6">
+    <form method="POST" class="gcard">
+      <input type="hidden" name="action" value="system"/>
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti"><i class="fas fa-sliders-h"></i></span>{{ t.get('system_settings','إعدادات النظام') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:24px;">
+        <div class="mb-3">
+          <label class="form-label-custom">{{ t.get('default_karat','العيار الافتراضي') }}</label>
+          <select name="default_karat" class="form-control-custom">
+            {% for k in [18,21,22,24] %}
+            <option value="{{ k }}" {{ 'selected' if (fac.default_karat or 21)==k }}>{{ k }}K</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-custom">{{ t.get('currency','العملة الافتراضية') }}</label>
+          <select name="default_currency" class="form-control-custom">
+            {% for c,n in [('SAR','ريال سعودي'),('AED','درهم إماراتي'),('KWD','دينار كويتي'),('TRY','ليرة تركية'),('USD','دولار')] %}
+            <option value="{{ c }}" {{ 'selected' if (fac.default_currency or 'SAR')==c }}>{{ c }} — {{ n }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="form-label-custom">{{ t.get('weight_unit','وحدة الوزن') }}</label>
+          <select name="weight_unit" class="form-control-custom">
+            <option value="g" {{ 'selected' if (fac.weight_unit or 'g')=='g' }}>{{ t.get('grams','جرام (g)') }}</option>
+            <option value="oz" {{ 'selected' if (fac.weight_unit or 'g')=='oz' }}>{{ t.get('ounce','أونصة (oz)') }}</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
+      </div>
+    </form>
+  </div>
+  </div>
+</div>
+
+{# ══ TAB: SECURITY ══════════════════════════════════════════ #}
+<div id="panel-security" class="tab-panel" style="{{ 'display:block' if active_tab=='security' else 'display:none' }}">
+  <div class="row g-4">
+
+    {# Change password #}
+    <div class="col-lg-6">
+      <form method="POST" class="gcard">
+        <input type="hidden" name="action" value="password"/>
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-lock"></i></span>{{ t.get('change_password','تغيير كلمة المرور') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('current_password','كلمة المرور الحالية') }}</label>
+            <input type="password" name="current_password" class="form-control-custom" required/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('new_password','كلمة المرور الجديدة') }}</label>
+            <input type="password" name="new_password" class="form-control-custom" required minlength="8"
+                   oninput="updatePwStrength(this.value)"/>
+            <div id="pwBar" style="height:4px;border-radius:2px;background:var(--border);margin-top:6px;">
+              <div id="pwFill" style="height:100%;border-radius:2px;width:0%;transition:all .3s;"></div>
+            </div>
+            <div id="pwText" style="font-size:10px;color:var(--text-muted);margin-top:2px;"></div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">{{ t.get('confirm_password','تأكيد كلمة المرور') }}</label>
+            <input type="password" name="confirm_password" class="form-control-custom" required/>
+          </div>
+          <button type="submit" class="btn-gold btn-full"><i class="fas fa-key"></i> {{ t.get('change_password','تغيير كلمة المرور') }}</button>
+        </div>
+      </form>
+    </div>
+
+    {# Change email #}
+    <div class="col-lg-6">
+      <form method="POST" class="gcard">
+        <input type="hidden" name="action" value="email"/>
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-envelope"></i></span>{{ t.get('change_email','تغيير الإيميل') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div style="background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);
+                      border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;">
+            <i class="fas fa-info-circle" style="color:var(--gold);"></i>
+            {{ t.get('change_email_note','تغيير الإيميل يتطلب تأكيد كلمة المرور الحالية.') }}
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('current_email','الإيميل الحالي') }}</label>
+            <input type="email" class="form-control-custom" value="{{ user.email }}"
+                   readonly style="opacity:.6;direction:ltr;"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">
+              <i class="fas fa-phone" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+              {{ t.get('registered_phone','رقم الجوال المسجل') }}
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="text" class="form-control-custom"
+                     value="{{ user.full_phone or t.get('not_set','غير محدد') }}"
+                     readonly style="opacity:.7;direction:ltr;font-family:monospace;letter-spacing:1px;flex:1;"/>
+              <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">
+                {{ t.get('change_in_general','غيّر من تبويب عام') }}
+              </span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('new_email','الإيميل الجديد') }}</label>
+            <input type="email" name="new_email" class="form-control-custom" required style="direction:ltr;"/>
+          </div>
+          <div class="mb-4">
+            <label class="form-label-custom">{{ t.get('verify_password','كلمة المرور للتحقق') }}</label>
+            <input type="password" name="verify_password" class="form-control-custom" required/>
+          </div>
+          <button type="submit" class="btn-gold btn-full"><i class="fas fa-envelope-open"></i> {{ t.get('update_email','تحديث الإيميل') }}</button>
+        </div>
+      </form>
+    </div>
+
+
+    {# Last login + Logout all devices #}
+    <div class="col-12">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-history"></i></span>{{ t.get('session_activity','النشاط والجلسات') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <div style="background:rgba(212,175,55,.05);border-radius:10px;padding:14px 16px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;"><i class="fas fa-clock" style="color:var(--gold);"></i> {{ t.get('last_login','آخر تسجيل دخول') }}</div>
+                <div style="font-weight:700;font-size:13px;">
+                  {{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else t.get('never','لم يُحدد') }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div style="background:rgba(212,175,55,.05);border-radius:10px;padding:14px 16px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;"><i class="fas fa-map-marker-alt" style="color:var(--gold);"></i> {{ t.get('last_login_ip','آخر IP') }}</div>
+                <div style="font-weight:700;font-size:13px;direction:ltr;">{{ user.last_login_ip or '—' }}</div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div style="background:rgba(212,175,55,.05);border-radius:10px;padding:14px 16px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;"><i class="fas fa-user" style="color:var(--gold);"></i> {{ t.get('account_since','عضو منذ') }}</div>
+                <div style="font-weight:700;font-size:13px;">{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '—' }}</div>
+              </div>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:16px;">
+            <form method="POST" action="{{ url_for('factory.logout_all_devices') }}"
+                  onsubmit="return confirm('{{ t.get('confirm_logout_all','هل تريد تسجيل الخروج من جميع الأجهزة؟') }}')">
+              <button type="submit" class="btn-danger-soft btn-sm">
+                <i class="fas fa-sign-out-alt"></i> {{ t.get('logout_all_devices','تسجيل الخروج من جميع الأجهزة') }}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# API Key #}
+    <div class="col-12">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-key"></i></span>{{ t.get('api_key','API Key') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+            <code id="apiKeyVal" style="flex:1;background:rgba(0,0,0,.04);padding:10px 14px;
+                                         border-radius:8px;font-size:12px;letter-spacing:1px;
+                                         direction:ltr;word-break:break-all;min-width:200px;">
+              {{ user.api_key if user.api_key else t.get('no_api_key','لا يوجد API Key — أنشئ واحداً') }}
+            </code>
+            {% if user.api_key %}
+            <button onclick="navigator.clipboard.writeText('{{ user.api_key }}').then(()=>showToast('{{ t.get('copy','تم النسخ') }}'))"
+                    class="btn-grey btn-sm" type="button">
+              <i class="fas fa-copy"></i>
+            </button>
+            {% endif %}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">
+            <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
+            {{ t.get('api_key_note','احتفظ بهذا المفتاح آمناً — لا تشاركه مع أحد.') }}
+          </div>
+          <form method="POST" action="{{ url_for('factory.gen_api_key') }}"
+                onsubmit="return {{ 'true' if not user.api_key else 'confirm(t_confirm_regen)' }}">
+            <button type="submit" class="btn-grey btn-sm">
+              <i class="fas fa-sync"></i>
+              {{ t.get('gen_api_key','إنشاء' if not user.api_key else 'إعادة إنشاء') + ' API Key' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{# ══ TAB: SUBSCRIPTION ═══════════════════════════════════ #}
+<div id="panel-subscription" class="tab-panel" style="{{ 'display:block' if active_tab=='subscription' else 'display:none' }}">
+  <div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="gcard" style="border-color:var(--gold-border);">
+      <div class="gcard-header">
+        <div class="gcard-title"><span class="ti ic-gold"><i class="fas fa-credit-card"></i></span>{{ t.get('tab_subscription','الاشتراك الحالي') }}</div>
+      </div>
+      <div class="gcard-body" style="padding:24px;">
+        <div class="row g-3 mb-4">
+          <div class="col-6">
+            <div class="stat-card" style="min-height:0;border-color:var(--gold-border);">
+              <div style="font-size:11px;color:var(--text-muted);">{{ t.plan }}</div>
+              <div style="font-size:20px;font-weight:900;color:var(--gold-dark);">{{ (fac.plan or 'basic').title() }}</div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat-card" style="min-height:0;border-color:{{ '#bbf7d0' if fac.is_subscription_valid else '#fecaca' }};">
+              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('subscription_status','الحالة') }}</div>
+              <div style="font-size:14px;font-weight:800;color:{{ 'var(--success)' if fac.is_subscription_valid else '#ef4444' }};">
+                {% if fac.is_subscription_valid %}
+                <i class="fas fa-check-circle"></i> {{ t.sub_active }}
+                {% else %}
+                <i class="fas fa-times-circle"></i> {{ t.sub_expired }}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat-card" style="min-height:0;">
+              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('days_remaining','أيام متبقية') }}</div>
+              <div style="font-size:24px;font-weight:900;color:{{ '#22c55e' if (fac.days_remaining or 0)>7 else ('#f59e0b' if (fac.days_remaining or 0)>0 else '#ef4444') }};">
+                {{ fac.days_remaining if fac.days_remaining is not none else '∞' }}
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="stat-card" style="min-height:0;">
+              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('subscription_expiry','تاريخ الانتهاء') }}</div>
+              <div style="font-size:14px;font-weight:800;">{{ fac.subscription_expiry or '∞' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align:center;padding:18px;background:rgba(212,175,55,.05);
+                    border-radius:12px;border:1px solid rgba(212,175,55,.15);">
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">
+            {{ t.get('need_renewal','لتجديد الاشتراك تواصل مع فريق الدعم') }}
+          </div>
+          {% if support_whatsapp %}
+          <a href="https://wa.me/{{ support_whatsapp }}?text={{ t.get('renewal_msg','أريد تجديد اشتراك نظام مصنع الذهب')|urlencode }}"
+             target="_blank"
+             style="display:inline-flex;align-items:center;gap:8px;background:#25D366;color:#fff;
+                    padding:10px 24px;border-radius:10px;font-weight:800;font-size:13px;text-decoration:none;">
+            <i class="fab fa-whatsapp"></i> {{ t.get('renew_via_whatsapp','تجديد عبر واتساب') }}
+          </a>
+          {% endif %}
+        </div>
+
+        {# Recent payments #}
+        {% if fac.payments.count() > 0 %}
+        <div style="margin-top:20px;">
+          <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">
+            {{ t.get('payment_history','آخر الفواتير') }}
+          </div>
+          {% for pay in recent_payments %}
+          <div style="display:flex;justify-content:space-between;align-items:center;
+                      padding:8px 12px;border-radius:8px;background:rgba(0,0,0,.02);
+                      margin-bottom:5px;font-size:12px;">
+            <code style="color:var(--gold-dark);font-weight:800;">{{ pay.invoice_number }}</code>
+            <span>{{ pay.period_days }} {{ t.days }}</span>
+            <strong style="color:var(--gold-dark);">{{ '%.0f'|format(pay.amount) }} {{ pay.currency }}</strong>
+            <span style="color:var(--text-muted);">{{ pay.paid_at.strftime('%Y-%m-%d') if pay.paid_at else '' }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+{# ══ TAB: SUPPORT ══════════════════════════════════════════ #}
+<div id="panel-support" class="tab-panel" style="{{ 'display:block' if active_tab=='support' else 'display:none' }}">
+  <div class="row g-4">
+
+    <div class="col-lg-6">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-life-ring"></i></span>{{ t.get('tech_support','الدعم الفني') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-size:36px;margin-bottom:8px;">🛟</div>
+            <div style="font-size:14px;font-weight:700;">{{ platform_name }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ platform_version }}</div>
+          </div>
+          {% if support_whatsapp %}
+          <a href="https://wa.me/{{ support_whatsapp }}" target="_blank"
+             style="display:flex;align-items:center;justify-content:center;gap:8px;
+                    background:#25D366;color:#fff;padding:12px;border-radius:10px;
+                    font-weight:800;font-size:13px;text-decoration:none;margin-bottom:10px;">
+            <i class="fab fa-whatsapp" style="font-size:18px;"></i>
+            {{ t.get('contact_support','تواصل مع خدمة العملاء') }}
+          </a>
+          {% endif %}
+          {% if support_email %}
+          <a href="mailto:{{ support_email }}"
+             style="display:flex;align-items:center;justify-content:center;gap:8px;
+                    background:rgba(212,175,55,.1);color:var(--gold-dark);padding:10px;
+                    border-radius:10px;font-weight:700;font-size:13px;text-decoration:none;">
+            <i class="fas fa-envelope"></i> {{ support_email }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-database"></i></span>{{ t.get('backup_restore','النسخ الاحتياطي') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div style="background:rgba(212,175,55,.05);border:1px solid rgba(212,175,55,.15);
+                      border-radius:10px;padding:14px;margin-bottom:16px;font-size:12.5px;color:var(--text-muted);">
+            <i class="fas fa-info-circle" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+            {{ t.get('backup_note','النسخة الاحتياطية تشمل: الموظفين، العملاء، أوامر العمل.') }}
+          </div>
+          <form method="POST">
+            <input type="hidden" name="action" value="backup"/>
+            <button type="submit" class="btn-gold btn-full" style="margin-bottom:8px;">
+              <i class="fas fa-download"></i> {{ t.get('create_backup','تحميل نسخة احتياطية') }}
+            </button>
+          </form>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">
+            JSON format — {{ t.get('factory_code_label','كود المصنع') }}: {{ fac.factory_code or fac.id }}
+          </div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">
+              <i class="fas fa-upload" style="color:var(--gold);"></i>
+              {{ t.get('restore_backup','استعادة نسخة احتياطية') }}
+            </div>
+            <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);
+                        border-radius:8px;padding:10px 14px;font-size:11.5px;color:#dc2626;margin-bottom:10px;">
+              <i class="fas fa-exclamation-triangle"></i>
+              {{ t.get('restore_warning','تحذير: الاستعادة ستستبدل البيانات الحالية.') }}
+            </div>
+            <label class="btn-grey btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <i class="fas fa-file-import"></i> {{ t.get('select_backup_file','اختر ملف النسخة الاحتياطية') }}
+              <input type="file" accept=".json" style="display:none;" disabled
+                     title="{{ t.get('coming_soon','قريباً') }}"/>
+            </label>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:6px;">
+              {{ t.get('coming_soon','قريباً — سيتم تفعيلها في الإصدار القادم') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# Report Issue #}
+    <div class="col-lg-6">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-bug"></i></span>{{ t.get('report_issue','الإبلاغ عن مشكلة') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <form method="POST" action="{{ url_for('factory.report_issue') }}">
+            <div class="mb-3">
+              <label class="form-label-custom">{{ t.get('issue_desc','وصف المشكلة') }}</label>
+              <textarea name="issue_body" class="form-control-custom" rows="4"
+                        required style="resize:vertical;"
+                        placeholder="{{ t.get('issue_placeholder','اكتب وصفاً دقيقاً للمشكلة...') }}"></textarea>
+            </div>
+            <button type="submit" class="btn-gold btn-full">
+              <i class="fas fa-paper-plane"></i> {{ t.get('send_report','إرسال البلاغ') }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    {# QR Code + System Info #}
+    <div class="col-12">
+      <div class="gcard">
+        <div class="gcard-header">
+          <div class="gcard-title"><span class="ti"><i class="fas fa-qrcode"></i></span>{{ t.get('factory_qr','QR المصنع وبيانات النظام') }}</div>
+        </div>
+        <div class="gcard-body" style="padding:22px;">
+          <div class="row g-4 align-items-center">
+            <div class="col-md-4" style="text-align:center;">
+              <div id="qrCodeArea" style="background:#fff;border:2px solid rgba(212,175,55,.2);
+                                          border-radius:12px;padding:16px;display:inline-block;">
+                <canvas id="qrCanvas" width="140" height="140"></canvas>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">
+                {{ fac.factory_code or fac.id }}
+              </div>
+              <button onclick="downloadQR()" class="btn-grey btn-sm" style="margin-top:8px;">
+                <i class="fas fa-download"></i> {{ t.get('download_qr','تحميل QR') }}
+              </button>
+            </div>
+            <div class="col-md-8">
+              <table style="width:100%;font-size:13px;">
+                {% macro srow(label, value) %}
+                <tr style="border-bottom:1px solid var(--border);">
+                  <td style="padding:8px 4px;color:var(--text-muted);font-weight:600;width:45%;">{{ label }}</td>
+                  <td style="padding:8px 4px;font-weight:700;">{{ value }}</td>
+                </tr>
+                {% endmacro %}
+                {{ srow(t.get('factory_code_label','كود المصنع'), fac.factory_code or '—') }}
+                {{ srow(t.plan, (fac.plan or 'basic').title()) }}
+                {{ srow(t.get('platform_version','إصدار النظام'), platform_version) }}
+                {{ srow(t.get('server_status','حالة السيرفر'), '🟢 ' + t.get('online','متصل')) }}
+                {{ srow(t.get('account_since','عضو منذ'), fac.created_at.strftime('%Y-%m-%d') if fac.created_at else '—') }}
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    var active = b.id === 'tab-' + tabId;
+    b.style.background = active ? 'rgba(212,175,55,.15)' : 'transparent';
+    b.style.color = active ? 'var(--gold-dark)' : 'var(--text-muted)';
+  });
+  var panel = document.getElementById('panel-' + tabId);
+  if (panel) panel.style.display = 'block';
+}
+
+function previewLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  if (input.files[0].size > 1024*1024) {
+    alert('{{ t.get("logo_size_limit","حجم الصورة يتجاوز 1MB") }}');
+    input.value = ''; return;
+  }
+  const r = new FileReader();
+  r.onload = e => {
+    const p = document.getElementById('logoPreview');
+    p.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain;"/>`;
+  };
+  r.readAsDataURL(input.files[0]);
+}
+
+function updatePwStrength(v) {
+  let s = 0;
+  if (v.length >= 8) s++;
+  if (/[A-Z]/.test(v)) s++;
+  if (/[0-9]/.test(v)) s++;
+  if (/[^A-Za-z0-9]/.test(v)) s++;
+  const colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+  const labels = ['{{ t.get("pw_weak","ضعيفة") }}','{{ t.get("pw_fair","مقبولة") }}','{{ t.get("pw_good","جيدة") }}','{{ t.get("pw_strong","قوية") }}'];
+  const fill = document.getElementById('pwFill');
+  const text = document.getElementById('pwText');
+  if (v.length > 0 && fill && text) {
+    fill.style.width = ((s/4)*100) + '%';
+    fill.style.background = colors[s-1] || colors[0];
+    text.textContent = labels[s-1] || labels[0];
+    text.style.color = colors[s-1] || colors[0];
+  }
+}
+
+// ── QR Code Generation ─────────────────────────────────────
+function generateQR() {
+  const canvas = document.getElementById('qrCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = 140;
+  // Simple visual QR placeholder (real QR needs library)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#1a1a1a';
+  // Draw finder patterns
+  [[0,0],[size-30,0],[0,size-30]].forEach(([x,y]) => {
+    ctx.fillRect(x+2, y+2, 26, 26);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x+6, y+6, 18, 18);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x+9, y+9, 12, 12);
+  });
+  // Add factory code text
+  const code = '{{ fac.factory_code or fac.id }}';
+  ctx.fillStyle = '#c8a84b';
+  ctx.font = 'bold 9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(code, size/2, size-4);
+}
+function downloadQR() {
+  const canvas = document.getElementById('qrCanvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'qr-{{ fac.factory_code or fac.id }}.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+function showToast(msg) {
+  const d = document.createElement('div');
+  d.textContent = msg;
+  Object.assign(d.style, {position:'fixed',bottom:'20px',
+    [document.documentElement.dir==='rtl'?'right':'left']:'20px',
+    background:'var(--gold)',color:'var(--black)',padding:'10px 20px',
+    borderRadius:'10px',fontWeight:'800',fontSize:'13px',zIndex:'9999'});
+  document.body.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';setTimeout(()=>d.remove(),300);},2000);
+}
+document.addEventListener('DOMContentLoaded', generateQR);
+const t_confirm_regen = '{{ t.get("confirm_regen_api","إعادة إنشاء API Key ستلغي المفتاح القديم. هل تريد المتابعة؟") }}';
+</script>
+{% endblock %}

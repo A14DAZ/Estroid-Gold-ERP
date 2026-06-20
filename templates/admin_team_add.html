@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('add_team_member','إضافة موظف') }} — {{ t.admin_panel }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-user-plus" style="color:#9333ea;margin-left:8px;"></i>
+      {{ t.get('add_team_member','إضافة موظف نظام') }}
+    </h4>
+    <div class="page-subtitle">{{ t.get('system_team_desc','موظفو إدارة المنصة — مستقل عن المصانع') }}</div>
+  </div>
+  <a href="{{ url_for('admin.team') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-id-card-alt"></i></span>
+          {{ t.get('team_member_info','بيانات الموظف') }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST">
+
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.full_name }} *</label>
+            <input type="text" name="full_name" class="form-control-custom"
+                   placeholder="{{ t.get('full_name','الاسم الكامل') }}" required/>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.email }} *</label>
+            <input type="email" name="email" class="form-control-custom"
+                   placeholder="user@example.com" required/>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('system_role_label','الدور') }} *</label>
+            <select name="system_role" class="form-control-custom" required>
+              {% for role in system_roles %}
+              <option value="{{ role }}">
+                {% if role == 'superadmin' %}👑 Super Admin
+                {% elif role == 'support' %}🎧 {{ t.get('role_support','دعم فني') }}
+                {% elif role == 'accountant' %}🧮 {{ t.get('role_accountant','محاسبة') }}
+                {% elif role == 'manager' %}📋 {{ t.get('role_manager','مدير') }}
+                {% else %}{{ role }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-custom">{{ t.get('new_password','كلمة المرور') }} * (min 8)</label>
+            <input type="password" name="password" class="form-control-custom"
+                   placeholder="••••••••" required minlength="8"/>
+          </div>
+
+          <div style="background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);
+                      border-radius:9px;padding:12px;margin-bottom:18px;">
+            <div style="font-size:12px;color:var(--text-muted);">
+              <i class="fas fa-info-circle" style="color:var(--gold);margin-left:6px;"></i>
+              {{ t.get('team_note','سيتم توليد كود موظف تلقائياً (EMP-XXXX)') }}
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button type="submit" class="btn-gold btn-full">
+              <i class="fas fa-plus-circle"></i> {{ t.get('add_team_member','إضافة الموظف') }}
+            </button>
+            <a href="{{ url_for('admin.team') }}" class="btn-grey btn-full" style="text-align:center;">
+              {{ t.cancel }}
+            </a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

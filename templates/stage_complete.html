@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+{% block title %}{{ t.stage_completion }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">
+    {{ t.stage_completion }}: <span style="color:var(--gold-dark);">{{ stage.stage_name }}</span>
+  </h4>
+  <a href="{{ url_for('orders.order_detail', order_id=order.id) }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    {# ── Handover summary ── #}
+    <div class="gcard mb-3" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border-color:#bfdbfe;">
+      <div class="gcard-body">
+        <div style="font-size:12px;color:#1d4ed8;font-weight:800;margin-bottom:10px;">
+          <i class="fas fa-paper-plane" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+          {{ t.handover }} {{ t.stage }} — {{ t.received_weight }}
+        </div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:11.5px;color:#475569;font-weight:600;">{{ t.received_weight }}</div>
+            <div style="font-size:26px;font-weight:900;color:#1d4ed8;"
+                 id="hw_val" data-val="{{ stage.received_weight }}">
+              {{ '%.3f'|format(stage.received_weight) }} {{ t.grams }}
+            </div>
+            <small style="color:#64748b;font-size:11.5px;">
+              {{ t.get('notes','ذهب فقط — الأحجار محسوبة بشكل منفصل') }}
+            </small>
+          </div>
+          {% if stage.worker %}
+          <div>
+            <div style="font-size:11.5px;color:#475569;font-weight:600;">{{ t.worker }}</div>
+            <div style="font-size:17px;font-weight:800;">{{ stage.worker.name }}</div>
+          </div>
+          {% endif %}
+          <div>
+            <div style="font-size:11.5px;color:#475569;font-weight:600;">{{ t.date }}</div>
+            <div style="font-size:13px;font-weight:700;">
+              {{ stage.handover_date.strftime('%Y-%m-%d %H:%M') if stage.handover_date else '—' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Stone section (Setting stage only) ── #}
+    {% if is_setting and stage.stone %}
+    <div class="stone-box mb-3">
+      <div class="stone-title">
+        <i class="fas fa-gem"></i> {{ t.stone_section }}
+        <span style="font-size:11px;font-weight:500;color:#94a3b8;">
+          ({{ t.get('notes','محسوبة بشكل منفصل عن الذهب') }})
+        </span>
+      </div>
+
+      {# Stone summary from handover #}
+      <div class="row g-2 mb-3">
+        {# ── 4 read-only info cards ── #}
+        {% set s_unit = stage.stone.stone_unit %}
+        {% set s_req  = stage.stone.stone_required or 0 %}
+        {% set s_giv  = stage.stone.stone_given    or 0 %}
+        {% set s_giv_g = s_giv * 0.2 if s_unit == 'carat' else s_giv %}
+        {% for label, val, unit, extra in [
+          (t.stone_type  if t.stone_type  else 'Type',  stage.stone.stone_type  or '—', '', ''),
+          (t.stone_color if t.stone_color else 'Color', stage.stone.stone_color or '—', '', ''),
+          (t.get('stone_required','الكمية المطلوبة'), s_req, s_unit,
+              '(' ~ ('%.4f'|format(s_req * 0.2) if s_unit=='carat' else '%.4f'|format(s_req / 0.2)) ~ ' ' ~ ('g' if s_unit=='carat' else 'ct') ~ ')'),
+          (t.get('stone_given','المسلَّم للعامل'), s_giv, s_unit,
+              '= ' ~ ('%.4f'|format(s_giv_g)) ~ ' g'),
+        ] %}
+        <div class="col-6 col-md-3">
+          <div style="background:rgba(124,58,237,.07);border:1px solid #e9d5ff;border-radius:9px;padding:9px 12px;">
+            <div style="font-size:11px;color:#64748b;font-weight:700;">{{ label }}</div>
+            <div style="font-size:15px;font-weight:800;color:#7e22ce;">
+              {% if val is number %}
+                {{ '%.3f'|format(val) }} {{ unit }}
+              {% else %}{{ val }}{% endif %}
+            </div>
+            {% if extra %}<div style="font-size:11px;color:#94a3b8;">{{ extra }}</div>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {# ── Returned stones input + live stone accounting ── #}
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label-custom" style="color:#7e22ce;">
+            {{ t.get('stone_returned','الأحجار المرتجعة') }}
+            ({{ stage.stone.stone_unit }}) *
+          </label>
+          <input type="number" name="stone_returned" id="stoneRet"
+                 class="form-control-custom" step="0.001" min="0"
+                 max="{{ stage.stone.stone_given or 0 }}"
+                 value="{{ stage.stone.stone_returned or 0 }}"
+                 placeholder="0.000" oninput="calcAll()"
+                 style="border-color:#d8b4fe;"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-custom" style="color:#7e22ce;">
+            {{ t.get('stone_used','المستهلك (أحجار)') }}
+          </label>
+          <div style="background:rgba(124,58,237,.08);border:1.5px solid #d8b4fe;border-radius:10px;
+                      padding:9px 13px;font-size:17px;font-weight:900;color:#7e22ce;">
+            <span id="stoneUsedDisplay">{{ '%.3f'|format(stage.stone.stone_used) }}</span>
+            {{ stage.stone.stone_unit }}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-custom" style="color:#7e22ce;">
+            {{ t.get('stone_weight_g','المستهلك بالجرام') }}
+          </label>
+          <div style="background:rgba(124,58,237,.08);border:1.5px solid #d8b4fe;border-radius:10px;
+                      padding:9px 13px;font-size:17px;font-weight:900;color:#7e22ce;">
+            <span id="stoneUsedGrams">{{ '%.4f'|format(stage.stone.stone_used_grams) }}</span> g
+          </div>
+        </div>
+        <div class="col-md-3" id="stoneWarnCol" style="display:none;">
+          <div id="stoneWarnBox" style="padding:9px 12px;border-radius:10px;font-size:12px;font-weight:700;"></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Gold completion form ── #}
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-check-circle"></i></span>{{ t.stage_completion }}
+        </div>
+      </div>
+      <div class="gcard-body">
+
+        {# Formula hint — different for Setting vs other stages #}
+        {% if is_setting and stage.stone %}
+        <div class="alert-custom alert-warning mb-3">
+          <i class="fas fa-calculator"></i>
+          <div>
+            <strong>
+              {{ t.get('notes','معادلة حساب فاقد الذهب:') }}
+            </strong><br/>
+            <span style="font-family:monospace;font-size:12.5px;direction:ltr;display:inline-block;margin-top:4px;">
+              gold_actual_output = product_weight − stone_used_g<br/>
+              gold_loss = gold_received − gold_actual_output − gold_scrap
+            </span>
+          </div>
+        </div>
+        {% else %}
+        <div class="alert-custom alert-warning mb-3">
+          <i class="fas fa-calculator"></i>
+          <strong>{{ 'فاقد الذهب = وزن المناولة − المنتج − رجيع الذهب' if lang=='ar' else 'Gold Loss = Received − Produced − رجيع الذهب (Scrap)' }}</strong>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label-custom">
+                {{ t.produced_weight }} ({{ t.grams }}) *
+                {% if is_setting and stage.stone %}
+                <span style="color:#7e22ce;font-size:11px;">
+                  — {{ t.get('total_weight','وزن القطعة الكاملة (ذهب + أحجار)') }}
+                </span>
+                {% endif %}
+              </label>
+              <input type="number" name="produced_weight" id="produced_weight"
+                     class="form-control-custom" step="0.001" min="0" required
+                     placeholder="0.000" oninput="calcAll()"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">
+                {{ t.get('scrap_weight','رجيع الذهب') }} ({{ t.grams }})
+              </label>
+              <input type="number" name="scrap_weight" id="scrap_weight"
+                     class="form-control-custom" step="0.001" min="0"
+                     value="0" placeholder="0.000" oninput="calcAll()"/>
+            </div>
+
+            {# ── Live accounting result panel ── #}
+            <div class="col-12">
+              <div class="gold-result-box" id="resultBox">
+
+                {# For Setting stage: show gold_actual_output too #}
+                {% if is_setting and stage.stone %}
+                <div class="result-item">
+                  <div class="rl">
+                    {{ t.get('produced_weight','ناتج الذهب الفعلي') }}
+                  </div>
+                  <div class="rv" id="calc_actual" style="color:var(--gold-dark);">—</div>
+                </div>
+                {% endif %}
+
+                <div class="result-item">
+                  <div class="rl">{{ t.loss }}</div>
+                  <div class="rv rv-loss" id="calc_loss">—</div>
+                </div>
+                <div class="result-item">
+                  <div class="rl">{{ t.loss_pct }}</div>
+                  <div class="rv" id="calc_pct">—</div>
+                </div>
+                <div class="result-item">
+                  <div class="rl">{{ t.gain }}</div>
+                  <div class="rv rv-gain" id="calc_gain">—</div>
+                </div>
+
+                {# Warning boxes #}
+                <div id="loss_warn" class="loss-warn-box" style="display:none;">
+                  <i class="fas fa-exclamation-triangle"></i> {{ t.loss_warning }}
+                </div>
+                <div id="gain_box" class="gain-info-box" style="display:none;">
+                  <i class="fas fa-arrow-up"></i>
+                  {{ t.get('warning','العامل أعاد ذهباً أكثر مما استلم') }}
+                </div>
+                <div id="accounting_err" style="display:none;background:#fee2e2;color:#dc2626;
+                     border:1.5px solid #fca5a5;padding:10px 15px;border-radius:10px;
+                     font-size:13px;font-weight:700;">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ 'خطأ محاسبي: الناتج الذهبي الفعلي سالب — راجع الأوزان.' if lang=='ar'
+                     else 'Accounting Error: Gold actual output is negative. Please review weights.' }}
+                </div>
+                <div id="scrap_warn" style="display:none;background:#fffbeb;color:#b45309;
+                     border:1.5px solid #fcd34d;padding:10px 15px;border-radius:10px;
+                     font-size:13px;font-weight:700;width:100%;">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ 'خطأ محاسبي: الرجيع أكبر من الفاقد' if lang=='ar'
+                     else t.get('warning','Accounting Error: Scrap exceeds expected loss') }}
+                </div>
+                {% if is_setting and stage.stone %}
+                {# Stone loss display + warning — Setting stage only #}
+                <div class="result-item">
+                  <div class="rl" style="color:#f9a8d4;">{{ t.get('notes','فاقد الأحجار') }}</div>
+                  <div class="rv" id="stone_loss_display" style="color:#f9a8d4;">—</div>
+                </div>
+                <div id="stone_loss_warn" style="display:none;background:#fdf2f8;color:#9d174d;
+                     border:1.5px solid #fbcfe8;padding:10px 15px;border-radius:10px;
+                     font-size:13px;font-weight:700;width:100%;">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ 'فاقد أحجار: قد يكون كسر أو فقد أو تلاعب' if lang=='ar'
+                     else 'Stone Loss: possible breakage, missing stones, or manipulation' }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            {# ── Dark summary panel (Setting stage only) ── #}
+            {% if is_setting and stage.stone %}
+            <div class="col-12">
+              <div style="background:linear-gradient(135deg,#0f1117,#1a1d21);border-radius:13px;
+                          padding:16px 20px;border:1px solid rgba(212,175,55,.2);">
+                <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:12px;
+                            text-transform:uppercase;letter-spacing:.5px;">
+                  <i class="fas fa-table" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+                  {{ t.get('reports','ملخص المحاسبة') }}
+                </div>
+                <table style="width:100%;font-size:13px;border-collapse:collapse;">
+                  <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                    <td style="padding:5px 8px;color:#64748b;">{{ t.get('received_weight','الذهب المسلم') }}</td>
+                    <td style="padding:5px 8px;color:#fff;font-weight:700;text-align:{{ 'left' if dir=='rtl' else 'right' }};">{{ '%.3f'|format(stage.received_weight or 0) }} g</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                    <td style="padding:5px 8px;color:#64748b;">{{ t.get('produced_weight','الذهب في المنتج') }}</td>
+                    <td style="padding:5px 8px;color:#fff;font-weight:700;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_product">—</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                    <td style="padding:5px 8px;color:#c4b5fd;">{{ t.get('stone_used','أحجار مستهلكة') }}</td>
+                    <td style="padding:5px 8px;color:#c4b5fd;font-weight:700;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_stone_g">—</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                    <td style="padding:5px 8px;color:var(--gold-light);font-weight:700;">{{ t.get('produced_weight','ناتج الذهب الفعلي') }}</td>
+                    <td style="padding:5px 8px;font-weight:900;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_actual">—</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+                    <td style="padding:5px 8px;color:#86efac;font-weight:700;">{{ t.get('scrap_weight','رجيع الذهب') }}</td>
+                    <td style="padding:5px 8px;font-weight:900;color:#86efac;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_scrap">—</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:5px 8px;color:var(--gold-light);font-weight:700;">{{ 'الفاقد الحقيقي' if lang=='ar' else 'Real Gold Loss' }}</td>
+                    <td style="padding:5px 8px;font-weight:900;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_loss">—</td>
+                  </tr>
+                  <tr style="border-top:2px solid rgba(212,175,55,.3);">
+                    <td style="padding:5px 8px;color:#f9a8d4;font-weight:700;">{{ t.get('notes','فاقد الأحجار') }}</td>
+                    <td style="padding:5px 8px;font-weight:900;text-align:{{ 'left' if dir=='rtl' else 'right' }};" id="sum_stone_loss">—</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="col-12">
+              <label class="form-label-custom">{{ t.notes }}</label>
+              <input type="text" name="notes" class="form-control-custom"
+                     value="{{ stage.notes or '' }}" placeholder="..."/>
+            </div>
+
+            <div class="col-12">
+              <hr class="gold-divider"/>
+              <button type="submit" class="btn-full"
+                      style="padding:12px;font-size:14px;background:linear-gradient(135deg,#16a34a,#15803d);
+                             color:#fff;border:none;border-radius:10px;font-family:'Cairo',sans-serif;
+                             font-weight:800;cursor:pointer;display:flex;align-items:center;
+                             justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,.4);">
+                <i class="fas fa-check-circle"></i> {{ t.complete_stage }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Constants ─────────────────────────────────────────────
+const CARAT_TO_GRAM     = 0.2;
+const LOSS_ALERT_PCT    = 2.0;
+const IS_SETTING        = {{ 'true' if (is_setting and stage.stone) else 'false' }};
+const hw                = {{ stage.received_weight or 0 }};
+const stoneGiven        = {{ stage.stone.stone_given    or 0 if (is_setting and stage.stone) else 0 }};
+const stoneRequired     = {{ stage.stone.stone_required or 0 if (is_setting and stage.stone) else 0 }};
+const stoneUnit         = '{{ stage.stone.stone_unit if (is_setting and stage.stone) else "carat" }}';
+
+// ── Master calculator ─────────────────────────────────────
+function calcAll() {
+  const produced = parseFloat(document.getElementById('produced_weight').value) || 0;
+
+  if (IS_SETTING) {
+    // ── PATCHED Setting formula ──────────────────────────
+    const ret   = parseFloat(document.getElementById('stoneRet').value)    || 0;
+    const scrap = parseFloat(document.getElementById('scrap_weight').value) || 0;
+
+    // Stone loss = extra stones not returned
+    const extraStone   = stoneGiven - stoneRequired;
+    const stoneLossCt  = Math.max(extraStone - ret, 0.0);
+
+    // Stone display always shows REQUIRED (what's embedded)
+    const stoneUsedG   = stoneRequired * CARAT_TO_GRAM;
+    document.getElementById('stoneUsedDisplay').textContent = stoneRequired.toFixed(3);
+    document.getElementById('stoneUsedGrams').textContent   = stoneUsedG.toFixed(4);
+
+    // Stone loss badge
+    const slEl = document.getElementById('stone_loss_display');
+    const swEl = document.getElementById('stone_loss_warn');
+    if (slEl) slEl.textContent = stoneLossCt.toFixed(3) + ' ct';
+    if (swEl) swEl.style.display = stoneLossCt > 0 ? 'flex' : 'none';
+
+    // Gold: actual output = product − stone_used
+    const goldActualOutput = produced - stoneUsedG;
+
+    // PATCHED: scrap reduces loss
+    // gold_loss = received − gold_actual_output − scrap
+    const goldLoss  = hw - goldActualOutput - scrap;
+    const lossVal   = goldLoss > 0 ? goldLoss : 0;
+    const gainVal   = goldLoss < 0 ? Math.abs(goldLoss) : 0;
+    const lossPct   = hw > 0 ? (lossVal / hw * 100) : 0;
+    const isErrActual = goldActualOutput < 0;
+    // gold_loss < 0 means scrap > expected loss → accounting warning
+    const isErrScrap  = goldLoss < 0;
+
+    updateResultUI(lossVal, gainVal, lossPct, isErrActual, goldActualOutput, isErrScrap);
+    updateSummaryTable(produced, stoneUsedG, goldActualOutput, scrap, lossVal, lossPct, stoneLossCt);
+
+  } else {
+    // ── Other stages unchanged ───────────────────────────
+    const scrap = parseFloat(document.getElementById('scrap_weight').value) || 0;
+    const raw   = hw - produced - scrap;
+    const lossVal = raw > 0 ? raw : 0;
+    const gainVal = raw < 0 ? Math.abs(raw) : 0;
+    const lossPct = hw > 0 ? (lossVal / hw * 100) : 0;
+    updateResultUI(lossVal, gainVal, lossPct, false, null, false);
+  }
+}
+
+function updateResultUI(loss, gain, pct, isErrActual, goldActual, isErrScrap) {
+  const lColor = pct > LOSS_ALERT_PCT ? 'var(--danger)' : 'var(--success)';
+  const lEl  = document.getElementById('calc_loss');
+  const pEl  = document.getElementById('calc_pct');
+  const gEl  = document.getElementById('calc_gain');
+  const wEl  = document.getElementById('loss_warn');
+  const gbEl = document.getElementById('gain_box');
+  const errEl   = document.getElementById('accounting_err');
+  const scrapEl = document.getElementById('scrap_warn');
+  const aEl  = document.getElementById('calc_actual');
+
+  lEl.textContent  = loss.toFixed(3) + ' g';
+  lEl.style.color  = isErrActual ? 'var(--danger)' : lColor;
+  pEl.textContent  = pct.toFixed(2) + '%';
+  pEl.style.color  = lColor;
+  gEl.textContent  = gain.toFixed(3) + ' g';
+  gEl.style.color  = gain > 0 ? 'var(--success)' : 'var(--text-muted)';
+
+  if (wEl)     wEl.style.display     = (!isErrActual && !isErrScrap && pct > LOSS_ALERT_PCT) ? 'flex' : 'none';
+  if (gbEl)    gbEl.style.display    = (!isErrActual && !isErrScrap && gain > 0)             ? 'flex' : 'none';
+  if (errEl)   errEl.style.display   = isErrActual                                           ? 'flex' : 'none';
+  if (scrapEl) scrapEl.style.display = (!isErrActual && isErrScrap)                          ? 'flex' : 'none';
+  if (aEl && goldActual !== null) {
+    aEl.textContent = goldActual.toFixed(3) + ' g';
+    aEl.style.color = goldActual < 0 ? 'var(--danger)' : 'var(--gold-light)';
+  }
+}
+
+function updateSummaryTable(product, stoneG, goldActual, scrap, loss, pct, stoneLossCt) {
+  const sp  = document.getElementById('sum_product');
+  const ss  = document.getElementById('sum_stone_g');
+  const sa  = document.getElementById('sum_actual');
+  const sc  = document.getElementById('sum_scrap');
+  const sl  = document.getElementById('sum_loss');
+  const ssl = document.getElementById('sum_stone_loss');
+  if (!sp) return;
+
+  sp.textContent  = product.toFixed(3)    + ' g';
+  ss.textContent  = stoneG.toFixed(4)     + ' g  (' + stoneRequired.toFixed(3) + ' ct)';
+  sa.textContent  = goldActual.toFixed(3) + ' g';
+  sa.style.color  = goldActual < 0 ? '#f87171' : 'var(--gold)';
+  if (sc) sc.textContent = scrap.toFixed(3) + ' g';
+  sl.textContent  = loss.toFixed(3) + ' g  (' + pct.toFixed(2) + '%)';
+  sl.style.color  = pct > LOSS_ALERT_PCT ? '#f87171' : '#86efac';
+  if (ssl) {
+    ssl.textContent = stoneLossCt.toFixed(3) + ' ct';
+    ssl.style.color = stoneLossCt > 0 ? '#f87171' : '#86efac';
+  }
+}
+
+function updateStoneWarning(used, required, unit) {
+  // Silenced — stone_loss_warn handles this now
+  const col = document.getElementById('stoneWarnCol');
+  if (col) col.style.display = 'none';
+}
+
+// Run on page load
+calcAll();
+</script>
+{% endblock %}

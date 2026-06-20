@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('product_inventory','مخزون المنتجات') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-store" style="color:var(--gold-dark);margin-left:10px;"></i>
+      {{ t.get('product_inventory','مخزون المنتجات') }}
+    </h4>
+    <div class="page-subtitle">
+      {{ t.get('sales','للبيع — استخدم المبيعات') }}
+    </div>
+  </div>
+  <a href="{{ url_for('prod_inv.add_product_page') }}" class="btn-gold">
+    <i class="fas fa-plus"></i>{{ t.get('product_add','إضافة منتج') }}
+  </a>
+</div>
+
+{# ── KPI Cards ── #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-boxes"></i></div>
+      <div class="stat-value">{{ products|length }}</div>
+      <div class="stat-label">{{ t.get('products','أنواع المنتجات') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-cubes"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ '%.2f'|format(total_qty) }}</div>
+      <div class="stat-label">{{ t.get('quantity','إجمالي الوحدات') }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    {# Per-karat breakdown — never sum different karats #}
+    <div class="gcard" style="padding:10px 14px;margin-bottom:0;">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:700;margin-bottom:8px;">
+        {{ t.get('karat_analysis','الوزن حسب العيار') }}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% for grp in karat_groups %}
+        <div style="background:rgba(212,175,55,.07);border:1.5px solid rgba(212,175,55,.25);
+                    border-radius:8px;padding:6px 12px;min-width:90px;text-align:center;">
+          <div style="font-size:18px;font-weight:900;color:var(--gold-dark);">
+            {{ '%.3f'|format(grp.weight) }}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ grp.karat }}K — {{ t.get('grams','جم') }}</div>
+          <div style="font-size:10px;color:#c4b5fd;">
+            {{ '%.4f'|format(grp.pure24) }} {{ t.get('net_24k','24K') }}
+          </div>
+        </div>
+        {% else %}
+        <span style="font-size:12px;color:var(--text-muted);">—</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#e9d5ff;background:linear-gradient(135deg,#fff,#faf5ff);">
+      <div class="stat-icon ic-purple"><i class="fas fa-star"></i></div>
+      <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(total_pure24) }}</div>
+      <div class="stat-label">{{ t.get('net_24k','إجمالي الصافي (24K)') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">
+        {{ t.get('pure_formula','Σ وزن × (عيار ÷ 24)') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Products Table ── #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-table"></i></span>
+      {{ t.get('products','قائمة المنتجات') }}
+    </div>
+    <span class="badge-custom badge-blue">{{ products|length }} {{ t.get('model_name','منتج') }}</span>
+  </div>
+  {% if products %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.08);">
+        <tr>
+          <th>{{ t.get('product_name','اسم المنتج') }}</th>
+          <th>{{ t.get('product_code','الكود') }}</th>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th>{{ t.get('unit_weight','وزن الوحدة') }}</th>
+          <th style="color:#86efac;">{{ t.get('quantity','الكمية') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('total_weight','الوزن الإجمالي') }}</th>
+          <th style="color:#c4b5fd;">{{ t.get('net_24k','الوزن الصافي (24K)') }}</th>
+          <th>{{ t.get('description','المصدر') }}</th>
+          <th>{{ t.get('delete','حذف') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td><strong>{{ p.product_name or '—' }}</strong></td>
+          <td><code style="font-size:12px;">{{ p.product_code }}</code></td>
+          <td><span class="karat-badge">{{ p.karat }}K</span></td>
+          <td style="color:var(--text-muted);">
+            {{ '%.3f'|format(p.unit_weight) }}
+            {% if p.input_mode == 'bulk' %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(59,130,246,.12);color:#1d4ed8;margin-right:3px;">{{ t.get('total','إجمالي') }}</span>
+            {% elif p.input_mode == 'single' %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(139,92,246,.12);color:#7c3aed;margin-right:3px;">{{ t.get('input_mode_single','قطعة') }}</span>
+            {% else %}
+              <span style="font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;
+                            background:rgba(22,163,74,.12);color:#15803d;margin-right:3px;">{{ t.get('input_mode_unit','وحدة') }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <strong style="color:{{ 'var(--success)' if p.quantity > 0 else 'var(--danger)' }};font-size:16px;">
+              {{ '%.2f'|format(p.quantity) }}
+            </strong>
+          </td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.3f'|format(p.total_weight) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            <strong style="color:#c4b5fd;">{{ '%.4f'|format(p.pure_24_weight) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td>
+            {% if p.source_type == 'from_work_order' %}
+              <span class="badge-custom badge-blue" style="font-size:10px;">
+                <i class="fas fa-industry"></i>{{ t.get('work_orders','أمر تشغيل') }}
+              </span>
+            {% else %}
+              <span class="badge-custom badge-grey" style="font-size:10px;">
+                <i class="fas fa-hand-paper"></i>{{ t.get('description','يدوي') }}
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST" action="{{ url_for('prod_inv.delete_product', pid=p.id) }}"
+                  onsubmit="return confirm('{{ t.get('confirm_delete','حذف هذا المنتج؟') }}')">
+              <button type="submit" class="btn-danger-soft btn-xs">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.06);border-top:2px solid rgba(212,175,55,.25);">
+        <tr>
+          <td colspan="4" style="font-weight:800;color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
+          <td style="font-weight:900;color:var(--success);font-size:15px;">{{ '%.2f'|format(total_qty) }}</td>
+          <td style="font-weight:900;color:var(--gold);font-size:15px;">{{ '%.3f'|format(total_weight) }} {{ t.get('grams','جم') }}</td>
+          <td style="font-weight:900;color:#c4b5fd;font-size:15px;">{{ '%.4f'|format(total_pure24) }} {{ t.get('grams','جم') }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:48px;color:var(--text-muted);">
+    <i class="fas fa-store" style="font-size:40px;display:block;margin-bottom:14px;opacity:.2;"></i>
+    {{ t.get('products','لا توجد منتجات.') }}<br/>
+    {{ t.get('product_add','أضف منتج أو أكمل أمر تشغيل.') }}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchMode(mode) {
+  document.getElementById('mode_per_unit').style.display = mode === 'per_unit' ? '' : 'none';
+  document.getElementById('mode_bulk').style.display     = mode === 'bulk'     ? '' : 'none';
+  document.getElementById('mode_single').style.display   = mode === 'single'   ? '' : 'none';
+}
+
+function calcPreview() {
+  const uw  = parseFloat(document.getElementById('uw')?.value)  || 0;
+  const qty = parseFloat(document.getElementById('qty')?.value) || 0;
+  const el  = document.getElementById('preview_total');
+  if (el) el.textContent = (uw * qty).toFixed(3) + ' ' + window._T.grams;
+}
+
+function calcBulkPreview() {
+  const tw  = parseFloat(document.getElementById('tw')?.value)   || 0;
+  const qty = parseFloat(document.getElementById('qty2')?.value) || 1;
+  const el  = document.getElementById('preview_unit');
+  if (el) el.textContent = (qty > 0 ? tw / qty : 0).toFixed(3) + ' ' + window._T.grams;
+}
+</script>
+{% endblock %}

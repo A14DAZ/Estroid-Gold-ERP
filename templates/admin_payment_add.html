@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('add_payment','تسجيل دفعة') }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-plus-circle" style="color:var(--gold);margin-left:10px;"></i>{{ t.get('add_payment','تسجيل دفعة جديدة') }}</h4>
+  <a href="{{ url_for('admin.payments') }}" class="btn-grey btn-sm"><i class="fas fa-arrow-right"></i> {{ t.back }}</a>
+</div>
+<div class="row justify-content-center">
+<div class="col-lg-6">
+<div class="gcard">
+  <div class="gcard-body" style="padding:28px;">
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label-custom">{{ t.factory_name }} *</label>
+        <select name="factory_id" class="form-control-custom" required>
+          <option value="">— {{ t.get('select','اختر') }} —</option>
+          {% for f in factories %}
+          <option value="{{ f.id }}" {{ 'selected' if request.args.get('fid','')==f.id|string else '' }}>
+            {{ f.factory_code or '' }} — {{ f.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('amount','المبلغ') }} *</label>
+          <input type="number" name="amount" class="form-control-custom" step="0.01" min="0" required placeholder="0.00"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('currency','العملة') }}</label>
+          <select name="currency" class="form-control-custom">
+            <option value="SAR">SAR — ريال سعودي</option>
+            <option value="USD">USD — Dollar</option>
+            <option value="TRY">TRY — Lira</option>
+            <option value="AED">AED — درهم</option>
+          </select>
+        </div>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('payment_method','طريقة الدفع') }}</label>
+          <select name="method" class="form-control-custom">
+            <option value="manual">🤝 {{ t.get('manual','يدوي') }}</option>
+            <option value="bank_transfer">🏦 {{ t.get('bank_transfer','تحويل بنكي') }}</option>
+            <option value="cash">💵 {{ t.get('cash','نقدي') }}</option>
+            <option value="stripe">💳 Stripe</option>
+            <option value="paypal">🅿 PayPal</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-custom">{{ t.get('period','مدة الاشتراك (أيام)') }}</label>
+          <input type="number" name="period_days" class="form-control-custom" value="30" min="1" required/>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label-custom">{{ t.get('notes','ملاحظات') }}</label>
+        <input type="text" name="notes" class="form-control-custom" placeholder="{{ t.get('optional','اختياري') }}"/>
+      </div>
+      <div style="background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);border-radius:9px;padding:12px;margin-bottom:18px;font-size:12px;color:var(--text-muted);">
+        <i class="fas fa-info-circle" style="color:var(--gold);margin-left:5px;"></i>
+        {{ t.get('payment_note','سيتم تمديد اشتراك المصنع تلقائياً بعد التسجيل.') }}
+      </div>
+      <button type="submit" class="btn-gold btn-full" style="padding:13px;">
+        <i class="fas fa-save"></i> {{ t.get('record_payment','تسجيل الدفعة') }}
+      </button>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}

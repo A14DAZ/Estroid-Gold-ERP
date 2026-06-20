@@ -1,0 +1,92 @@
+{# Reports navigation bar — mirrors inventory tab style #}
+<div class="mb-4 no-print" style="background:var(--black-soft);border:1px solid var(--border);
+     border-radius:12px;padding:6px 8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+  {% set tabs = [
+    ('reports.orders_report',    'fa-file-invoice',  t.get('per_order','حسب الأمر')),
+    ('reports.stages_report',    'fa-layer-group',   t.get('per_stage','حسب المرحلة')),
+    ('reports.workers_report',   'fa-user-clock',    t.get('per_worker','حسب الموظف')),
+    ('reports.production_report','fa-industry',      t.get('production_report','تقرير الإنتاج')),
+    ('reports.customers_report', 'fa-users-cog',     t.get('customers_report','تقرير العملاء')),
+    ('reports.inventory_report', 'fa-warehouse',     t.get('inventory_report','تقرير المخزون')),
+    ('reports.products_report',  'fa-box',           t.get('reports_products','تقرير المنتجات')),
+    ('reports.purchases_report', 'fa-arrow-down',    t.get('reports_purchases','تقرير المشتريات')),
+    ('reports.sales_report',     'fa-arrow-up',      t.get('reports_sales','تقرير المبيعات')),
+    ('reports.archive_index',    'fa-archive',       t.get('reports_archive','الأرشيف')),
+  ] %}
+  {% for ep, ico, label in tabs %}
+  <a href="{{ url_for(ep) }}"
+     class="{{ 'btn-gold' if request.endpoint == ep else 'btn-grey' }} btn-sm"
+     style="font-size:12.5px;white-space:nowrap;">
+    <i class="fas {{ ico }}"></i> {{ label }}
+  </a>
+  {% endfor %}
+  {% if report %}
+  {# Spacer pushes print+archive to the end regardless of RTL/LTR #}
+  <span style="flex:1 1 auto;min-width:8px;"></span>
+  <button onclick="window.print()" class="btn-grey btn-sm"
+          style="font-size:12px;white-space:nowrap;flex-shrink:0;">
+    <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+  </button>
+  <button onclick="document.getElementById('quickArchiveModal').style.display='flex'"
+          class="btn-gold btn-sm"
+          style="font-size:12px;white-space:nowrap;flex-shrink:0;">
+    <i class="fas fa-archive"></i> {{ t.get('archive_new','أرشفة جديدة') }}
+  </button>
+  {% endif %}
+</div>
+
+{# Quick Archive Modal — appears when clicking أرشفة in any report #}
+{% if report %}
+<div id="quickArchiveModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+            z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--black-soft);border:1.5px solid rgba(212,175,55,.3);
+              border-radius:14px;padding:26px;max-width:400px;width:90%;
+              box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    <div style="font-size:16px;font-weight:900;margin-bottom:16px;">
+      <i class="fas fa-archive" style="color:var(--gold-dark);margin-left:8px;"></i>
+      {{ t.get('archive_new','أرشفة الفترة الحالية') }}
+    </div>
+    <form method="POST" action="{{ url_for('reports.create_archive') }}">
+      <div style="margin-bottom:12px;">
+        <label class="form-label-custom">{{ t.get('archive_label','عنوان الأرشيف') }} *</label>
+        <input type="text" name="archive_label" class="form-control-custom"
+               placeholder="{{ t.get('archive_label','الربع الأول 2026') }}" required/>
+      </div>
+      <div class="row g-2 mb-3">
+        <div class="col-6">
+          <label class="form-label-custom" style="font-size:11px;">{{ t.get('archive_from','من تاريخ') }}</label>
+          <input type="date" name="arch_date_from" class="form-control-custom"/>
+        </div>
+        <div class="col-6">
+          <label class="form-label-custom" style="font-size:11px;">{{ t.get('archive_to','إلى تاريخ') }}</label>
+          <input type="date" name="arch_date_to" class="form-control-custom"/>
+        </div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="form-label-custom" style="font-weight:800;color:#f87171;">
+          <i class="fas fa-lock" style="margin-left:5px;"></i>{{ t.get('password','كلمة المرور') }} *
+        </label>
+        <input type="password" name="archive_password" class="form-control-custom"
+               placeholder="{{ t.get('password','كلمة المرور') }}" required
+               style="border-color:rgba(212,175,55,.4);"/>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">
+        <i class="fas fa-info-circle" style="color:var(--gold-dark);margin-left:4px;"></i>
+        {{ t.get('notes','لقطة من البيانات — لا يُحذف أي شيء.') }}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button type="button" class="btn-grey"
+                onclick="document.getElementById('quickArchiveModal').style.display='none'">{{ t.get('cancel','إلغاء') }}</button>
+        <button type="submit" class="btn-gold">
+          <i class="fas fa-archive"></i>{{ t.get('archive_save','حفظ الأرشيف') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('quickArchiveModal').addEventListener('click',function(e){
+  if(e.target===this)this.style.display='none';
+});
+</script>
+{% endif %}

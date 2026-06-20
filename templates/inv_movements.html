@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('inventory_movements','حركة الذهب') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-exchange-alt" style="color:var(--gold-dark);margin-left:10px;"></i>{{ t.get('gold_movements','حركة الذهب') }}</h4>
+</div>
+
+{% include '_inv_nav.html' %}
+
+{# ── ملخص الحركة (24K فقط — لا أوزان خام) ── #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">
+        <span class="badge-custom badge-green" style="font-size:10px;margin-left:4px;">{{ t.get('incoming','وارد') }}</span>
+        <span>{{ t.get('incoming','من عميل (24K)') }}</span>
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#86efac;">{{ '%.4f'|format(mov.customer_in) }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">
+        <span class="badge-custom badge-red" style="font-size:10px;margin-left:4px;">{{ t.get('outgoing','صادر') }}</span>
+        <span>{{ t.get('outgoing','إلى أمر تشغيل (24K)') }}</span>
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#f87171;">{{ '%.4f'|format(mov.order_issue) }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">
+        <span class="badge-custom badge-green" style="font-size:10px;margin-left:4px;">{{ t.get('incoming','وارد') }}</span>
+        <span>{{ t.get('incoming','من أمر تشغيل (24K)') }}</span>
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#86efac;">{{ '%.4f'|format(mov.production_return) }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">
+        <span class="badge-custom badge-red" style="font-size:10px;margin-left:4px;">{{ t.get('outgoing','صادر') }}</span>
+        <span>{{ t.get('outgoing','إلى عميل (24K)') }}</span>
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#f87171;">{{ '%.4f'|format(mov.customer_out) }}</div>
+      <div style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── جدول الحركات ── #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-list"></i></span>
+      {{ t.get('inventory_movements','سجل الحركات') }}
+    </div>
+    <span class="badge-custom badge-blue" style="font-size:12px;">{{ txns|length }} {{ t.get('description','حركة') }}</span>
+  </div>
+  {% if txns %}
+  <div style="overflow-x:auto;max-height:540px;overflow-y:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);position:sticky;top:0;">
+        <tr>
+          <th>{{ t.get('customer_type','النوع') }}</th>
+          <th>{{ t.get('description','التصنيف') }}</th>
+          <th>{{ t.get('karat_label','العيار') }}</th>
+          <th>{{ t.get('weight','الوزن الفعلي (جم)') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('net_24k','الوزن الصافي (24K)') }}</th>
+          <th>{{ t.get('description','البيان') }}</th>
+          <th>{{ t.get('trans_date','التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in txns %}
+        {% set txn = row.txn %}
+        <tr>
+          <td>
+            {% if txn.transaction_type == 'in' %}
+              <span class="badge-custom badge-green"><i class="fas fa-arrow-down"></i>{{ t.get('incoming','وارد') }}</span>
+            {% else %}
+              <span class="badge-custom badge-red"><i class="fas fa-arrow-up"></i>{{ t.get('outgoing','صادر') }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set cls = row.class %}
+            {% set typ = txn.transaction_type %}
+            {% if typ == 'in' and cls == 'customer_in' %}
+              <span class="badge-custom badge-blue" style="font-size:10px;">
+                <i class="fas fa-user"></i>{{ t.get('customer','من عميل') }}
+              </span>
+            {% elif cls == 'product_manual' %}
+              <span class="badge-custom badge-gold" style="font-size:10px;">
+                <i class="fas fa-store"></i>{{ t.get('products','من المنتجات') }}
+              </span>
+            {% elif typ == 'in' and cls in ('production_return','order_issue') %}
+              <span class="badge-custom badge-green" style="font-size:10px;">
+                <i class="fas fa-industry"></i>{{ t.get('work_orders','من أمر تشغيل') }}
+              </span>
+            {% elif typ == 'out' and cls == 'customer_out' %}
+              <span class="badge-custom badge-gold" style="font-size:10px;">
+                <i class="fas fa-store"></i>{{ t.get('customer','إلى عميل') }}
+              </span>
+            {% elif typ == 'out' and cls == 'order_issue' %}
+              <span class="badge-custom badge-purple" style="font-size:10px;">
+                <i class="fas fa-tools"></i>{{ t.get('work_orders','إلى أمر تشغيل') }}
+              </span>
+            {% else %}
+              <span class="badge-custom badge-grey" style="font-size:10px;">
+                <i class="fas fa-exchange-alt"></i> {{ cls }}
+              </span>
+            {% endif %}
+          </td>
+          <td><span class="karat-badge">{{ txn.karat }}K</span></td>
+          <td>
+            <strong style="color:{{ '#86efac' if txn.transaction_type=='in' else '#f87171' }};">
+              {{ '%.3f'|format(txn.weight) }}
+            </strong>
+          </td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.4f'|format(row.fine) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);"> 24K</span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ txn.description or '—' }}</td>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap;">{{ txn.transaction_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.06);border-top:2px solid rgba(212,175,55,.25);">
+        <tr>
+          <td colspan="3" style="font-weight:800;color:var(--gold-dark);">{{ t.get('net_24k','إجمالي صافي (24K)') }}</td>
+          <td style="color:var(--text-muted);font-size:11px;font-style:italic;">{{ t.get('notes','غير قابل للجمع') }}</td>
+          <td style="font-weight:900;color:var(--gold);">
+            {{ t.get('incoming','وارد') }}: {{ '%.4f'|format(total_in_24) }} — {{ t.get('outgoing','صادر') }}: {{ '%.4f'|format(total_out_24) }}
+          </td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:40px;color:var(--text-muted);">
+    <i class="fas fa-exchange-alt" style="font-size:32px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('inventory_movements','لا توجد حركات.') }}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

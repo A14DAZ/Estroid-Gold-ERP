@@ -1,0 +1,369 @@
+{% extends "base.html" %}
+{% block title %}{{ t.admin_panel }}{% endblock %}
+
+{% block content %}
+
+{# ── Staff role badge (only for non-superadmin staff) ── #}
+{% if not current_user.is_superadmin %}
+<div class="alert-custom alert-warning mb-3" style="display:flex;align-items:center;gap:12px;">
+  <i class="fas fa-user-shield" style="font-size:20px;color:#d97706;"></i>
+  <div>
+    <strong>{{ current_user.full_name }}</strong>
+    <span style="font-size:12px;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:10px;">
+      — {{ t.get('system_role_label','الدور') }}:
+      {% set sr = current_user.system_role or current_user.role %}
+      {% if sr == 'support' %}🎧 {{ t.get('role_support','دعم فني') }}
+      {% elif sr == 'accountant' %}🧮 {{ t.get('role_accountant','محاسبة') }}
+      {% elif sr == 'manager' %}📋 {{ t.get('role_manager','مدير') }}
+      {% else %}{{ sr }}{% endif %}
+    </span>
+    <span style="font-size:11px;color:var(--text-muted);">
+      <i class="fas fa-eye-slash"></i> {{ t.get('staff_limited_access','بعض الإجراءات محدودة لصلاحيتك') }}
+    </span>
+  </div>
+</div>
+{% endif %}
+
+{# ══ HEADER ══ #}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-crown" style="color:#9333ea;margin-{{ 'left' if dir=='rtl' else 'right' }}:10px;"></i>
+      {{ t.admin_panel }}
+    </h4>
+    <div class="page-subtitle" style="font-size:12px;color:var(--text-muted);margin-top:3px;">
+      {{ today }}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if current_user.is_superadmin %}
+    <a href="{{ url_for('admin.create_factory_slot') }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i> {{ t.get('add_factory','+ إضافة مصنع') }}
+    </a>
+    {% endif %}
+    <a href="{{ url_for('admin.factories') }}" class="btn-grey btn-sm">
+      <i class="fas fa-building"></i> {{ t.factories }}
+    </a>
+    <a href="{{ url_for('admin.team') }}" class="btn-grey btn-sm">
+      <i class="fas fa-user-shield"></i> {{ t.get('system_team','فريق النظام') }}
+    </a>
+  </div>
+</div>
+
+{# ══ ROW 1 — Factories (4 cards) ══ #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin-bottom:10px;">
+  <i class="fas fa-building" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+  {{ t.factories }}
+</div>
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('admin.factories') }}" style="text-decoration:none;display:block;">
+      <div class="stat-card" style="cursor:pointer;transition:transform .15s;border-color:var(--gold-border);"
+           onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div class="stat-icon ic-gold"><i class="fas fa-building"></i></div>
+        <div class="stat-value">{{ stats.total_factories }}</div>
+        <div class="stat-label">{{ t.get('total_factories_label','إجمالي المصانع') }}</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <a href="{{ url_for('admin.factories') }}" style="text-decoration:none;display:block;">
+      <div class="stat-card" style="cursor:pointer;transition:transform .15s;border-color:#bbf7d0;"
+           onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div class="stat-icon ic-green"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-value" style="color:var(--success);">{{ stats.active_factories }}</div>
+        <div class="stat-label">{{ t.get('active_factories_label','مصانع نشطة') }}</div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-clock"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ stats.expired_count }}</div>
+      <div class="stat-label">{{ t.get('expired_factories','اشتراكات منتهية') }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fde68a;">
+      <div class="stat-icon ic-gold"><i class="fas fa-exclamation-triangle"></i></div>
+      <div class="stat-value" style="color:#d97706;">{{ stats.expiring_7 }}</div>
+      <div class="stat-label">{{ t.get('expiring_soon','تنتهي خلال 7 أيام') }}</div>
+    </div>
+  </div>
+
+</div>
+
+{# ══ ROW 2 — Orders & Workers (4 cards) ══ #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin-bottom:10px;">
+  <i class="fas fa-chart-bar" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+  {{ t.get('platform_activity','نشاط المنصة') }}
+</div>
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon ic-gold"><i class="fas fa-clipboard-list"></i></div>
+      <div class="stat-value">{{ stats.total_orders }}</div>
+      <div class="stat-label">{{ t.get('total_orders_label','إجمالي الأوامر') }}</div>
+      <div class="prog-wrap" style="margin-top:6px;">
+        <div class="prog-bar" style="width:{{ stats.completion_pct }}%"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">
+        {{ stats.completion_pct }}% {{ t.get('completed','مكتملة') }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bfdbfe;">
+      <div class="stat-icon ic-blue"><i class="fas fa-spinner"></i></div>
+      <div class="stat-value" style="color:#1d4ed8;">{{ stats.active_orders }}</div>
+      <div class="stat-label">{{ t.get('active_orders','أوامر نشطة') }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-check-double"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ stats.completed_orders }}</div>
+      <div class="stat-label">{{ t.get('completed_orders','أوامر مكتملة') }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#e9d5ff;">
+      <div class="stat-icon ic-purple"><i class="fas fa-users"></i></div>
+      <div class="stat-value" style="color:#7e22ce;">{{ stats.total_workers }}</div>
+      <div class="stat-label">{{ t.get('employees_count','إجمالي الموظفين') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">
+        {{ t.get('across_all_factories','في جميع المصانع') }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ══ ROW 3 — Subscriptions summary (3 cards) ══ #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin-bottom:10px;">
+  <i class="fas fa-id-card" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+  {{ t.get('subscriptions','الاشتراكات') }}
+</div>
+<div class="row g-3 mb-4">
+
+  <div class="col-4">
+    <div class="stat-card" style="min-height:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-gold" style="width:38px;height:38px;font-size:15px;flex-shrink:0;">
+          <i class="fas fa-infinity"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:var(--gold-dark);">{{ stats.unlimited_count }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('unlimited_subs','غير محدودة') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="stat-card" style="min-height:0;border-color:#fde68a;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="stat-icon ic-gold" style="width:38px;height:38px;font-size:15px;flex-shrink:0;">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#d97706;">{{ stats.expiring_30 }}</div>
+          <div style="font-size:11px;color:var(--text-muted);">{{ t.get('expiring_30','تنتهي خلال 30 يوم') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <a href="{{ url_for('admin.team') }}" style="text-decoration:none;display:block;">
+      <div class="stat-card" style="min-height:0;border-color:#e9d5ff;cursor:pointer;transition:transform .15s;"
+           onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="stat-icon ic-purple" style="width:38px;height:38px;font-size:15px;flex-shrink:0;">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div>
+            <div style="font-size:22px;font-weight:900;color:#7e22ce;">{{ stats.team_count }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ t.get('system_team','فريق النظام') }}</div>
+          </div>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+{# ══ SECTION — Alerts (only when there are issues) ══ #}
+{% set n_expired  = alerts.expired|length %}
+{% set n_expiring = alerts.expiring_soon|length %}
+{% set n_inactive = alerts.inactive|length %}
+{% if n_expired or n_expiring or n_inactive %}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin-bottom:10px;">
+  <i class="fas fa-bell" style="color:#f87171;margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+  {{ t.get('alerts','التنبيهات') }}
+  <span style="background:#f87171;color:#fff;border-radius:9px;
+               padding:1px 7px;font-size:10px;margin-{{ 'right' if dir=='rtl' else 'left' }}:6px;">
+    {{ n_expired + n_expiring + n_inactive }}
+  </span>
+</div>
+<div class="row g-3 mb-2">
+
+  {% if n_expired %}
+  <div class="col-12 col-md-4">
+    <div class="gcard" style="border-color:#fecaca;">
+      <div class="gcard-body" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(220,38,38,.15);
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-clock" style="color:#dc2626;font-size:15px;"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#dc2626;">{{ t.get('expired_factories','اشتراكات منتهية') }}</div>
+            <div style="font-size:24px;font-weight:900;color:#dc2626;line-height:1;">{{ n_expired }}</div>
+          </div>
+        </div>
+        {% for f in alerts.expired[:4] %}
+        <div style="font-size:12px;padding:5px 0;border-top:1px solid rgba(220,38,38,.1);
+                    display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <span style="font-weight:700;">{{ f.name }}</span>
+            {% if f.factory_code %}
+            <code style="font-size:10px;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:5px;">{{ f.factory_code }}</code>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('admin.manage_subscription', fid=f.id) }}"
+             class="btn-gold btn-xs" style="font-size:10px;">
+            <i class="fas fa-cog"></i>
+          </a>
+        </div>
+        {% endfor %}
+        {% if n_expired > 4 %}
+        <div style="text-align:center;margin-top:8px;">
+          <a href="{{ url_for('admin.factories') }}" style="font-size:11px;color:#dc2626;">
+            +{{ n_expired - 4 }} {{ t.get('more','أخرى') }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if n_expiring %}
+  <div class="col-12 col-md-4">
+    <div class="gcard" style="border-color:#fde68a;">
+      <div class="gcard-body" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,158,11,.15);
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:15px;"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#d97706;">{{ t.get('expiring_soon','تنتهي قريباً') }}</div>
+            <div style="font-size:24px;font-weight:900;color:#d97706;line-height:1;">{{ n_expiring }}</div>
+          </div>
+        </div>
+        {% for f in alerts.expiring_soon[:4] %}
+        <div style="font-size:12px;padding:5px 0;border-top:1px solid rgba(245,158,11,.1);
+                    display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <span style="font-weight:700;">{{ f.name }}</span>
+            {% if f.factory_code %}
+            <code style="font-size:10px;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:5px;">{{ f.factory_code }}</code>
+            {% endif %}
+          </div>
+          <span style="color:#d97706;font-size:11px;font-weight:800;white-space:nowrap;">
+            {{ f.days_remaining }} {{ t.days }}
+          </span>
+        </div>
+        {% endfor %}
+        {% if n_expiring > 4 %}
+        <div style="text-align:center;margin-top:8px;">
+          <a href="{{ url_for('admin.factories') }}" style="font-size:11px;color:#d97706;">
+            +{{ n_expiring - 4 }} {{ t.get('more','أخرى') }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if n_inactive %}
+  <div class="col-12 col-md-4">
+    <div class="gcard" style="border-color:#e5e7eb;">
+      <div class="gcard-body" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(107,114,128,.12);
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-ban" style="color:#6b7280;font-size:15px;"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#6b7280;">{{ t.get('inactive_factories','مصانع غير نشطة') }}</div>
+            <div style="font-size:24px;font-weight:900;color:#6b7280;line-height:1;">{{ n_inactive }}</div>
+          </div>
+        </div>
+        {% for f in alerts.inactive[:4] %}
+        <div style="font-size:12px;padding:5px 0;border-top:1px solid rgba(107,114,128,.1);
+                    display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <span style="font-weight:700;">{{ f.name }}</span>
+            {% if f.factory_code %}
+            <code style="font-size:10px;color:var(--text-muted);margin-{{ 'right' if dir=='rtl' else 'left' }}:5px;">{{ f.factory_code }}</code>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('admin.manage_subscription', fid=f.id) }}"
+             class="btn-grey btn-xs" style="font-size:10px;">
+            <i class="fas fa-toggle-on"></i>
+          </a>
+        </div>
+        {% endfor %}
+        {% if n_inactive > 4 %}
+        <div style="text-align:center;margin-top:8px;">
+          <a href="{{ url_for('admin.factories') }}" style="font-size:11px;color:#6b7280;">
+            +{{ n_inactive - 4 }} {{ t.get('more','أخرى') }}
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+{# ══ Quick Links ══ #}
+<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;
+            letter-spacing:.6px;margin-bottom:10px;margin-top:8px;">
+  <i class="fas fa-link" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"></i>
+  {{ t.get('quick_links','روابط سريعة') }}
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;">
+  <a href="{{ url_for('admin.factories') }}" class="btn-grey btn-sm">
+    <i class="fas fa-building"></i> {{ t.factories }}
+  </a>
+  <a href="{{ url_for('admin.create_factory_slot') }}" class="btn-grey btn-sm">
+    <i class="fas fa-key"></i> {{ t.gen_code }}
+  </a>
+  <a href="{{ url_for('admin.users') }}" class="btn-grey btn-sm">
+    <i class="fas fa-building"></i> {{ t.get('factory_users','مستخدمو المصانع') }}
+  </a>
+  <a href="{{ url_for('admin.team') }}" class="btn-grey btn-sm">
+    <i class="fas fa-user-shield"></i> {{ t.get('system_team','فريق النظام') }}
+  </a>
+</div>
+
+{% endblock %}

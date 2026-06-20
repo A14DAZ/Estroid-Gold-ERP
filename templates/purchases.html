@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('purchases','المشتريات') }}{% endblock %}
+
+{% block content %}
+{% set print_title = t.get('purchases','المشتريات') %}
+{% include '_print_header.html' %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">{{ t.get('purchases','المشتريات') }}</h4>
+  </div>
+    <button onclick="window.print()" class="btn-grey btn-sm no-print"><i class="fas fa-print"></i> {{ t.get('print','طباعة') }}</button>
+  <a href="{{ url_for('exports.create_import') }}" class="btn-gold">
+    <i class="fas fa-plus"></i> {{ t.new_import }}
+  </a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-list"></i></div>
+      <div class="stat-value" style="color:var(--success);">{{ count }}</div>
+      <div class="stat-label">{{ t.get('purchases','عدد عمليات الشراء') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:#e9d5ff;">
+      <div class="stat-icon ic-purple"><i class="fas fa-weight-hanging"></i></div>
+      <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(total_pure24) }}</div>
+      <div class="stat-label">{{ t.get('total_recv','إجمالي الوارد (24K)') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-coins"></i></div>
+      <div class="stat-value" style="color:var(--gold-dark);">{{ '%.2f'|format(total_price) }}</div>
+      <div class="stat-label">{{ t.get('total_value','إجمالي القيمة') }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;"><table class="gtable">
+    <thead><tr>
+      <th>{{ t.get('operation_code','رقم العملية') }}</th>
+      <th>{{ t.customer_name }}</th>
+      <th>{{ t.get('product_name','المنتج') }} / {{ t.get('description','الوصف') }}</th>
+      <th>{{ t.karat_label }}</th>
+      <th>{{ t.get('weight','الوزن') }}</th>
+      <th>{{ t.get('total','الإجمالي') }} ({{ t.sar }})</th>
+      <th>{{ t.trans_date }}</th>
+      <th>{{ t.get('invoice_btn','فاتورة') }}</th>
+    </tr></thead>
+    <tbody>
+      {% for txn in txns %}
+      <tr>
+        <td>
+          <span style="font-family:monospace;font-weight:800;color:var(--success);">
+            {{ txn.op_code or '—' }}
+          </span>
+        </td>
+        <td>
+          {% if txn.customer %}
+            <a href="{{ url_for('customers.customer_profile', cid=txn.customer.id) }}"
+               style="color:var(--gold-dark);font-weight:700;">{{ txn.customer.name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if txn.product_name %}
+            <strong>{{ txn.product_name }}</strong>
+          {% else %}
+            <span style="color:var(--text-muted);">{{ txn.description or '—' }}</span>
+          {% endif %}
+        </td>
+        <td><span class="karat-badge">{{ txn.karat }}K</span></td>
+        <td><strong>{{ '%.3f'|format(txn.weight) }}</strong> {{ t.grams }}</td>
+        <td><strong style="color:var(--success);">{{ '%.2f'|format(txn.total_price or 0) }}</strong> {{ t.sar }}</td>
+        <td style="font-size:11.5px;color:var(--text-muted);">{{ txn.transaction_date }}</td>
+        <td>
+          <a href="{{ url_for('exports.txn_detail', tid=txn.id) }}"
+             class="btn-grey btn-xs" style="font-size:11px;">
+            <i class="fas fa-file-invoice"></i>{{ t.get('print','فاتورة') }}</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" style="text-align:center;padding:36px;color:var(--text-muted);">
+        {{ t.get('purchases','لا توجد مشتريات بعد.') }}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

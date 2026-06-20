@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('sales','نتيجة التصدير') }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">
+    <i class="fas fa-check-circle" style="color:var(--success);margin-{{ 'left' if dir=='rtl' else 'right' }}:10px;"></i>
+    {{ t.get('sales','تم التصدير بنجاح') }}
+  </h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('exports.create_export') }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i> {{ t.new_export }}
+    </a>
+    <a href="{{ url_for('exports.list_exports') }}" class="btn-grey btn-sm">
+      <i class="fas fa-list"></i> {{ t.exports }}
+    </a>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="gcard" style="background:linear-gradient(135deg,var(--black),var(--black-soft));
+                              border-color:rgba(212,175,55,.3);">
+      <div class="gcard-body" style="padding:28px;">
+
+        <div style="text-align:center;margin-bottom:22px;">
+          <div style="width:64px;height:64px;background:var(--gold);border-radius:50%;
+                      display:inline-flex;align-items:center;justify-content:center;
+                      font-size:28px;color:var(--black);box-shadow:0 8px 24px rgba(212,175,55,.5);">
+            <i class="fas fa-check"></i>
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          {% for label, value, color in [
+            (t.get('customer','العميل'),
+             txn.customer.name if txn.customer else ('—'),
+             '#fff'),
+            (t.get('sale_type','نوع الحركة'),
+             t.get('outgoing','صادر/تصدير'),
+             '#f87171'),
+            (t.get('karat','العيار'),
+             txn.karat ~ 'K',
+             'var(--gold)'),
+            (t.get('weight','وزن الذهب'),
+             '%.3f'|format(txn.weight) ~ ' ' ~ t.grams,
+             '#fff'),
+            ((t.pure_weight),
+             '%.4f'|format(txn.pure_weight) ~ ' ' ~ t.grams ~ ' (24K)',
+             'var(--gold-light)'),
+            ((t.labor_per_gram),
+             '%.2f'|format(txn.labor_per_gram) ~ ' ' ~ t.sar,
+             '#86efac'),
+            ((t.labor_total),
+             '%.2f'|format(txn.labor_total) ~ ' ' ~ t.sar,
+             'var(--gold)'),
+            (t.get('date','التاريخ'),
+             txn.transaction_date|string,
+             '#94a3b8'),
+            (t.get('description','البيان'),
+             txn.description or '—',
+             '#94a3b8'),
+          ] %}
+          <tr style="border-bottom:1px solid rgba(255,255,255,.06);">
+            <td style="padding:9px 8px;color:#64748b;font-weight:600;">{{ label }}</td>
+            <td style="padding:9px 8px;color:{{ color }};font-weight:800;text-align:{{ 'left' if dir=='rtl' else 'right' }};">
+              {{ value }}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+
+        <hr style="border-color:rgba(212,175,55,.2);margin:18px 0;"/>
+
+        {# Labor breakdown highlight #}
+        <div style="text-align:center;">
+          <div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:6px;text-transform:uppercase;">
+            {{ t.labor_total }}
+          </div>
+          <div style="font-size:46px;font-weight:900;color:var(--gold);line-height:1;">
+            {{ '%.2f'|format(txn.labor_total) }}
+          </div>
+          <div style="font-size:14px;color:#64748b;margin-top:4px;">{{ t.sar }}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3 justify-content-center">
+      <button onclick="window.print()" class="btn-grey">
+        <i class="fas fa-print"></i> {{ t.print }}
+      </button>
+      <a href="{{ url_for('exports.create_export') }}" class="btn-gold">
+        <i class="fas fa-plus"></i> {{ t.new_export }}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

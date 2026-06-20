@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% block title %}{{ worker.name }} — {{ t.get('employees','تفاصيل الموظف') }}{% endblock %}
+
+{% block content %}
+{% set print_title = worker.name + ' — ' + t.get('employees','بيانات الموظف') %}
+{% set print_ref = worker.code or '' %}
+{% include '_print_header.html' %}
+<div class="page-header no-print">
+  <div style="display:flex;align-items:center;gap:16px;">
+    {# Employee photo — header #}
+    <div style="width:54px;height:54px;border-radius:50%;overflow:hidden;flex-shrink:0;
+                border:2px solid rgba(212,175,55,.3);
+                background:rgba(212,175,55,.06);
+                display:flex;align-items:center;justify-content:center;">
+      {% if worker.photo_data %}
+      <img src="{{ worker.photo_data }}"
+           style="width:100%;height:100%;object-fit:cover;"/>
+      {% else %}
+      <i class="fas fa-user" style="font-size:22px;color:rgba(212,175,55,.4);"></i>
+      {% endif %}
+    </div>
+    <div>
+      <h4 class="page-title" style="margin:0;">
+        {{ worker.name }}
+        <code style="font-size:13px;color:var(--gold-dark);margin-right:8px;">{{ worker.code or '' }}</code>
+        {# ID expiry badge next to name #}
+        {% if id_expiry_info %}
+          {% if id_expiry_info.status == 'expired' %}
+          <span style="font-size:11px;background:rgba(248,113,113,.15);color:#f87171;
+                       padding:2px 8px;border-radius:999px;font-weight:800;vertical-align:middle;">
+            <i class="fas fa-times-circle"></i>{{ t.get('employee_id_expiry','هوية منتهية') }}
+          </span>
+          {% elif id_expiry_info.status == 'warning' %}
+          <span style="font-size:11px;background:rgba(251,146,60,.15);color:#ea580c;
+                       padding:2px 8px;border-radius:999px;font-weight:800;vertical-align:middle;">
+            <i class="fas fa-exclamation-triangle"></i> {{ id_expiry_info.days_left }}د
+          </span>
+          {% endif %}
+        {% endif %}
+      </h4>
+      <div style="font-size:13px;color:var(--text-muted);">
+        {{ worker.specialty or '' }}
+        {% if worker.phone %}· {{ worker.phone }}{% endif %}
+        {% if worker.monthly_salary %}· {{ '%.0f'|format(worker.monthly_salary) }} ر.س{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="d-flex gap-2 no-print">
+    <button onclick="window.print()" class="btn-grey btn-sm">
+      <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+    </button>
+    <button onclick="printCard()" class="btn-gold btn-sm">
+      <i class="fas fa-id-card"></i>{{ t.get('employee_id_card','طباعة البطاقة') }}</button>
+    <a href="{{ url_for('workers.edit_worker', wid=worker.id) }}" class="btn-grey btn-sm">
+      <i class="fas fa-edit"></i>{{ t.get('edit','تعديل') }}</a>
+    {% if worker.is_active %}
+    <button onclick="document.getElementById('terminateModal').style.display='flex'"
+            class="btn-danger-soft btn-sm">
+      <i class="fas fa-user-times"></i>{{ t.get('employee_terminate','إنهاء الخدمة') }}</button>
+    {% else %}
+    <span class="badge-custom badge-grey" style="padding:8px 14px;font-size:12px;">
+      <i class="fas fa-user-slash"></i>{{ t.get('employee_status_off','منتهي الخدمة') }}
+      {% if worker.termination_date %}— {{ worker.termination_date }}{% endif %}
+    </span>
+    {% endif %}
+    <a href="{{ url_for('workers.list_workers') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('employees','الموظفون') }}
+    </a>
+  </div>
+</div>
+
+{# ── KPI cards — 24K converted ── #}
+{% set pure_recv = stats.karat_rows | sum(attribute='recv') %}
+{% set pure_prod_24 = namespace(v=0) %}
+{% set pure_recv_24 = namespace(v=0) %}
+{% set pure_loss_24 = namespace(v=0) %}
+{% for kr in stats.karat_rows %}
+  {% set pure_recv_24.v = pure_recv_24.v + (kr.recv * kr.karat / 24) %}
+  {% set pure_prod_24.v = pure_prod_24.v + (kr.prod * kr.karat / 24) %}
+  {% set pure_loss_24.v = pure_loss_24.v + (kr.loss * kr.karat / 24) %}
+{% endfor %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="stat-icon ic-blue"><i class="fas fa-tasks"></i></div>
+      <div class="stat-value">{{ stats.count }}</div>
+      <div class="stat-label">{{ t.get('completed_stages','مراحل مكتملة') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-arrow-down"></i></div>
+      <div class="stat-value" style="color:#86efac;font-size:18px;">{{ '%.3f'|format(stats.total_recv) }}</div>
+      <div class="stat-label">{{ t.get('received_weight','مستلم (جم فعلي)') }}</div>
+      <div style="font-size:10px;color:#c4b5fd;margin-top:2px;">
+        {{ t.get('net_24k','صافي 24K') }}: {{ '%.3f'|format(pure_recv_24.v) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-gem"></i></div>
+      <div class="stat-value" style="color:var(--gold-dark);font-size:18px;">{{ '%.3f'|format(stats.total_prod) }}</div>
+      <div class="stat-label">{{ t.get('produced_weight','منتج (جم فعلي)') }}</div>
+      <div style="font-size:10px;color:#c4b5fd;margin-top:2px;">
+        {{ t.get('net_24k','صافي 24K') }}: {{ '%.3f'|format(pure_prod_24.v) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-minus-circle"></i></div>
+      <div class="stat-value" style="color:#f87171;font-size:18px;">{{ '%.3f'|format(stats.total_loss) }}</div>
+      <div class="stat-label">{{ t.get('loss','فاقد (جم فعلي)') }}</div>
+      <div style="font-size:10px;color:#c4b5fd;margin-top:2px;">
+        {{ t.get('net_24k','صافي 24K') }}: {{ '%.3f'|format(pure_loss_24.v) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#fde68a;">
+      <div class="stat-icon" style="background:rgba(251,191,36,.12);"><i class="fas fa-percent" style="color:#d97706;"></i></div>
+      <div class="stat-value" style="color:{{ '#f87171' if stats.loss_pct>5 else ('#f59e0b' if stats.loss_pct>2 else 'var(--success)') }};font-size:18px;">
+        {{ '%.1f'|format(stats.loss_pct) }}%
+      </div>
+      <div class="stat-label">{{ t.get('loss_pct_label','نسبة الفاقد') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
+        {{ t.get('loss_pct_label','فاقد ÷ مستلم') }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:{{ '#bbf7d0' if stats.efficiency>=95 else ('#fde68a' if stats.efficiency>=85 else '#fecaca') }};">
+      <div class="stat-icon {{ 'ic-green' if stats.efficiency>=95 else ('ic-yellow' if stats.efficiency>=85 else 'ic-red') }}">
+        <i class="fas fa-tachometer-alt"></i>
+      </div>
+      <div class="stat-value"
+           style="color:{{ 'var(--success)' if stats.efficiency>=95 else ('#f59e0b' if stats.efficiency>=85 else '#f87171') }};font-size:18px;">
+        {{ '%.1f'|format(stats.efficiency) }}%
+      </div>
+      <div class="stat-label">{{ t.get('efficiency','الكفاءة') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
+        {{ t.get('efficiency','منتج ÷ مستلم') }}
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Karat badges ── #}
+{% if stats.karat_rows %}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+  <span style="font-size:12px;color:var(--text-muted);font-weight:600;">{{ t.get('karat','عمل على:') }}</span>
+  {% for kr in stats.karat_rows %}
+  <span class="karat-badge" style="font-size:12px;padding:4px 12px;">{{ kr.karat }}K</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── المعلومات الشخصية الخاصة ── #}
+{% if worker.nationality or worker.date_of_birth or worker.id_number or worker.start_date or worker.id_expiry_date %}
+<div class="gcard mb-4 no-print">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti" style="background:rgba(59,130,246,.1);">
+        <i class="fas fa-lock" style="color:#3b82f6;"></i>
+      </span>
+      {{ t.get('employee_id_card','المعلومات الشخصية') }}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      {# ID expiry alert badge in header #}
+      {% if id_expiry_info %}
+        {% if id_expiry_info.status == 'expired' %}
+          <span style="background:rgba(248,113,113,.15);color:#f87171;
+                       font-size:11px;font-weight:800;padding:3px 10px;
+                       border-radius:999px;border:1px solid rgba(248,113,113,.3);">
+            <i class="fas fa-times-circle" style="margin-left:4px;"></i>{{ t.get('employee_id_expiry','هوية منتهية') }}
+          </span>
+        {% elif id_expiry_info.status == 'warning' %}
+          <span style="background:rgba(251,146,60,.15);color:#ea580c;
+                       font-size:11px;font-weight:800;padding:3px 10px;
+                       border-radius:999px;border:1px solid rgba(251,146,60,.3);">
+            <i class="fas fa-exclamation-triangle" style="margin-left:4px;"></i>
+            {{ t.get('employee_id_expiry','تنتهي خلال') }} {{ id_expiry_info.days_left }} {{ t.get('day','يوم') }}
+          </span>
+        {% endif %}
+      {% endif %}
+      <span class="badge-custom" style="font-size:10px;background:rgba(59,130,246,.1);
+                                         color:#3b82f6;padding:3px 10px;">
+        <i class="fas fa-eye-slash" style="margin-left:4px;"></i>{{ t.get('notes','خاصة') }}
+      </span>
+    </div>
+  </div>
+  <div class="gcard-body">
+    <div class="row g-3">
+      {% if worker.start_date %}
+      <div class="col-md-3 col-6">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">{{ t.get('trans_date','تاريخ بداية العمل') }}</div>
+        <strong style="font-size:14px;">{{ worker.start_date }}</strong>
+      </div>
+      {% endif %}
+      {% if worker.nationality %}
+      <div class="col-md-3 col-6">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">{{ t.get('employee_nationality','الجنسية') }}</div>
+        <strong style="font-size:14px;">{{ worker.nationality }}</strong>
+      </div>
+      {% endif %}
+      {# تاريخ الميلاد + العمر المحسوب #}
+      {% if worker.date_of_birth %}
+      <div class="col-md-3 col-6">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">{{ t.get('employee_dob','تاريخ الميلاد') }}</div>
+        <strong style="font-size:14px;">{{ worker.date_of_birth }}</strong>
+        {% if age is not none %}
+        <div style="font-size:11px;color:var(--gold-dark);margin-top:2px;font-weight:700;">
+          {{ t.get('employee_age','العمر') }}: {{ age }}
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {# رقم الهوية #}
+      {% if worker.id_number %}
+      <div class="col-md-3 col-6">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">{{ t.get('employee_id_number','رقم الهوية / الإقامة') }}</div>
+        <strong style="font-size:14px;direction:ltr;display:inline-block;">
+          {{ worker.id_number[:4] }}••••{{ worker.id_number[-3:] if worker.id_number|length > 7 else '•••' }}
+        </strong>
+      </div>
+      {% endif %}
+      {# تاريخ انتهاء الهوية + تنبيه #}
+      {% if worker.id_expiry_date %}
+      <div class="col-md-3 col-6">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">{{ t.get('employee_id_expiry','تاريخ انتهاء الهوية') }}</div>
+        <strong style="font-size:14px;">{{ worker.id_expiry_date }}</strong>
+        {% if id_expiry_info %}
+          {% if id_expiry_info.status == 'expired' %}
+          <div style="color:#f87171;font-size:11px;font-weight:800;margin-top:3px;">
+            <i class="fas fa-times-circle"></i> {{ t.get('employee_status_off','منتهية') }}
+          </div>
+          {% elif id_expiry_info.status == 'warning' %}
+          <div style="color:#ea580c;font-size:11px;font-weight:800;margin-top:3px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ t.get('employee_id_expiry','تنتهي خلال') }} {{ id_expiry_info.days_left }} {{ t.get('day','يوم') }}
+          </div>
+          {% else %}
+          <div style="color:var(--success);font-size:11px;margin-top:3px;">
+            <i class="fas fa-check-circle"></i>
+            {{ t.get('active','سارية') }} ({{ id_expiry_info.days_left }} {{ t.get('day','يوم') }})
+          </div>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# ── تحليل حسب العيار ── #}
+{% if stats.karat_rows %}
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-layer-group"></i></span>{{ t.get('karat_analysis','تحليل حسب العيار') }}</div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);">
+        <tr>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th style="color:#86efac;text-align:center;">{{ t.get('received_weight','المستلم (جم)') }}</th>
+          <th style="color:var(--gold-dark);text-align:center;">{{ t.get('produced_weight','المنتج (جم)') }}</th>
+          <th style="color:#f87171;text-align:center;">{{ t.get('loss','الفاقد (جم)') }}</th>
+          <th style="color:#f59e0b;text-align:center;">{{ t.get('loss_pct','الفاقد %') }}</th>
+          <th style="text-align:center;">{{ t.get('efficiency','الكفاءة') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kr in stats.karat_rows %}
+        <tr>
+          <td><span class="karat-badge">{{ kr.karat }}K</span></td>
+          <td style="text-align:center;"><strong style="color:#86efac;">{{ '%.3f'|format(kr.recv) }}</strong></td>
+          <td style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.3f'|format(kr.prod) }}</strong></td>
+          <td style="text-align:center;"><strong style="color:#f87171;">{{ '%.3f'|format(kr.loss) }}</strong></td>
+          <td style="text-align:center;">
+            <strong style="color:{{ '#f87171' if kr.loss_pct>5 else ('#f59e0b' if kr.loss_pct>2 else 'var(--success)') }};">
+              {{ '%.1f'|format(kr.loss_pct) }}%
+            </strong>
+          </td>
+          <td style="text-align:center;">
+            {% set eff = ((kr.prod / kr.recv)*100) if kr.recv > 0 else 0 %}
+            <div style="background:var(--border);border-radius:4px;height:8px;width:80px;
+                        display:inline-block;overflow:hidden;vertical-align:middle;">
+              <div style="background:{{ 'var(--success)' if eff>=95 else ('#f59e0b' if eff>=85 else '#f87171') }};
+                          height:100%;width:{{ eff|round|int }}%;transition:width .3s;"></div>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted);margin-right:4px;">{{ '%.0f'|format(eff) }}%</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# ── Production stages table ── #}
+<div class="gcard">
+  <div class="gcard-header no-print">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-list-ol"></i></span>
+      {{ t.get('production_stages','سجل المراحل الإنتاجية') }}
+    </div>
+    <span class="badge-custom badge-blue">{{ stages|length }} {{ t.get('stage','مرحلة') }}</span>
+  </div>
+  {% if stages %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);">
+        <tr>
+          <th>{{ t.get('order_number','رقم الأمر') }}</th>
+          <th>{{ t.get('stage','المرحلة') }}</th>
+          <th style="color:#86efac;text-align:center;">{{ t.get('received_weight','مستلم (جم)') }}</th>
+          <th style="color:var(--gold-dark);text-align:center;">{{ t.get('produced_weight','منتج (جم)') }}</th>
+          <th style="color:#f87171;text-align:center;">{{ t.get('loss','فاقد (جم)') }}</th>
+          <th style="color:#f59e0b;text-align:center;">{{ t.get('loss_pct','فاقد %') }}</th>
+          <th style="text-align:center;">{{ t.get('efficiency','الكفاءة %') }}</th>
+          <th style="text-align:center;">{{ t.get('status','الحالة') }}</th>
+          <th style="text-align:center;">{{ t.get('date','التاريخ') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in stages %}
+        {% set recv = s.received_weight or 0 %}
+        {% set prod = s.produced_weight or 0 %}
+        {% set loss = s.loss_weight     or 0 %}
+        {% set lp   = ((loss / recv * 100) if recv > 0 else 0)|round(1) %}
+        {% set eff  = ((prod / recv * 100) if recv > 0 else 0)|round(1) %}
+        {% set k    = s.work_order.karat if s.work_order else 0 %}
+        <tr>
+          <td>
+            {% if s.work_order %}
+              <a href="{{ url_for('orders.order_detail', order_id=s.work_order.id) }}"
+                 style="font-weight:700;color:var(--gold-dark);text-decoration:none;">
+                {{ s.work_order.order_number }}
+              </a>
+              <span class="karat-badge" style="font-size:10px;margin-right:4px;">{{ k }}K</span>
+            {% else %}—{% endif %}
+          </td>
+          <td><strong>{{ s.stage_name }}</strong></td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#86efac;">{{ '%.3f'|format(recv) }}</strong>
+            {% if k %}<div style="font-size:10px;color:#c4b5fd;">{{ '%.3f'|format(recv*k/24) }} 24K</div>{% endif %}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:var(--gold-dark);">{{ '%.3f'|format(prod) }}</strong>
+            {% if k %}<div style="font-size:10px;color:#c4b5fd;">{{ '%.3f'|format(prod*k/24) }} 24K</div>{% endif %}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#f87171;">{{ '%.3f'|format(loss) }}</strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:{{ '#f87171' if lp>5 else ('#f59e0b' if lp>2 else 'var(--success)') }};">
+              {{ '%.1f'|format(lp) }}%
+            </strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:{{ 'var(--success)' if eff>=95 else ('#f59e0b' if eff>=85 else '#f87171') }};">
+              {{ '%.1f'|format(eff) }}%
+            </strong>
+          </td>
+          <td style="text-align:center;">
+            {% if s.status == 'completed' %}
+              <span class="badge-custom badge-green" style="font-size:10px;">{{ t.get('completed','مكتمل') }}</span>
+            {% elif s.status == 'in_progress' %}
+              <span class="badge-custom badge-blue" style="font-size:10px;">{{ t.get('in_progress','قيد التنفيذ') }}</span>
+            {% else %}
+              <span class="badge-custom badge-grey" style="font-size:10px;">{{ s.status }}</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-size:11px;color:var(--text-muted);">
+            {{ s.created_at.strftime('%Y-%m-%d') if s.created_at else '—' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.05);border-top:2px solid rgba(212,175,55,.2);font-weight:900;">
+        <tr>
+          <td colspan="2" style="color:var(--gold-dark);">{{ t.get('total','الإجمالي (مكتمل)') }}</td>
+          <td style="text-align:center;">
+            <strong style="color:#86efac;">{{ '%.3f'|format(stats.total_recv) }}</strong>
+            <div style="font-size:10px;color:#c4b5fd;">{{ '%.3f'|format(pure_recv_24.v) }} 24K</div>
+          </td>
+          <td style="text-align:center;">
+            <strong style="color:var(--gold-dark);">{{ '%.3f'|format(stats.total_prod) }}</strong>
+            <div style="font-size:10px;color:#c4b5fd;">{{ '%.3f'|format(pure_prod_24.v) }} 24K</div>
+          </td>
+          <td style="text-align:center;color:#f87171;">{{ '%.3f'|format(stats.total_loss) }}</td>
+          <td style="text-align:center;color:#f59e0b;">{{ '%.1f'|format(stats.loss_pct) }}%</td>
+          <td style="text-align:center;color:{{ 'var(--success)' if stats.efficiency>=95 else ('#f59e0b' if stats.efficiency>=85 else '#f87171') }};">
+            {{ '%.1f'|format(stats.efficiency) }}%
+          </td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:48px;color:var(--text-muted);">
+    <i class="fas fa-inbox" style="font-size:36px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('production_stages','لا توجد مراحل إنتاجية.') }}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{# ── Employee ID Card (print-ready) ── #}
+<div id="idCardOverlay"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+            z-index:9998;align-items:center;justify-content:center;">
+
+  {# Card #}
+  <div id="empIdCard"
+       style="background:#fff;border-radius:16px;width:340px;
+              box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden;
+              font-family:'Cairo',sans-serif;">
+
+    {# Header — gold band with factory branding #}
+    <div style="background:linear-gradient(135deg,#1a1a1a 0%,#2d2400 60%,#d4af37 100%);
+                padding:20px;text-align:center;">
+      {% if fac.logo_data %}
+      <img src="{{ fac.logo_data }}"
+           style="height:48px;max-width:120px;object-fit:contain;
+                  border-radius:6px;margin-bottom:8px;display:block;margin:0 auto 8px;"/>
+      {% else %}
+      <div style="width:48px;height:48px;border-radius:50%;
+                  background:rgba(212,175,55,.25);
+                  display:flex;align-items:center;justify-content:center;
+                  margin:0 auto 8px;">
+        <i class="fas fa-industry" style="color:var(--gold-dark);font-size:22px;"></i>
+      </div>
+      {% endif %}
+      <div style="font-size:14px;font-weight:900;color:#d4af37;letter-spacing:.5px;">
+        {{ fac.name }}
+      </div>
+      {% if fac.city %}
+      <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:2px;">{{ fac.city }}</div>
+      {% endif %}
+    </div>
+
+    {# Employee info #}
+    <div style="padding:20px;text-align:center;">
+
+      {# Photo — actual or fallback #}
+      <div style="width:76px;height:76px;border-radius:50%;overflow:hidden;
+                  border:3px solid rgba(212,175,55,.4);
+                  margin:0 auto 12px;
+                  background:rgba(212,175,55,.08);
+                  display:flex;align-items:center;justify-content:center;">
+        {% if worker.photo_data %}
+        <img src="{{ worker.photo_data }}"
+             style="width:100%;height:100%;object-fit:cover;"/>
+        {% else %}
+        <i class="fas fa-user" style="font-size:30px;color:rgba(212,175,55,.4);"></i>
+        {% endif %}
+      </div>
+
+      <div style="font-size:18px;font-weight:900;color:#1a1a1a;margin-bottom:4px;">
+        {{ worker.name }}
+      </div>
+      <div style="font-size:13px;color:#666;margin-bottom:12px;">
+        {{ worker.specialty or 'موظف' }}
+      </div>
+
+      {# Details grid #}
+      <div style="background:#f8f8f8;border-radius:10px;padding:12px 16px;
+                  text-align:right;font-size:12px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;padding:4px 0;
+                    border-bottom:1px solid #eee;">
+          <span style="color:#999;">{{ t.get('employee_code','رقم الموظف') }}</span>
+          <strong style="color:#d4af37;font-family:monospace;">{{ worker.code }}</strong>
+        </div>
+        {% if worker.phone %}
+        <div style="display:flex;justify-content:space-between;padding:4px 0;
+                    border-bottom:1px solid #eee;">
+          <span style="color:#999;">{{ t.get('employee_phone','الجوال') }}</span>
+          <strong style="direction:ltr;display:inline-block;">{{ worker.phone }}</strong>
+        </div>
+        {% endif %}
+        <div style="display:flex;justify-content:space-between;padding:4px 0;">
+          <span style="color:#999;">{{ t.get('status','الحالة') }}</span>
+          <span style="background:{{ '#dcfce7' if worker.is_active else '#fee2e2' }};
+                       color:{{ '#15803d' if worker.is_active else '#dc2626' }};
+                       padding:2px 10px;border-radius:999px;font-weight:700;font-size:11px;">
+            {{ t.get('sub_active','نشط') if worker.is_active else t.get('employee_status_off','منتهي الخدمة') }}
+          </span>
+        </div>
+      </div>
+
+      {# Gold bar footer #}
+      <div style="height:4px;background:linear-gradient(90deg,#d4af37,#f5e68a,#d4af37);
+                  border-radius:2px;margin-top:4px;"></div>
+    </div>
+  </div>
+
+  {# Controls #}
+  <div style="position:absolute;top:20px;left:20px;display:flex;gap:10px;" class="no-print">
+    <button onclick="document.getElementById('idCardOverlay').style.display='none'"
+            style="background:rgba(255,255,255,.15);color:#fff;border:none;
+                   border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;">
+      <i class="fas fa-times"></i> {{ t.get('cancel','إغلاق') }}
+    </button>
+    <button onclick="printCard()"
+            style="background:#d4af37;color:#1a1a1a;border:none;
+                   border-radius:8px;padding:8px 16px;cursor:pointer;
+                   font-size:13px;font-weight:800;">
+      <i class="fas fa-print"></i>{{ t.get('employee_id_card','طباعة البطاقة') }}</button>
+  </div>
+</div>
+
+<style>
+@media print {
+  body.printing-card * { visibility: hidden !important; }
+  body.printing-card #empIdCard,
+  body.printing-card #empIdCard * { visibility: visible !important; }
+  body.printing-card #empIdCard {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+</style>
+
+<script>
+function printCard() {
+  document.getElementById('idCardOverlay').style.display = 'flex';
+  setTimeout(function() {
+    document.body.classList.add('printing-card');
+    window.print();
+    document.body.classList.remove('printing-card');
+  }, 300);
+}
+document.getElementById('idCardOverlay').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+</script>
+
+{% if worker.is_active %}
+{# ── Termination Modal ── #}
+<div id="terminateModal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);
+            z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--black-soft);border:1.5px solid rgba(248,113,113,.3);
+              border-radius:14px;padding:28px;max-width:460px;width:90%;
+              box-shadow:0 20px 60px rgba(0,0,0,.4);">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <div style="width:42px;height:42px;border-radius:50%;
+                  background:rgba(248,113,113,.12);flex-shrink:0;
+                  display:flex;align-items:center;justify-content:center;">
+        <i class="fas fa-user-times" style="color:#f87171;font-size:18px;"></i>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:900;">{{ t.get('employee_terminate','إنهاء الخدمة') }}</div>
+        <div style="font-size:13px;color:var(--text-muted);">
+          {{ worker.name }} — {{ worker.code or '' }}
+        </div>
+      </div>
+    </div>
+
+    {# Settlement summary — calculated in JS from available data #}
+    <div style="background:rgba(212,175,55,.06);border:1px solid rgba(212,175,55,.2);
+                border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;">
+      <div style="font-weight:700;color:var(--gold-dark);margin-bottom:8px;">
+        <i class="fas fa-file-invoice" style="margin-left:5px;"></i>{{ t.get('salary_due','ملخص المستحقات') }}</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:4px 16px;">
+        <span style="color:var(--text-muted);">{{ t.get('employee_salary','الراتب الشهري') }}</span>
+        <span style="font-weight:700;">{{ '%.2f'|format(worker.monthly_salary or 0) }} ر.س</span>
+        <span style="color:var(--text-muted);">{{ t.get('total_produced_label','إجمالي المنتج') }}</span>
+        <span style="font-weight:700;color:var(--gold-dark);">{{ '%.3f'|format(stats.total_prod) }} {{ t.get('grams','جم') }}</span>
+        <span style="color:var(--text-muted);">{{ t.get('total_loss_label','إجمالي الفاقد') }}</span>
+        <span style="font-weight:700;color:#f87171;">{{ '%.3f'|format(stats.total_loss) }} {{ t.get('grams','جم') }}</span>
+        <span style="color:var(--text-muted);">{{ t.get('efficiency','الكفاءة') }}</span>
+        <span style="font-weight:700;">{{ '%.1f'|format(stats.efficiency) }}%</span>
+      </div>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('workers.terminate_worker', wid=worker.id) }}">
+      <div style="margin-bottom:14px;">
+        <label class="form-label-custom"
+               style="font-weight:800;color:#f87171;margin-bottom:6px;display:block;">
+          <i class="fas fa-lock" style="margin-left:5px;"></i>
+          {{ t.get('password','كلمة مرورك للتأكيد') }} *
+        </label>
+        <input type="password" name="confirm_password"
+               class="form-control-custom"
+               placeholder="{{ t.get('password','كلمة المرور') }}" required
+               style="border-color:rgba(248,113,113,.4);"/>
+      </div>
+      <div style="margin-bottom:18px;">
+        <label class="form-label-custom" style="margin-bottom:6px;display:block;">
+          {{ t.get('notes','ملاحظات') }}
+        </label>
+        <input type="text" name="extra_notes" class="form-control-custom"
+               placeholder="{{ t.get('notes','السبب...') }}"/>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" class="btn-grey"
+                onclick="document.getElementById('terminateModal').style.display='none'">
+          <i class="fas fa-times"></i>{{ t.get('cancel','إلغاء') }}</button>
+        <button type="submit"
+                style="background:#f87171;color:#fff;border:none;border-radius:9px;
+                       padding:9px 20px;font-weight:800;cursor:pointer;font-size:13px;
+                       display:flex;align-items:center;gap:7px;">
+          <i class="fas fa-user-times"></i>{{ t.get('employee_terminate','تأكيد إنهاء الخدمة') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('terminateModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+</script>
+{% endif %}
+{% endblock %}

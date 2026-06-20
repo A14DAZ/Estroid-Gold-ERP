@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('product_inventory','مخزون المنتجات') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-boxes" style="color:var(--gold-dark);margin-left:10px;"></i>{{ t.get('product_inventory','مخزون المنتجات') }}</h4>
+</div>
+
+{% include '_inv_nav.html' %}
+
+{% if products_by_karat %}
+
+  {# ── ملخص سريع ── #}
+  <div class="row g-3 mb-4">
+    {% for karat, prods in products_by_karat.items() %}
+    <div class="col-6 col-md-3">
+      <div class="stat-card" style="border-color:var(--gold-border);">
+        <div class="stat-icon ic-gold">
+          <span style="font-size:13px;font-weight:900;">{{ karat }}K</span>
+        </div>
+        <div class="stat-value" style="color:var(--gold-dark);">
+          {{ '%.4f'|format(prods | sum(attribute='pure_24')) }}
+        </div>
+        <div class="stat-label">{{ t.get('karat_label','عيار') }} {{ karat }} — {{ t.get('net_24k','صافي') }}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
+          {{ prods|length }} {{ t.get('model_name','منتج') }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── جدول لكل عيار ── #}
+  {% for karat, prods in products_by_karat.items() %}
+  <div class="gcard mb-3">
+    <div class="gcard-header">
+      <div class="gcard-title">
+        <span class="karat-badge" style="font-size:14px;padding:4px 12px;margin-left:10px;">{{ karat }}K</span>
+        <span style="color:var(--text-muted);font-size:13px;">{{ prods|length }} {{ t.get('model_name','منتج') }}</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">
+        {{ t.get('net_24k','صافي (24K)') }}: <strong>{{ '%.4f'|format(prods | sum(attribute='pure_24')) }}</strong> {{ t.get('grams','جم') }}
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+        <thead style="background:rgba(212,175,55,.06);">
+          <tr>
+            <th>{{ t.get('order_number','رقم الأمر') }}</th>
+            <th>{{ t.get('product_name','اسم المنتج') }}</th>
+            <th>{{ t.get('product_code','كود المنتج') }}</th>
+            <th>{{ t.get('karat_label','العيار') }}</th>
+            <th>{{ t.get('weight','الوزن الفعلي') }}</th>
+            <th style="color:var(--gold-dark);">{{ t.get('net_24k','الوزن الصافي (24K)') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prods %}
+          <tr>
+            <td style="color:var(--gold-dark);font-weight:700;">{{ p.order_number }}</td>
+            <td><strong>{{ p.product_name }}</strong></td>
+            <td>
+              {% if p.product_code != '—' %}
+                <code style="font-size:11px;">{{ p.product_code }}</code>
+              {% else %}—{% endif %}
+            </td>
+            <td><span class="karat-badge">{{ p.karat }}K</span></td>
+            <td>
+              <strong style="color:var(--success);">{{ '%.3f'|format(p.weight) }}</strong>
+              <span style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+            </td>
+            <td>
+              <strong style="color:var(--gold-dark);">{{ '%.4f'|format(p.pure_24) }}</strong>
+              <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot style="background:rgba(212,175,55,.06);border-top:2px solid rgba(212,175,55,.25);">
+          <tr>
+            <td colspan="4" style="font-weight:800;color:var(--gold-dark);">{{ t.get('total','إجمالي') }} {{ t.get('karat_label','عيار') }} {{ karat }}</td>
+            <td style="color:var(--text-muted);font-size:11px;font-style:italic;">{{ t.get('notes','غير قابل للجمع') }}</td>
+            <td style="font-weight:900;color:var(--gold);">
+              {{ '%.4f'|format(prods | sum(attribute='pure_24')) }} {{ t.get('grams','جم') }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="gcard">
+  <div class="gcard-body" style="text-align:center;padding:48px;color:var(--text-muted);">
+    <i class="fas fa-boxes" style="font-size:40px;display:block;margin-bottom:14px;opacity:.2;"></i>
+    {{ t.get('products','لا توجد منتجات.') }}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

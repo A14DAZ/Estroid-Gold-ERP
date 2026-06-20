@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('employees','الموظفون') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      {{ t.get('employees','الموظفون') }}
+      <span style="color:var(--text-muted);font-size:15px;font-weight:600;">({{ workers|length }})</span>
+    </h4>
+  </div>
+  <a href="{{ url_for('workers.create_worker') }}" class="btn-gold">
+    <i class="fas fa-user-plus"></i>{{ t.get('employee_add','إضافة موظف') }}</a>
+</div>
+
+<div class="search-bar">
+  <form method="GET" style="display:flex;gap:10px;align-items:center;width:100%;">
+    <input type="text" name="q" class="form-control-custom" style="flex:1;"
+           placeholder="{{ t.get('search','بحث') }}..." value="{{ q }}"/>
+    <button type="submit" class="btn-gold btn-sm"><i class="fas fa-search"></i></button>
+    {% if q %}<a href="{{ url_for('workers.list_workers') }}" class="btn-grey btn-sm"><i class="fas fa-times"></i></a>{% endif %}
+  </form>
+</div>
+
+<div class="gcard">
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;table-layout:fixed;width:100%;">
+      <colgroup>
+        <col style="width:40px;"/>
+        <col style="width:90px;"/>
+        <col style="width:160px;"/>
+        <col style="width:110px;"/>
+        <col style="width:90px;"/>
+        <col style="width:110px;"/>
+        <col style="width:100px;"/>
+        <col style="width:90px;"/>
+        <col style="width:80px;"/>
+        <col style="width:120px;"/>
+      </colgroup>
+      <thead style="background:rgba(212,175,55,.08);">
+        <tr>
+          <th style="text-align:center;">#</th>
+          <th>{{ t.get('employee_code','الكود') }}</th>
+          <th>{{ t.get('full_name','الاسم') }}</th>
+          <th>{{ t.get('specialty','التخصص') }}</th>
+          <th style="text-align:center;">{{ t.get('salary','الراتب') }}</th>
+          <th style="color:#86efac;text-align:center;">{{ t.get('produced_weight','المنتج (جم)') }}</th>
+          <th style="color:#f87171;text-align:center;">{{ t.get('loss','الفاقد (جم)') }}</th>
+          <th style="color:#f59e0b;text-align:center;">{{ t.get('loss_pct','الفاقد %') }}</th>
+          <th style="text-align:center;">{{ t.get('status','الحالة') }}</th>
+          <th style="text-align:center;">{{ t.get('actions','الإجراءات') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in workers %}
+        {% set s = stats.get(w.id, {}) %}
+        {% set eff = s.get('efficiency', 0) %}
+        <tr>
+          <td style="text-align:center;color:var(--text-muted);font-size:12px;">{{ loop.index }}</td>
+          <td><code style="font-size:11px;font-weight:800;color:var(--gold-dark);">{{ w.code or '—' }}</code></td>
+          <td>
+            <a href="{{ url_for('workers.worker_detail', wid=w.id) }}"
+               style="font-weight:800;color:var(--black);text-decoration:none;
+                      display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ w.name }}
+            </a>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ w.specialty or '—' }}</td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:var(--gold-dark);">{{ '%.0f'|format(w.monthly_salary or 0) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('sar','ر.س') }}</span>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#86efac;">{{ '%.3f'|format(s.get('total_prod',0)) }}</strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#f87171;">{{ '%.3f'|format(s.get('total_loss',0)) }}</strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            {% set lp = s.get('loss_pct',0) %}
+            <strong style="color:{{ '#f87171' if lp>5 else ('#f59e0b' if lp>2 else 'var(--success)') }};">
+              {{ '%.1f'|format(lp) }}%
+            </strong>
+          </td>
+          <td style="text-align:center;">
+            <span class="badge-custom {{ 'badge-green' if w.is_active else 'badge-grey' }}"
+                  style="font-size:10px;">
+              {{ t.get('sub_active','نشط') if w.is_active else t.get('sub_suspended','موقوف') }}
+            </span>
+          </td>
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;">
+              <a href="{{ url_for('workers.worker_detail', wid=w.id) }}" class="btn-gold btn-xs"><i class="fas fa-eye"></i></a>
+              <a href="{{ url_for('workers.edit_worker', wid=w.id) }}" class="btn-grey btn-xs"><i class="fas fa-edit"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="10" style="text-align:center;padding:48px;color:var(--text-muted);">
+            <i class="fas fa-hard-hat" style="font-size:36px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            {{ t.get('employees','لا يوجد موظفون بعد.') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if workers %}
+      <tfoot style="background:rgba(212,175,55,.05);border-top:2px solid rgba(212,175,55,.2);font-weight:900;">
+        <tr>
+          <td colspan="4" style="color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
+          <td style="text-align:center;color:var(--gold-dark);">{{ '%.0f'|format(total_salary) }} ر.س</td>
+          <td style="text-align:center;color:#86efac;">
+            {{ '%.3f'|format(stats.values()|sum(attribute='total_prod')|default(0)) }} {{ t.get('grams','جم') }}
+          </td>
+          <td style="text-align:center;color:#f87171;">
+            {{ '%.3f'|format(stats.values()|sum(attribute='total_loss')|default(0)) }} {{ t.get('grams','جم') }}
+          </td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

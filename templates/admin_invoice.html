@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('invoice_no','فاتورة') }} {{ pay.invoice_number }}{% endblock %}
+{% block content %}
+{% set print_title = t.get('invoice_no','فاتورة') + ' ' + (pay.invoice_number or '') %}
+{% include '_print_header.html' %}
+
+<div class="page-header no-print">
+  <h4 class="page-title"><i class="fas fa-file-invoice" style="color:var(--gold);margin-left:10px;"></i>{{ t.get('invoice_no','فاتورة') }} {{ pay.invoice_number }}</h4>
+  <div style="display:flex;gap:8px;">
+    <button onclick="window.print()" class="btn-gold btn-sm"><i class="fas fa-print"></i> {{ t.get('print','طباعة') }}</button>
+    <a href="{{ url_for('admin.payments') }}" class="btn-grey btn-sm"><i class="fas fa-arrow-right"></i> {{ t.back }}</a>
+  </div>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-6">
+<div class="gcard" style="border-color:var(--gold-border);">
+  <div class="gcard-body" style="padding:32px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:1.5px solid rgba(212,175,55,.15);">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;margin-bottom:4px;">{{ t.get('invoice_no','رقم الفاتورة') }}</div>
+        <div style="font-size:26px;font-weight:900;color:var(--gold-dark);">{{ pay.invoice_number }}</div>
+      </div>
+      <div style="text-align:{{ 'left' if lang in ('en','tr') else 'right' }};">
+        <span class="badge-custom badge-green" style="font-size:13px;padding:8px 16px;">{{ t.get('paid','مدفوع') }}</span>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">{{ pay.paid_at.strftime('%Y-%m-%d') if pay.paid_at else today }}</div>
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;">
+      {% macro irow(label, value, color='') %}
+      <tr style="border-bottom:1px solid rgba(0,0,0,.05);">
+        <td style="padding:10px 8px;font-size:13px;color:var(--text-muted);font-weight:600;width:40%;">{{ label }}</td>
+        <td style="padding:10px 8px;font-size:14px;font-weight:800;{{ 'color:'+color+';' if color }}">{{ value }}</td>
+      </tr>
+      {% endmacro %}
+
+      {{ irow(t.factory_name, fac.name if fac else '—') }}
+      {{ irow(t.get('factory_code_label','كود المصنع'), fac.factory_code or '—') }}
+      {{ irow(t.plan, pay.plan_slug.title() if pay.plan_slug else '—') }}
+      {{ irow(t.get('period','المدة'), (pay.period_days|string) + ' ' + t.days) }}
+      {{ irow(t.get('payment_method','طريقة الدفع'), pay.method or '—') }}
+      {{ irow(t.get('amount','المبلغ'), ('%.2f'|format(pay.amount)) + ' ' + pay.currency, 'var(--gold-dark)') }}
+      {% if pay.notes %}{{ irow(t.get('notes','ملاحظات'), pay.notes) }}{% endif %}
+      {% if pay.recorded_by %}{{ irow(t.get('recorded_by','سجّل بواسطة'), pay.recorded_by.full_name) }}{% endif %}
+    </table>
+
+    <div style="background:rgba(212,175,55,.06);border-radius:10px;padding:16px;margin-top:20px;text-align:center;">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">{{ t.get('total','الإجمالي') }}</div>
+      <div style="font-size:32px;font-weight:900;color:var(--gold-dark);">{{ '%.2f'|format(pay.amount) }} {{ pay.currency }}</div>
+    </div>
+
+    <div class="print-invoice-only" style="margin-top:24px;text-align:center;font-size:13px;color:#555;">
+      {{ t.get('thank_you','شكراً لتعاملكم معنا') }} — Powered by {{ platform_name }}
+    </div>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}

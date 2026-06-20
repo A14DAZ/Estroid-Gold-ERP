@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}{{ t.factories }} — {{ t.admin_panel }}{% endblock %}
+
+{% block content %}
+
+{# ── Header ── #}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-building" style="color:#1d4ed8;margin-left:8px;"></i>
+      {{ t.factories }}
+      <span style="font-size:14px;font-weight:600;color:var(--text-muted);margin-right:8px;">
+        ({{ pagination.total }})
+      </span>
+    </h4>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{{ url_for('admin.create_factory_slot') }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i> {{ t.get('add_factory','+ إضافة مصنع') }}
+    </a>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.dashboard }}
+    </a>
+  </div>
+</div>
+
+{# ── Search ── #}
+<div class="search-bar no-print mb-3">
+  <form method="GET" style="display:flex;gap:10px;align-items:center;width:100%;">
+    <input type="text" name="q" class="form-control-custom" style="flex:1;"
+           placeholder="{{ t.search }}..." value="{{ q }}"/>
+    <button type="submit" class="btn-gold btn-sm">
+      <i class="fas fa-search"></i> {{ t.search }}
+    </button>
+    {% if q %}
+    <a href="{{ url_for('admin.factories') }}" class="btn-grey btn-sm">
+      <i class="fas fa-times"></i>
+    </a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Clean Table — 7 columns only ── #}
+<div class="gcard">
+  <div style="overflow-x:auto;">
+    <table class="gtable">
+      <thead>
+        <tr>
+          <th style="width:100px;">{{ t.get('factory_code_label','كود المصنع') }}</th>
+          <th>{{ t.factory_name }}</th>
+          <th>{{ t.email }}</th>
+          <th style="text-align:center;width:130px;">{{ t.get('subscription_status','الاشتراك') }}</th>
+          <th style="text-align:center;width:100px;">{{ t.get('days_remaining','الأيام') }}</th>
+          <th style="text-align:center;width:70px;">{{ t.get('is_active','الحالة') }}</th>
+          <th style="text-align:center;width:90px;">{{ t.actions }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in pagination.items %}
+        <tr style="vertical-align:middle;">
+
+          {# Factory Code #}
+          <td>
+            <code style="font-size:12px;font-weight:900;color:var(--gold-dark);
+                         background:rgba(212,175,55,.1);padding:3px 9px;
+                         border-radius:6px;letter-spacing:1.5px;white-space:nowrap;">
+              {{ f.factory_code or '—' }}
+            </code>
+          </td>
+
+          {# Name + logo + city #}
+          <td>
+            <div style="display:flex;align-items:center;gap:9px;">
+              {% if f.logo_data %}
+              <img src="{{ f.logo_data }}" alt=""
+                   style="width:30px;height:30px;border-radius:7px;object-fit:contain;
+                          border:1px solid rgba(212,175,55,.25);background:var(--black-soft);
+                          padding:2px;flex-shrink:0;"/>
+              {% else %}
+              <div style="width:30px;height:30px;border-radius:7px;background:rgba(212,175,55,.08);
+                          display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-building" style="font-size:12px;color:var(--gold-dark);"></i>
+              </div>
+              {% endif %}
+              <div>
+                <div style="font-weight:800;font-size:13.5px;">{{ f.name }}</div>
+                {% if f.city %}
+                <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">
+                  <i class="fas fa-map-marker-alt" style="font-size:9px;"></i> {{ f.city }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+
+          {# Email #}
+          <td style="font-size:12px;color:var(--text-muted);">
+            {{ f.user.email if f.user else '—' }}
+          </td>
+
+          {# Subscription status #}
+          <td style="text-align:center;">
+            {% if f.subscription_status == 'active' %}
+              <span class="badge-custom badge-green" style="white-space:nowrap;">
+                <i class="fas fa-check-circle"></i> {{ t.sub_active }}
+              </span>
+            {% elif f.subscription_status == 'expired' %}
+              <span class="badge-custom badge-red" style="white-space:nowrap;">
+                <i class="fas fa-clock"></i> {{ t.sub_expired }}
+              </span>
+            {% else %}
+              <span class="badge-custom badge-grey" style="white-space:nowrap;">
+                <i class="fas fa-ban"></i> {{ t.sub_suspended }}
+              </span>
+            {% endif %}
+          </td>
+
+          {# Days remaining — colored #}
+          <td style="text-align:center;">
+            {% if f.days_remaining is none %}
+              <span style="color:var(--gold);font-weight:900;font-size:16px;">∞</span>
+            {% elif f.days_remaining <= 0 %}
+              <span class="badge-custom badge-red" style="font-size:11px;">{{ t.sub_expired }}</span>
+            {% elif f.days_remaining <= 7 %}
+              <span class="badge-custom" style="background:rgba(245,158,11,.15);color:#d97706;font-weight:800;">
+                {{ f.days_remaining }}
+              </span>
+            {% else %}
+              <span class="badge-custom badge-green" style="font-weight:800;">{{ f.days_remaining }}</span>
+            {% endif %}
+          </td>
+
+          {# Active / Inactive dot #}
+          <td style="text-align:center;">
+            {% if f.is_active %}
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                           background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.2);"
+                    title="{{ t.sub_active }}"></span>
+            {% else %}
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                           background:#9ca3af;"
+                    title="{{ t.sub_suspended }}"></span>
+            {% endif %}
+          </td>
+
+          {# Actions — only 3 compact buttons #}
+          <td style="text-align:center;">
+            <div style="display:flex;gap:4px;justify-content:center;flex-wrap:nowrap;">
+              {# Settings / Details #}
+              <a href="{{ url_for('admin.manage_subscription', fid=f.id) }}"
+                 class="btn-gold btn-xs" title="{{ t.get('manage_subscription','إدارة') }}">
+                <i class="fas fa-cog"></i>
+              </a>
+              {# Toggle active #}
+              <form method="POST" action="{{ url_for('admin.toggle_factory', fid=f.id) }}" style="display:inline;">
+                <button type="submit"
+                        class="{{ 'btn-danger-soft' if f.is_active else 'btn-success-soft' }} btn-xs"
+                        title="{{ t.deactivate if f.is_active else t.activate }}">
+                  <i class="fas fa-{{ 'ban' if f.is_active else 'check' }}"></i>
+                </button>
+              </form>
+              {# Delete #}
+              <button onclick="askConfirm('{{ t.confirm_delete }}','{{ t.are_you_sure }}','{{ url_for('admin.delete_factory', fid=f.id) }}','POST')"
+                      class="btn-danger-soft btn-xs" title="{{ t.delete }}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </td>
+
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">
+            <i class="fas fa-building" style="font-size:30px;display:block;margin-bottom:12px;opacity:.2;"></i>
+            {{ t.get('no_data','لا توجد مصانع بعد') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Pagination #}
+  {% if pagination.pages > 1 %}
+  <div class="gcard-body d-flex justify-content-center gap-2">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.factories', page=pagination.prev_num, q=q) }}" class="btn-grey btn-sm">←</a>
+    {% endif %}
+    <span style="font-size:13px;color:var(--text-muted);padding:6px 12px;">
+      {{ pagination.page }} / {{ pagination.pages }}
+    </span>
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.factories', page=pagination.next_num, q=q) }}" class="btn-grey btn-sm">→</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

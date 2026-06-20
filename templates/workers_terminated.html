@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('employee_terminated','الموظفون السابقون') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title">
+    <i class="fas fa-user-slash" style="color:#f87171;margin-left:10px;"></i>{{ t.get('employee_terminated','الموظفون السابقون') }}<span style="color:var(--text-muted);font-size:15px;font-weight:600;">({{ workers|length }})</span>
+  </h4>
+  <a href="{{ url_for('workers.list_workers') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('active','الموظفون النشطون') }}
+  </a>
+</div>
+
+<div class="gcard">
+  {% if workers %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0"
+           style="font-family:'Cairo',sans-serif;table-layout:fixed;width:100%;">
+      <colgroup>
+        <col style="width:90px;"/>
+        <col style="width:160px;"/>
+        <col style="width:110px;"/>
+        <col style="width:100px;"/>
+        <col style="width:110px;"/>
+        <col style="width:100px;"/>
+        <col style="width:110px;"/>
+        <col style="width:120px;"/>
+      </colgroup>
+      <thead style="background:rgba(248,113,113,.06);">
+        <tr>
+          <th style='text-align:center;'>{{ t.get('employee_code','الكود') }}</th>
+          <th>{{ t.get('full_name','الاسم') }}</th>
+          <th style="text-align:center;">{{ t.get('specialty','التخصص') }}</th>
+          <th style="text-align:center;">{{ t.get('termination_date','تاريخ الإنهاء') }}</th>
+          <th style="color:var(--gold-dark);text-align:center;">{{ t.get('produced_weight','المنتج (جم)') }}</th>
+          <th style="color:#f87171;text-align:center;">{{ t.get('loss','الفاقد (جم)') }}</th>
+          <th style="text-align:center;">{{ t.get('efficiency','الكفاءة') }}</th>
+          <th style='text-align:center;'>{{ t.get('view','الملف') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in workers %}
+        {% set s = stats.get(w.id, {}) %}
+        <tr>
+          <td style="text-align:center;">
+            <code style="font-size:11px;font-weight:800;color:var(--text-muted);">{{ w.code or '—' }}</code>
+          </td>
+          <td>
+            <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ w.name }}
+            </strong>
+          </td>
+          <td style="text-align:center;font-size:12px;color:var(--text-muted);">{{ w.specialty or '—' }}</td>
+          <td style="text-align:center;font-size:12px;color:#f87171;white-space:nowrap;">
+            {{ w.termination_date or '—' }}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:var(--gold-dark);">{{ '%.3f'|format(s.get('total_prod',0)) }}</strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            <strong style="color:#f87171;">{{ '%.3f'|format(s.get('total_loss',0)) }}</strong>
+          </td>
+          <td style="text-align:center;white-space:nowrap;">
+            {% set eff = s.get('efficiency',0) %}
+            <strong style="color:{{ 'var(--success)' if eff>=95 else ('#f59e0b' if eff>=85 else '#f87171') }};">
+              {{ '%.0f'|format(eff) }}%
+            </strong>
+          </td>
+          <td style="text-align:center;">
+            <a href="{{ url_for('workers.worker_detail', wid=w.id) }}"
+               class="btn-grey btn-xs"><i class="fas fa-eye"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:48px;color:var(--text-muted);">
+    <i class="fas fa-user-check" style="font-size:36px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('employee_terminated','لا يوجد موظفون منتهو الخدمة.') }}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

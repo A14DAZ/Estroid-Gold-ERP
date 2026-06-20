@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h4 class="page-title">
+      {{ order.order_number }}
+      <span class="karat-badge" style="font-size:11px;margin-{{ 'right' if dir=='rtl' else 'left' }}:8px;">{{ order.karat }}K</span>
+    </h4>
+    <div class="page-subtitle">
+      {% set display_client = order.client or none %}
+      {% if display_client %}
+        <a href="{{ url_for('customers.customer_profile', cid=display_client.id) }}"
+           style="color:var(--gold-dark);text-decoration:none;font-weight:700;">
+          <i class="fas fa-user" style="margin-left:4px;"></i>{{ display_client.name }}
+        </a>
+        {% if display_client.phone %}
+          <span style="color:var(--text-muted);margin-right:8px;margin-left:8px;">·</span>
+          <span style="color:var(--text-muted);direction:ltr;">{{ display_client.phone }}</span>
+        {% endif %}
+      {% elif order.customer_name %}
+        <i class="fas fa-user" style="margin-left:4px;"></i>{{ order.customer_name }}
+      {% endif %}
+      {% if order.model_name %}
+        <span style="color:var(--text-muted);margin:0 8px;">·</span> {{ order.model_name }}
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+
+    {% if order.status == 'active' %}
+      {# ── نشط: إضافة مرحلة + إتمام فقط ── #}
+      <a href="{{ url_for('orders.add_stage', order_id=order.id) }}" class="btn-gold btn-sm">
+        <i class="fas fa-plus"></i> {{ t.add_stage }}
+      </a>
+      <form method="POST" action="{{ url_for('orders.change_status', order_id=order.id) }}" style="display:inline;">
+        <input type="hidden" name="status" value="completed"/>
+        <button type="submit" class="btn-success-soft btn-sm">
+          <i class="fas fa-check-double"></i> {{ t.complete_order }}
+        </button>
+      </form>
+
+    {% else %}
+      {# ── مغلق: مكتمل أو ملغي ── #}
+      {% if not view_only %}
+        {# وضع التعديل المؤقت مفعّل #}
+        <span style="background:rgba(245,158,11,.12);border:1.5px solid #f59e0b;
+                     border-radius:9px;padding:6px 14px;font-size:12.5px;
+                     color:#b45309;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+          <i class="fas fa-unlock-alt"></i>
+          {{ t.get('warning','وضع التعديل المؤقت') }}
+        </span>
+        <form method="POST"
+              action="{{ url_for('orders.cancel_edit_mode', order_id=order.id) }}"
+              style="display:inline;">
+          <button type="submit" class="btn-grey btn-sm">
+            <i class="fas fa-times"></i>{{ t.get('cancel','إنهاء التعديل') }}
+          </button>
+        </form>
+      {% else %}
+        {# للعرض فقط: badge + زر تعديل بباسورد + زر حذف بباسورد #}
+        <span class="badge-custom {{ 'badge-green' if order.status=='completed' else 'badge-red' }}"
+              style="font-size:12px;padding:7px 14px;">
+          <i class="fas fa-eye" style="margin-left:5px;"></i>
+          {{ t.get('completed','مكتمل') if order.status=='completed' else t.get('cancelled','ملغي') }}
+        </span>
+        <a href="{{ url_for('orders.edit_auth', order_id=order.id) }}" class="btn-grey btn-sm">
+          <i class="fas fa-edit"></i> {{ t.edit }}
+        </a>
+        <a href="{{ url_for('orders.delete_auth', order_id=order.id) }}" class="btn-danger-soft btn-sm">
+          <i class="fas fa-trash-alt"></i> {{ t.delete }}
+        </a>
+      {% endif %}
+    {% endif %}
+
+    <a href="{{ url_for('orders.list_orders') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i>
+    </a>
+  </div>
+</div>
+
+{# Order KPIs — sequential flow display #}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-weight-hanging"></i></div>
+      <div class="stat-value">{{ '%.3f'|format(order.initial_weight) }}</div>
+      <div class="stat-label">{{ t.get('initial_weight','الوزن الابتدائي') }} ({{ t.grams }})</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="{{ 'border-color:#86efac;' if order.status=='completed' else '' }}">
+      <div class="stat-icon ic-green"><i class="fas fa-check-double"></i></div>
+      <div class="stat-value" style="color:var(--success);">
+        {{ '%.3f'|format(order.final_output_weight if order.status=='completed' else order.last_stage_output) }}
+      </div>
+      <div class="stat-label">{{ t.get('produced_weight','الذهب الناتج النهائي') }} ({{ t.grams }})</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="stat-icon {{ 'ic-red' if order.total_loss > 1 else 'ic-green' }}">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-value {{ 'loss-bad' if order.total_loss > 1 else 'loss-ok' }}">
+        {{ '%.3f'|format(order.total_loss) }}
+      </div>
+      <div class="stat-label">{{ t.get('total_loss_label','إجمالي الفاقد') }} ({{ t.grams }})</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-undo-alt"></i></div>
+      <div class="stat-value" style="color:var(--success);">
+        {{ '%.3f'|format(order.total_scrap) }}
+      </div>
+      <div class="stat-label">{{ t.get('scrap_weight','إجمالي الرجيع') }} ({{ t.grams }})</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card">
+      <div class="stat-icon ic-blue"><i class="fas fa-tasks"></i></div>
+      <div class="stat-value">{{ stages|length }}</div>
+      <div class="stat-label">{{ t.stage }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-2">
+    <div class="stat-card" style="border-color:#e9d5ff;">
+      <div class="stat-icon ic-purple"><i class="fas fa-gem"></i></div>
+      <div class="stat-value" style="color:#7e22ce;">{{ '%.4f'|format(order.total_stone_gain) }}</div>
+      <div class="stat-label">{{ t.get('from_stone','الكسب من الأحجار') }} ({{ t.grams }})</div>
+    </div>
+  </div>
+</div>
+
+{# Accounting discrepancy alert (only for completed) #}
+{% if order.status == 'completed' and order.accounting_diff | abs > 0.001 %}
+<div class="alert-custom alert-warning mb-3">
+  <i class="fas fa-exclamation-triangle"></i>
+  <strong>{{ 'تنبيه: يوجد فرق محاسبي في الأوزان' if lang=='ar' else 'Warning: accounting discrepancy detected' }}</strong>
+  —
+  {{ t.get('initial_weight','الابتدائي') }}: {{ '%.3f'|format(order.initial_weight) }}g
+  | {{ t.get('produced_weight','الناتج') }}: {{ '%.3f'|format(order.final_output_weight) }}g
+  | {{ t.get('loss','الفاقد') }}: {{ '%.3f'|format(order.total_loss) }}g
+  | {{ t.get('scrap_weight','الرجيع') }}: {{ '%.3f'|format(order.total_scrap) }}g
+  | {{ t.get('description','الفرق') }}: {{ '%+.4f'|format(order.accounting_diff) }}g
+</div>
+{% endif %}
+
+{% if order.notes %}
+<div class="alert-custom alert-info mb-3">
+  <i class="fas fa-sticky-note"></i> {{ order.notes }}
+</div>
+{% endif %}
+
+{# Timeline #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title"><span class="ti"><i class="fas fa-project-diagram"></i></span>{{ t.stage }}</div>
+    {% if not view_only %}
+    <a href="{{ url_for('orders.add_stage', order_id=order.id) }}" class="btn-gold btn-sm">
+      <i class="fas fa-plus"></i>
+    </a>
+    {% endif %}
+  </div>
+  <div class="gcard-body">
+    {% if stages %}
+    <div class="timeline">
+      {% for s in stages %}
+      <div class="tl-item">
+        <div class="tl-dot {{ 'tl-dot-done' if s.status=='completed' else 'tl-dot-prog' }}">
+          {{ loop.index }}
+        </div>
+        <div class="tl-card">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <strong style="font-size:14px;">
+                <i class="fas {{ stage_icons.get(s.stage_name, 'fa-cog') }}"
+                   style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:7px;"></i>
+                {{ s.stage_name }}
+              </strong>
+              {% if s.worker %}
+                <span style="color:var(--text-muted);font-size:12.5px;margin-{{ 'right' if dir=='rtl' else 'left' }}:12px;">
+                  <i class="fas fa-user" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:4px;"></i>{{ s.worker.name }}
+                </span>
+              {% endif %}
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              {% if not view_only %}
+                {% if s.status == 'in_progress' %}
+                  <span class="badge-custom badge-blue"><i class="fas fa-hourglass-half"></i> {{ t.in_progress }}</span>
+                  <a href="{{ url_for('orders.complete_stage', stage_id=s.id) }}" class="btn-success-soft btn-xs">
+                    <i class="fas fa-check-circle"></i> {{ t.complete_stage }}
+                  </a>
+                {% else %}
+                  <span class="badge-custom badge-green"><i class="fas fa-check-circle"></i> {{ t.completed }}</span>
+                {% endif %}
+                <button onclick="askConfirm('{{ t.delete }}','Delete stage {{ s.stage_name }}?','{{ url_for('orders.delete_stage', stage_id=s.id) }}','POST')"
+                        class="btn-danger-soft btn-xs">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              {% else %}
+                {# view_only: status badge only — no action buttons #}
+                {% if s.status == 'in_progress' %}
+                  <span class="badge-custom badge-blue"><i class="fas fa-hourglass-half"></i> {{ t.in_progress }}</span>
+                {% else %}
+                  <span class="badge-custom badge-green"><i class="fas fa-check-circle"></i> {{ t.completed }}</span>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+
+          {# Handover info #}
+          <div style="margin-top:10px;font-size:13px;color:#475569;display:flex;gap:22px;flex-wrap:wrap;">
+            <span><i class="fas fa-weight-hanging" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:4px;"></i>
+              {{ t.received_weight }}: <strong>{{ '%.3f'|format(s.received_weight) }} {{ t.grams }}</strong></span>
+            {% if s.handover_date %}
+              <span style="color:var(--text-muted);font-size:12px;">{{ s.handover_date.strftime('%Y-%m-%d %H:%M') }}</span>
+            {% endif %}
+          </div>
+
+          {# Stone info (setting stage) — new fields #}
+          {% if s.stone and (s.stone.stone_type or (s.stone.stone_given or 0) > 0) %}
+          <div class="mt-2" style="background:rgba(124,58,237,.07);border:1px solid #e9d5ff;border-radius:9px;padding:9px 13px;font-size:12.5px;color:#7e22ce;">
+            <i class="fas fa-gem" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+            <strong>{{ t.stone_section }}:</strong>
+            {{ s.stone.stone_type or '—' }}
+            {% if s.stone.stone_color %} · {{ s.stone.stone_color }}{% endif %}
+            · {{ t.stone_type if false else (t.get('confirm','مطلوب')) }}: {{ '%.3f'|format(s.stone.stone_required or 0) }} {{ s.stone.stone_unit }}
+            · {{ t.get('stone_given','مسلَّم') }}: {{ '%.3f'|format(s.stone.stone_given or 0) }} {{ s.stone.stone_unit }}
+            ({{ '%.4f'|format(s.stone.stone_given_grams) }} g)
+            {% if s.status == 'completed' and (s.stone.stone_returned or 0) > 0 %}
+              · {{ t.returned_stone }}: {{ '%.3f'|format(s.stone.stone_returned) }} {{ s.stone.stone_unit }}
+              · {{ t.get('stone_used','مستهلك') }}: <strong>{{ '%.3f'|format(s.stone.stone_used) }} {{ s.stone.stone_unit }}</strong>
+              ({{ '%.4f'|format(s.stone.stone_used_grams) }} g)
+            {% endif %}
+          </div>
+          {% endif %}
+
+          {# Completion info #}
+          {% if s.status == 'completed' %}
+          <div class="mt-3">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;">
+              <span class="badge-custom badge-blue">{{ t.produced_weight }}: {{ '%.3f'|format(s.produced_weight) }} {{ t.grams }}</span>
+              <span class="badge-custom badge-grey">{{ t.scrap_weight }}: {{ '%.3f'|format(s.scrap_weight) }} {{ t.grams }}</span>
+              {% if s.loss_weight > 0 %}
+                <span class="badge-custom {{ 'badge-red' if s.loss_percentage > 2 else 'badge-green' }}">
+                  {{ t.loss }}: {{ '%.3f'|format(s.loss_weight) }} {{ t.grams }}
+                  ({{ '%.2f'|format(s.loss_percentage) }}%)
+                  {% if s.loss_percentage > 2 %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+                </span>
+              {% endif %}
+              {% if s.gold_gain > 0 %}
+                <span class="badge-custom badge-green">
+                  {{ t.gain }}: {{ '%.3f'|format(s.gold_gain) }} {{ t.grams }}
+                  <i class="fas fa-arrow-up"></i>
+                </span>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if s.notes %}
+          <div style="margin-top:7px;font-size:12px;color:var(--text-muted);">
+            <i class="fas fa-sticky-note" style="margin-{{ 'left' if dir=='rtl' else 'right' }}:4px;"></i>{{ s.notes }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+      <i class="fas fa-stream" style="font-size:32px;display:block;margin-bottom:12px;opacity:.25;"></i>
+      <strong>{{ t.get('production_stages','لا توجد مراحل بعد.') }}</strong>
+      {% if not view_only %}
+      <br/>
+      <a href="{{ url_for('orders.add_stage', order_id=order.id) }}" class="btn-gold btn-sm mt-3">
+        <i class="fas fa-plus"></i> {{ t.add_stage }}
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

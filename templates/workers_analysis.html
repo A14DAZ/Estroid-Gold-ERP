@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('employee_analysis','تحليل الموظفين') }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h4 class="page-title">
+    <i class="fas fa-chart-bar" style="color:var(--gold-dark);margin-left:10px;"></i>
+    {{ t.get('employee_analysis','تحليل الموظفين') }}
+  </h4>
+  <a href="{{ url_for('workers.list_workers') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-right"></i>{{ t.get('employee_list','قائمة الموظفين') }}
+  </a>
+</div>
+
+{# ── KPIs — جميع القيم محوّلة لصافي 24K ── #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:var(--gold-border);">
+      <div class="stat-icon ic-gold"><i class="fas fa-users-cog"></i></div>
+      <div class="stat-value">{{ total_workers }}</div>
+      <div class="stat-label">{{ t.get('total_workers','إجمالي الموظفين') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-gem"></i></div>
+      <div class="stat-value" style="color:#86efac;">{{ '%.3f'|format(total_prod_24) }}</div>
+      <div class="stat-label">{{ t.get('total_produced_label','إجمالي الإنتاج') }}<strong style="color:#c4b5fd;">{{ t.get('net_24k','صافي 24K') }}</strong></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-minus-circle"></i></div>
+      <div class="stat-value" style="color:#f87171;">{{ '%.3f'|format(total_loss_24) }}</div>
+      <div class="stat-label">{{ t.get('total_loss_label','إجمالي الفاقد') }}<strong style="color:#c4b5fd;">{{ t.get('net_24k','صافي 24K') }}</strong></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fde68a;">
+      <div class="stat-icon" style="background:rgba(251,191,36,.12);">
+        <i class="fas fa-percent" style="color:#d97706;"></i>
+      </div>
+      <div class="stat-value" style="color:#d97706;">{{ '%.1f'|format(avg_loss_pct) }}%</div>
+      <div class="stat-label">{{ t.get('loss_pct_label','متوسط الفاقد') }}</div>
+    </div>
+  </div>
+</div>
+
+{# ── Global karat breakdown ── #}
+{% if global_karat_rows %}
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-layer-group"></i></span>
+      {{ t.get('karat_analysis','تحليل حسب العيار') }}
+    </div>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);">
+        <tr>
+          <th style="text-align:center;">{{ t.get('karat','العيار') }}</th>
+          <th style="color:#86efac;text-align:center;">{{ t.get('received_weight','مستلم (جم)') }}</th>
+          <th style="color:#86efac;text-align:center;">{{ t.get('net_24k','مستلم (24K)') }}</th>
+          <th style="color:var(--gold-dark);text-align:center;">{{ t.get('produced_weight','منتج (جم)') }}</th>
+          <th style="color:var(--gold-dark);text-align:center;">{{ t.get('net_24k','منتج (24K)') }}</th>
+          <th style="color:#f87171;text-align:center;">{{ t.get('loss','فاقد (جم)') }}</th>
+          <th style="color:#c4b5fd;text-align:center;">{{ t.get('net_24k','فاقد (24K)') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in global_karat_rows %}
+        <tr>
+          <td style="text-align:center;"><span class="karat-badge">{{ g.karat }}K</span></td>
+          <td style="text-align:center;">{{ '%.3f'|format(g.recv) }}</td>
+          <td style="text-align:center;"><strong style="color:#86efac;">{{ '%.3f'|format(g.recv_24) }}</strong></td>
+          <td style="text-align:center;">{{ '%.3f'|format(g.prod) }}</td>
+          <td style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.3f'|format(g.prod_24) }}</strong></td>
+          <td style="text-align:center;color:#f87171;">{{ '%.3f'|format(g.loss) }}</td>
+          <td style="text-align:center;"><strong style="color:#c4b5fd;">{{ '%.3f'|format(g.loss_24) }}</strong></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.05);border-top:2px solid rgba(212,175,55,.2);font-weight:900;">
+        <tr>
+          <td style="color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
+          <td style="text-align:center;color:var(--text-muted);">{{ '%.3f'|format(total_recv_raw) }}</td>
+          <td style="text-align:center;"><strong style="color:#86efac;">{{ '%.3f'|format(total_recv_24) }}</strong> <span style="font-size:10px;color:#c4b5fd;">24K</span></td>
+          <td colspan="2" style="text-align:center;"><strong style="color:var(--gold-dark);">{{ '%.3f'|format(total_prod_24) }}</strong> <span style="font-size:10px;color:#c4b5fd;">24K</span></td>
+          <td></td>
+          <td style="text-align:center;"><strong style="color:#f87171;">{{ '%.3f'|format(total_loss_24) }}</strong> <span style="font-size:10px;color:#c4b5fd;">24K</span></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+
+{# ── Top 3 rankings ── #}
+<div class="row g-3">
+  {# أعلى إنتاجاً #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(212,175,55,.12);">
+            <i class="fas fa-trophy" style="color:var(--gold-dark);"></i>
+          </span>{{ t.get('total_produced_label','أعلى إنتاجاً') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:14px;">
+        {% for r in top_by_prod %}
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+                    border-bottom:1px solid rgba(0,0,0,.05);">
+          <div style="width:24px;height:24px;border-radius:50%;
+                      background:{{ 'var(--gold)' if loop.index==1 else 'rgba(212,175,55,.15)' }};
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:11px;font-weight:900;color:{{ '#fff' if loop.index==1 else 'var(--gold-dark)' }};">
+            {{ loop.index }}
+          </div>
+          <div style="flex:1;font-weight:700;font-size:13px;">{{ r.worker.name }}</div>
+          <strong style="color:var(--gold-dark);white-space:nowrap;">{{ '%.2f'|format(r.total_prod) }} {{ t.get('notes','جم') }}</strong>
+        </div>
+        {% else %}
+        <div style="color:var(--text-muted);text-align:center;">{{ t.get('view','لا توجد بيانات') }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# أقل فاقداً (الأفضل) #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(22,163,74,.1);">
+            <i class="fas fa-star" style="color:var(--success);"></i>
+          </span>{{ t.get('total_loss_label','أقل فاقداً') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:14px;">
+        {% for r in top_by_loss if r.count > 0 %}
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+                    border-bottom:1px solid rgba(0,0,0,.05);">
+          <div style="width:24px;height:24px;border-radius:50%;
+                      background:rgba(22,163,74,.15);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:11px;font-weight:900;color:var(--success);">
+            {{ loop.index }}
+          </div>
+          <div style="flex:1;font-weight:700;font-size:13px;">{{ r.worker.name }}</div>
+          <strong style="color:var(--success);white-space:nowrap;">{{ '%.1f'|format(r.loss_pct) }}%</strong>
+        </div>
+        {% else %}
+        <div style="color:var(--text-muted);text-align:center;">{{ t.get('view','لا توجد بيانات') }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# أكثر عمليات #}
+  <div class="col-md-4">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti" style="background:rgba(59,130,246,.1);">
+            <i class="fas fa-tasks" style="color:#3b82f6;"></i>
+          </span>{{ t.get('total_stages','أكثر عمليات') }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:14px;">
+        {% for r in top_by_ops if r.count > 0 %}
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0;
+                    border-bottom:1px solid rgba(0,0,0,.05);">
+          <div style="width:24px;height:24px;border-radius:50%;
+                      background:rgba(59,130,246,.12);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:11px;font-weight:900;color:#3b82f6;">
+            {{ loop.index }}
+          </div>
+          <div style="flex:1;font-weight:700;font-size:13px;">{{ r.worker.name }}</div>
+          <strong style="color:#3b82f6;">{{ r.count }} {{ t.get('stage','مرحلة') }}</strong>
+        </div>
+        {% else %}
+        <div style="color:var(--text-muted);text-align:center;">{{ t.get('view','لا توجد بيانات') }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

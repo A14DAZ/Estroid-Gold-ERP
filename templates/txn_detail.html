@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ txn.op_code or (t.get('sales','بيع') if txn.transaction_type=='OUT' else t.get('purchases','شراء')) }} — {{ t.get('operation_code','تفاصيل العملية') }}{% endblock %}
+
+{% block content %}
+
+{# ── Print Header (hidden on screen, visible on print) ── #}
+{% set print_title = t.get('sales','فاتورة بيع') if txn.transaction_type=='OUT' else t.get('purchases','فاتورة شراء') %}
+{% set print_ref   = txn.op_code or '—' %}
+{% include '_print_header.html' %}
+
+<div class="row justify-content-center" style="margin-top:20px;">
+<div class="col-lg-7">
+
+{# ── Screen page header ── #}
+<div class="page-header no-print">
+  <div>
+    <h4 class="page-title">
+      {% if txn.transaction_type == 'OUT' %}
+        <i class="fas fa-arrow-up" style="color:#f87171;margin-left:10px;"></i>{{ t.get('sales','فاتورة بيع') }}
+      {% else %}
+        <i class="fas fa-arrow-down" style="color:#86efac;margin-left:10px;"></i>{{ t.get('purchases','فاتورة شراء') }}
+      {% endif %}
+    </h4>
+  </div>
+  <div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn-grey btn-sm">
+      <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+    </button>
+    {% if txn.transaction_type == 'OUT' %}
+    <a href="{{ url_for('exports.list_exports') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('sales','المبيعات') }}</a>
+    {% else %}
+    <a href="{{ url_for('exports.list_purchases') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('purchases','المشتريات') }}</a>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Original invoice card — unchanged ── #}
+<div class="gcard" style="border-color:{{ 'rgba(248,113,113,.3)' if txn.transaction_type=='OUT' else 'rgba(134,239,172,.3)' }};">
+  <div class="gcard-body" style="padding:28px;">
+
+    {# Header #}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;
+                padding-bottom:16px;border-bottom:1.5px solid rgba(212,175,55,.15);">
+      <div>
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:4px;">{{ t.get('operation_code','رقم العملية') }}</div>
+        <div style="font-size:28px;font-weight:900;color:var(--gold-dark);letter-spacing:1px;">
+          {{ txn.op_code or '—' }}
+        </div>
+      </div>
+      <div style="text-align:left;">
+        <span class="badge-custom {{ 'badge-red' if txn.transaction_type=='OUT' else 'badge-green' }}"
+              style="font-size:13px;padding:8px 16px;">
+          {{ t.get('sales','بيع') if txn.transaction_type == 'OUT' else t.get('purchases','شراء') }}
+        </span>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">
+          {{ txn.transaction_date.strftime('%Y-%m-%d') if txn.transaction_date else '—' }}
+        </div>
+      </div>
+    </div>
+
+    {# Details table — original layout #}
+    <table style="width:100%;border-collapse:collapse;font-family:'Cairo',sans-serif;">
+      {% macro row(label, value, color='') %}
+      <tr style="border-bottom:1px solid rgba(0,0,0,.05);">
+        <td style="padding:10px 8px;font-size:13px;color:var(--text-muted);font-weight:600;width:40%;">{{ label }}</td>
+        <td style="padding:10px 8px;font-size:14px;font-weight:800;{{ 'color:'+color+';' if color }}">{{ value }}</td>
+      </tr>
+      {% endmacro %}
+
+      {% if txn.product_name %}
+        {{ row(t.get('model_name','المنتج'), txn.product_name) }}
+      {% endif %}
+      {% if txn.product_code %}
+        {{ row(t.get('product_code','الكود'), txn.product_code) }}
+      {% endif %}
+      {{ row(t.get('karat','العيار'), txn.karat|string + 'K') }}
+      {{ row(t.get('weight','الوزن'), '%.4f %s'|format(txn.weight, t.get('grams','جم')), 'var(--gold-dark)') }}
+      {{ row(t.get('net_24k','الصافي 24K'), '%.4f %s'|format(txn.pure_weight or 0, t.get('grams','جم')), '#c4b5fd') }}
+      {% if txn.price_per_gram and txn.price_per_gram > 0 %}
+        {{ row(t.get('price_per_gram','سعر الجرام'), '%.2f %s'|format(txn.price_per_gram, t.sar)) }}
+      {% endif %}
+      {{ row(t.get('total','الإجمالي'), '%.2f %s'|format(txn.total_price or 0, t.sar), 'var(--gold-dark)') }}
+      {% if txn.customer %}
+        {{ row(t.get('customer','العميل / المورد'), txn.customer.name) }}
+      {% endif %}
+      {% if txn.description %}
+        {{ row(t.get('notes','ملاحظات'), txn.description) }}
+      {% endif %}
+    </table>
+
+    {# Footer totals — original layout #}
+    <div style="background:rgba(212,175,55,.06);border-radius:10px;padding:16px 20px;
+                margin-top:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);">{{ t.get('weight','وزن (جم)') }}</div>
+        <div style="font-size:20px;font-weight:900;color:var(--gold-dark);">{{ '%.4f'|format(txn.weight) }}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);">{{ t.get('net_24k','عيار 24K') }}</div>
+        <div style="font-size:20px;font-weight:900;color:#c4b5fd;">{{ '%.4f'|format(txn.pure_weight or 0) }}</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);">{{ t.get('total','الإجمالي') }}</div>
+        <div style="font-size:20px;font-weight:900;color:var(--gold-dark);">{{ '%.2f'|format(txn.total_price or 0) }}</div>
+      </div>
+    </div>
+
+    {# Print-only footer ── #}
+    <div class="print-invoice-only" style="margin-top:28px;padding-top:16px;
+         border-top:1px solid #e5e7eb;text-align:center;">
+      <div style="font-size:13px;color:var(--text-muted);font-weight:600;">
+        {{ t.get('thank_you','شكراً لتعاملكم معنا') }}
+      </div>
+      <div style="font-size:10px;color:#aaa;margin-top:4px;">
+        {{ t.get('print_footer_note','تم إنشاء هذا التقرير بواسطة نظام مصنع الذهب') }}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</div>
+{% endblock %}

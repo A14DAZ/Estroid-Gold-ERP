@@ -1,0 +1,523 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} — {{ t.get('statement','دفتر الحساب') }}{% endblock %}
+
+{% block content %}
+{% set print_title = customer.name + ' — ' + t.get('statement','كشف الحساب') %}
+{% set print_ref = customer.code or '' %}
+{% include '_print_header.html' %}
+
+
+<div class="page-header" style="align-items:flex-start;flex-wrap:wrap;gap:14px;">
+  <div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="width:52px;height:52px;border-radius:50%;
+                  background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:22px;color:var(--black);font-weight:900;flex-shrink:0;">
+        {{ customer.name[0] | upper }}
+      </div>
+      <div>
+        <h4 class="page-title" style="margin:0;">
+          {{ customer.name }}
+          <span class="badge-custom {{ 'badge-blue' if customer.type=='client' else 'badge-gold' }}"
+                style="font-size:11px;margin-right:8px;vertical-align:middle;">
+            {{ t.get('client','عميل') if customer.type=='client' else t.get('supplier','مورد') }}
+          </span>
+        </h4>
+        {% if customer.phone %}
+        <div style="color:var(--text-muted);font-size:13px;direction:ltr;text-align:right;margin-top:2px;">
+          <i class="fas fa-phone" style="margin-left:5px;color:var(--gold-dark);"></i>{{ customer.phone }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button onclick="window.print()" class="btn-grey btn-sm no-print">
+      <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+    </button>
+    <a href="{{ url_for('customers.edit_customer', cid=customer.id) }}" class="btn-grey btn-sm">
+      <i class="fas fa-edit"></i>{{ t.get('edit','تعديل') }}</a>
+    <a href="{{ url_for('customers.list_customers') }}" class="btn-grey btn-sm">
+      <i class="fas fa-arrow-right"></i>{{ t.get('customers','العملاء') }}
+    </a>
+  </div>
+</div>
+
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#bbf7d0;">
+      <div class="stat-icon ic-green"><i class="fas fa-arrow-down"></i></div>
+      <div class="stat-value" style="color:#86efac;font-size:20px;">{{ '%.4f'|format(total_in_pure24) }}</div>
+      <div class="stat-label">{{ t.get('total_recv','إجمالي الوارد (24K)') }}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">{{ '%.3f'|format(total_in_weight) }} {{ t.get('grams','جم') }} — {{ txns_in|length }} {{ t.get('description','حركة') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fecaca;">
+      <div class="stat-icon ic-red"><i class="fas fa-arrow-up"></i></div>
+      <div class="stat-value" style="color:#f87171;font-size:20px;">{{ '%.4f'|format(total_out_pure24) }}</div>
+      <div class="stat-label">{{ t.get('total_sent','إجمالي الصادر (24K)') }}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">{{ '%.3f'|format(total_out_weight) }} {{ t.get('grams','جم') }} — {{ txns_out|length }} {{ t.get('description','حركة') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card" style="border-color:#fde68a;">
+      <div class="stat-icon" style="background:rgba(251,191,36,.12);"><i class="fas fa-undo" style="color:#f59e0b;"></i></div>
+      <div class="stat-value" style="color:#d97706;font-size:20px;">{{ '%.4f'|format(total_ret_pure24) }}</div>
+      <div class="stat-label">{{ t.get('total_ret','إجمالي الرجيع (24K)') }}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">{{ '%.3f'|format(total_ret_weight) }} {{ t.get('grams','جم') }} — {{ txns_returns|length }} {{ t.get('returns','رجيع') }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card"
+         style="border-color:{{ '#bbf7d0' if net_balance >= 0 else '#fecaca' }};">
+      <div class="stat-icon {{ 'ic-green' if net_balance >= 0 else 'ic-red' }}">
+        <i class="fas fa-balance-scale"></i>
+      </div>
+      <div class="stat-value"
+           style="color:{{ 'var(--success)' if net_balance >= 0 else 'var(--danger)' }};font-size:20px;">
+        {{ '%+.4f'|format(net_balance) }}
+      </div>
+      <div class="stat-label">{{ t.get('balance','صافي الرصيد (24K)') }}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">
+        {{ t.get('total_recv','وارد') }} + {{ t.get('returns','رجيع') }} − {{ t.get('total_sent','صادر') }} | {{ (txns_in|length)+(txns_out|length)+(txns_returns|length) }} معاملة
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid rgba(212,175,55,.2);">
+  {% for t_id, t_label, t_icon in [
+      ('statement', t.get('statement','كشف الحساب'),  'fa-list'),
+      ('returns',   t.get('returns','الرجيع'),       'fa-undo'),
+      ('analysis',  t.get('karat_analysis','تحليل حسب العيار'), 'fa-chart-bar')
+  ] %}
+  <a href="{{ url_for('customers.customer_profile', cid=customer.id, tab=t_id) }}"
+     style="padding:10px 22px;font-size:13px;font-weight:700;text-decoration:none;
+            border-bottom:3px solid {{ 'var(--gold)' if tab==t_id else 'transparent' }};
+            color:{{ 'var(--gold-dark)' if tab==t_id else 'var(--text-muted)' }};
+            margin-bottom:-2px;transition:all .15s;">
+    <i class="fas {{ t_icon }}" style="margin-left:5px;"></i>{{ t_label }}
+  </a>
+  {% endfor %}
+</div>
+<div style="margin-top:20px;"></div>
+
+
+{% if tab == 'statement' %}
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti" style="background:rgba(134,239,172,.12);">
+        <i class="fas fa-arrow-down" style="color:#86efac;"></i>
+      </span>
+      {{ t.get('incoming','الوارد — ذهب مستلم') }}
+    </div>
+    <span class="badge-custom badge-green" style="font-size:12px;">{{ txns_in|length }} {{ t.get('description','حركة') }}</span>
+  </div>
+
+  {% if txns_in %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(134,239,172,.06);">
+        <tr>
+          <th>{{ t.get('date','التاريخ') }}</th>
+          <th>{{ t.get('weight','الوزن') }}</th>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('net_24k','الوزن الصافي (24K)') }}</th>
+          <th>{{ t.get('notes','ملاحظات') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in txns_in %}
+        {% set fw = txn.pure_weight if (txn.pure_weight and txn.pure_weight > 0)
+                    else (txn.weight * txn.karat / 24) %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12.5px;white-space:nowrap;">
+            {{ txn.transaction_date }}
+          </td>
+          <td>
+            <strong style="color:#86efac;font-size:14px;">{{ '%.3f'|format(txn.weight) }}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td><span class="karat-badge">{{ txn.karat }}K</span></td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.4f'|format(fw) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ txn.description or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(134,239,172,.08);border-top:2px solid rgba(134,239,172,.4);">
+        <tr>
+          <td style="font-weight:800;color:#86efac;">{{ t.get('total','الإجمالي') }}</td>
+          <td style="font-weight:900;color:#86efac;">{{ '%.3f'|format(total_in_weight) }} {{ t.get('grams','جم') }}</td>
+          <td></td>
+          <td style="font-weight:900;color:var(--gold);">{{ '%.4f'|format(total_in_pure24) }} {{ t.get('grams','جم') }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:32px;color:var(--text-muted);">
+    <i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:10px;opacity:.2;"></i>
+    {{ t.get('incoming','لا توجد حركات وارد.') }}
+  </div>
+  {% endif %}
+</div>
+
+
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti" style="background:rgba(248,113,113,.1);">
+        <i class="fas fa-arrow-up" style="color:#f87171;"></i>
+      </span>
+      {{ t.get('outgoing','الصادر — منتجات مباعة') }}
+    </div>
+    <span class="badge-custom badge-red" style="font-size:12px;">{{ txns_out|length }} {{ t.get('description','حركة') }}</span>
+  </div>
+
+  {% if txns_out %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(248,113,113,.06);">
+        <tr>
+          <th>{{ t.get('date','التاريخ') }}</th>
+          <th>{{ t.get('product_name','اسم المنتج') }}</th>
+          <th>{{ t.get('product_code','كود المنتج') }}</th>
+          <th>{{ t.get('weight','الوزن') }}</th>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th style="color:var(--gold-dark);">{{ t.get('net_24k','الوزن الصافي (24K)') }}</th>
+          <th>{{ t.get('price_per_gram','سعر الجرام') }}</th>
+          <th style="color:var(--gold);">{{ t.get('labor_total','إجمالي الأجرة') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for txn in txns_out %}
+        {% set fw = txn.pure_weight if (txn.pure_weight and txn.pure_weight > 0)
+                    else (txn.weight * txn.karat / 24) %}
+        {# total_wage = weight × price_per_gram (no labor field) #}
+        {% set wage = txn.total_price if txn.total_price else (txn.weight * txn.price_per_gram) %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12.5px;white-space:nowrap;">
+            {{ txn.transaction_date }}
+          </td>
+          <td>
+            {% if txn.product_name %}
+              <strong>{{ txn.product_name }}</strong>
+            {% else %}
+              <span style="color:var(--text-muted);">{{ txn.description or '—' }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if txn.product_code %}
+              <code style="font-size:11px;color:var(--text-muted);">{{ txn.product_code }}</code>
+            {% else %}—{% endif %}
+          </td>
+          <td>
+            <strong style="color:#f87171;font-size:14px;">{{ '%.3f'|format(txn.weight) }}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td><span class="karat-badge">{{ txn.karat }}K</span></td>
+          <td>
+            <strong style="color:var(--gold-dark);">{{ '%.4f'|format(fw) }}</strong>
+            <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
+          </td>
+          <td style="color:var(--text-muted);">
+            {{ '%.2f'|format(txn.price_per_gram) }} ر.س
+          </td>
+          <td>
+            <strong style="color:var(--gold);font-size:14px;">{{ '%.2f'|format(wage) }}</strong>
+            <span style="font-size:11px;color:var(--text-muted);">{{ t.get('sar','ر.س') }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.06);border-top:2px solid rgba(212,175,55,.3);">
+        <tr>
+          <td colspan="3" style="font-weight:800;color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
+          <td style="font-weight:900;color:#f87171;">{{ '%.3f'|format(total_out_weight) }} {{ t.get('grams','جم') }}</td>
+          <td></td>
+          <td style="font-weight:900;color:var(--gold);">{{ '%.4f'|format(total_out_pure24) }} {{ t.get('grams','جم') }}</td>
+          <td></td>
+          <td style="font-weight:900;color:var(--gold);font-size:15px;">{{ '%.2f'|format(total_wages) }} ر.س</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:32px;color:var(--text-muted);">
+    <i class="fas fa-box-open" style="font-size:28px;display:block;margin-bottom:10px;opacity:.2;"></i>
+    {{ t.get('sales','لا توجد مبيعات.') }}
+  </div>
+  {% endif %}
+</div>
+
+{% endif %}{# end statement #}
+
+
+{% if tab == 'returns' %}
+
+{# Add return form #}
+<div class="gcard mb-4">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti" style="background:rgba(251,191,36,.12);">
+        <i class="fas fa-undo" style="color:#d97706;"></i>
+      </span>{{ t.get('return_add','تسجيل رجيع جديد') }}</div>
+  </div>
+  <div class="gcard-body">
+    {% if not prior_sales %}
+    <div style="background:rgba(248,113,113,.08);border:1.5px solid rgba(248,113,113,.3);
+                border-radius:10px;padding:16px 20px;color:#f87171;font-weight:700;">
+      <i class="fas fa-ban" style="margin-left:8px;"></i>
+      {{ t.get('return_add','لا يمكن تسجيل رجيع') }}
+    </div>
+    {% elif allowed_return <= 0 %}
+    <div style="background:rgba(248,113,113,.08);border:1.5px solid rgba(248,113,113,.3);
+                border-radius:10px;padding:16px 20px;color:#f87171;font-weight:700;">
+      <i class="fas fa-ban" style="margin-left:8px;"></i>
+      {{ t.get('balanced','تم استرداد كامل الكمية') }}
+      <div style="font-size:12px;font-weight:500;margin-top:6px;">
+        {{ t.get('total_sent','إجمالي الصادر') }}: {{ '%.3f'|format(total_out_weight) }} {{ t.get('grams','جم') }} |
+        {{ t.get('total_ret','إجمالي المُرجَّع') }}: {{ '%.3f'|format(total_ret_weight) }} {{ t.get('grams','جم') }}
+      </div>
+    </div>
+    {% else %}
+    <div style="background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.2);
+                border-radius:9px;padding:10px 16px;margin-bottom:14px;font-size:13px;">
+      <i class="fas fa-info-circle" style="color:var(--success);margin-left:6px;"></i>
+      {{ t.get('allowed_return','المتاح للرجيع') }}:
+      <strong style="color:var(--success);font-size:16px;margin-right:6px;">
+        {{ '%.3f'|format(allowed_return) }} {{ t.get('grams','جم') }}
+      </strong>
+      ({{ t.get('total_sent','إجمالي الصادر') }}: {{ '%.3f'|format(total_out_weight) }} {{ t.get('grams','جم') }} —
+       المُرجَّع: {{ '%.3f'|format(total_ret_weight) }}{{ t.get('grams','جم') }}
+    </div>
+    <form method="POST" action="{{ url_for('customers.add_return', cid=customer.id) }}">
+      <div class="row g-3 mb-3">
+        <div class="col-md-12">
+          <label class="form-label-custom">{{ t.get('ref_sale','اختر عملية البيع المرجعية *') }}</label>
+          <select name="ref_txn_id" id="ref_txn_sel" class="form-select-custom"
+                  onchange="fillReturnFromSale(this)">
+            <option value="">— {{ t.get('ref_sale','اختر عملية بيع') }} —</option>
+            {% for s in prior_sales %}
+            <option value="{{ s.id }}"
+                    data-weight="{{ s.weight }}"
+                    data-karat="{{ s.karat }}"
+                    data-name="{{ s.product_name or '' }}"
+                    data-code="{{ s.product_code or '' }}"
+                    data-opcode="{{ s.op_code or '' }}">
+              {{ s.op_code or '#'+s.id|string }} —
+              {{ s.product_name or 'ذهب' }}
+              ({{ '%.3f'|format(s.weight) }}{{ t.get('grams','جم') }} @ {{ s.karat }}K)
+              — {{ s.transaction_date }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label-custom">{{ t.get('weight','الوزن المرجَّع *') }}</label>
+          <input type="number" name="ret_weight" id="ret_weight"
+                 class="form-control-custom" step="0.001" min="0"
+                 placeholder="0.000" required/>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;" id="ret_max_hint"></div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label-custom">{{ t.get('karat','العيار') }}</label>
+          <select name="ret_karat" id="ret_karat" class="form-select-custom">
+            {% for k in karats %}
+            <option value="{{ k }}" {{ 'selected' if k==18 }}>{{ k }}K</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-custom">{{ t.get('product_name','اسم المنتج') }}</label>
+          <input type="text" name="ret_product_name" id="ret_product_name"
+                 class="form-control-custom" readonly
+                 style="background:#f8fafc;color:var(--text-muted);"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label-custom">{{ t.get('date','التاريخ') }}</label>
+          <input type="date" name="ret_date" class="form-control-custom" value="{{ today }}"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label-custom">{{ t.get('notes','ملاحظات') }}</label>
+          <input type="text" name="ret_description" class="form-control-custom"/>
+        </div>
+        <input type="hidden" name="ret_product_code" id="ret_product_code"/>
+      </div>
+      <div class="mt-3">
+        <button type="submit" class="btn-gold">
+          <i class="fas fa-undo"></i>{{ t.get('return_add','تسجيل الرجيع وإضافة للمخزون') }}</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{# Returns table #}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti" style="background:rgba(251,191,36,.12);">
+        <i class="fas fa-history" style="color:#d97706;"></i>
+      </span>{{ t.get('returns','سجل الرجيع') }}</div>
+    <span class="badge-custom" style="background:rgba(251,191,36,.15);color:#d97706;">
+      {{ txns_returns|length }} {{ t.get('returns','رجيع') }}
+    </span>
+  </div>
+  {% if txns_returns %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover table-striped mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(251,191,36,.07);">
+        <tr>
+          <th>{{ t.get('operation_code','رقم العملية') }}</th>
+          <th>{{ t.get('date','التاريخ') }}</th>
+          <th>{{ t.get('model_name','المنتج') }}</th>
+          <th>{{ t.get('weight','الوزن') }}</th>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th>{{ t.get('net_24k','الصافي 24K') }}</th>
+          <th>{{ t.get('notes','ملاحظات') }}</th>
+          <th class="no-print">{{ t.get('print','طباعة') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in txns_returns %}
+        <tr>
+          <td><span style="font-family:monospace;font-weight:800;color:#d97706;">{{ r.op_code or '—' }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ r.transaction_date }}</td>
+          <td>
+            {% if r.product_name %}<strong>{{ r.product_name }}</strong>{% else %}—{% endif %}
+            {% if r.product_code %}<br/><code style="font-size:10px;">{{ r.product_code }}</code>{% endif %}
+          </td>
+          <td><strong>{{ '%.3f'|format(r.weight) }}</strong>{{ t.get('grams','جم') }}</td>
+          <td><span class="karat-badge">{{ r.karat }}K</span></td>
+          <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(r.pure_weight or (r.weight * r.karat / 24)) }} {{ t.get('grams','جم') }}</td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ r.description or '—' }}</td>
+          <td class="no-print">
+            <a href="{{ url_for('exports.txn_detail', tid=r.id) }}"
+               class="btn-grey btn-xs" style="font-size:11px;" target="_blank">
+              <i class="fas fa-print"></i> {{ t.get('print','طباعة') }}
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(251,191,36,.05);border-top:2px solid rgba(251,191,36,.2);font-weight:900;">
+        <tr>
+          <td colspan="2" style="color:#d97706;">{{ t.get('total','الإجمالي') }}</td>
+          <td><strong>{{ '%.3f'|format(total_ret_weight) }}</strong>{{ t.get('grams','جم') }}</td>
+          <td></td>
+          <td style="color:#c4b5fd;"><strong>{{ '%.4f'|format(total_ret_pure24) }}</strong>{{ t.get('grams','جم') }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:36px;color:var(--text-muted);">
+    <i class="fas fa-undo" style="font-size:32px;display:block;margin-bottom:12px;opacity:.2;"></i>
+    {{ t.get('returns','لا توجد معاملات رجيع.') }}
+  </div>
+  {% endif %}
+</div>
+{% endif %}{# end returns #}
+
+
+{% if tab == 'analysis' %}
+<div class="gcard">
+  <div class="gcard-header">
+    <div class="gcard-title">
+      <span class="ti"><i class="fas fa-chart-bar"></i></span>{{ t.get('karat_analysis','تحليل حسب العيار') }}</div>
+  </div>
+  {% if karat_analysis %}
+  <div style="overflow-x:auto;">
+    <table class="table table-hover mb-0" style="font-family:'Cairo',sans-serif;">
+      <thead style="background:rgba(212,175,55,.06);">
+        <tr>
+          <th>{{ t.get('karat','العيار') }}</th>
+          <th style="color:#86efac;">{{ t.get('pure_in','وارد (24K)') }}</th>
+          <th style="color:#f87171;">{{ t.get('pure_out','صادر (24K)') }}</th>
+          <th style="color:#f59e0b;">{{ t.get('total_ret','رجيع (24K)') }}</th>
+          <th>{{ t.get('net_24k','صافي (24K)') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in karat_analysis %}
+        <tr>
+          <td><span class="karat-badge" style="font-size:14px;">{{ g.karat }}K</span></td>
+          <td><strong style="color:#86efac;">{{ '%.4f'|format(g.in_24) }}</strong></td>
+          <td><strong style="color:#f87171;">{{ '%.4f'|format(g.out_24) }}</strong></td>
+          <td><strong style="color:#f59e0b;">{{ '%.4f'|format(g.ret_24) }}</strong></td>
+          <td>
+            <strong style="color:{{ 'var(--success)' if g.net >= 0 else 'var(--danger)' }};">
+              {{ '%+.4f'|format(g.net) }}
+            </strong>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot style="background:rgba(212,175,55,.05);border-top:2px solid rgba(212,175,55,.2);font-weight:900;">
+        <tr>
+          <td style="color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
+          <td style="color:#86efac;">{{ '%.4f'|format(total_in_pure24) }}</td>
+          <td style="color:#f87171;">{{ '%.4f'|format(total_out_pure24) }}</td>
+          <td style="color:#f59e0b;">{{ '%.4f'|format(total_ret_pure24) }}</td>
+          <td style="color:{{ 'var(--success)' if net_balance >= 0 else 'var(--danger)' }};">
+            {{ '%+.4f'|format(net_balance) }}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="gcard-body" style="text-align:center;padding:36px;color:var(--text-muted);">
+    {{ t.get('view','لا توجد معاملات.') }}
+  </div>
+  {% endif %}
+</div>
+{% endif %}{# end analysis #}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillReturnFromSale(sel) {
+  const opt    = sel.options[sel.selectedIndex];
+  const weight = opt.getAttribute('data-weight') || '0';
+  const karat  = opt.getAttribute('data-karat')  || '18';
+  const name   = opt.getAttribute('data-name')   || '';
+  const code   = opt.getAttribute('data-code')   || '';
+
+  // Auto-fill karat
+  const karatSel = document.getElementById('ret_karat');
+  if (karatSel) {
+    for (let i = 0; i < karatSel.options.length; i++) {
+      if (karatSel.options[i].value == karat) { karatSel.selectedIndex = i; break; }
+    }
+  }
+  // Auto-fill product
+  const nameEl = document.getElementById('ret_product_name');
+  const codeEl = document.getElementById('ret_product_code');
+  if (nameEl) nameEl.value = name;
+  if (codeEl) codeEl.value = code;
+
+  // Max weight hint
+  const hint   = document.getElementById('ret_max_hint');
+  const wInput = document.getElementById('ret_weight');
+  if (parseFloat(weight) > 0) {
+    if (hint)   hint.textContent = window._T.max_label + ': ' + parseFloat(weight).toFixed(3) + ' ' + window._T.grams;
+    if (wInput) wInput.max = weight;
+  }
+}
+</script>
+{% endblock %}

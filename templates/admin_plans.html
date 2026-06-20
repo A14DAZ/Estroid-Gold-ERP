@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('plans','الباقات') }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title"><i class="fas fa-boxes" style="color:var(--gold);margin-left:10px;"></i>{{ t.get('plans','باقات الاشتراك') }}</h4>
+  <a href="{{ url_for('admin.subscriptions') }}" class="btn-grey btn-sm"><i class="fas fa-arrow-right"></i> {{ t.back }}</a>
+</div>
+<div class="row g-4">
+  {% for plan in plans %}
+  <div class="col-md-4">
+    <div class="gcard" style="border-color:{{ 'var(--gold-border)' if plan.slug=='enterprise' else ('rgba(59,130,246,.3)' if plan.slug=='pro' else 'var(--border)') }};">
+      <div class="gcard-header" style="background:{{ 'rgba(212,175,55,.06)' if plan.slug=='enterprise' else '' }};">
+        <div class="gcard-title">
+          {{ '🥇' if plan.slug=='enterprise' else ('🥈' if plan.slug=='pro' else '🥉') }}
+          {{ plan.name }}
+        </div>
+      </div>
+      <div class="gcard-body" style="padding:20px;">
+        <div style="font-size:28px;font-weight:900;color:var(--gold-dark);margin-bottom:4px;">
+          {{ '%.0f'|format(plan.price_month) }} <span style="font-size:13px;color:var(--text-muted);">{{ t.sar }}/{{ t.get('month','شهر') }}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+          {{ '%.0f'|format(plan.price_year) }} {{ t.sar }}/{{ t.get('year','سنة') }}
+        </div>
+        <div style="font-size:12.5px;color:var(--text-muted);line-height:2;">
+          <div><i class="fas fa-users" style="color:var(--gold);margin-left:6px;"></i> {{ (plan.max_workers|string + ' ' + t.get('employees_count','موظف')) if plan.max_workers else '∞ ' + t.get('employees_count','موظف') }}</div>
+          <div><i class="fas fa-clipboard-list" style="color:var(--gold);margin-left:6px;"></i> {{ (plan.max_orders|string + ' ' + t.work_orders) if plan.max_orders else '∞ ' + t.work_orders }}</div>
+        </div>
+        {% if current_user.is_superadmin %}
+        <details style="margin-top:14px;">
+          <summary class="btn-grey btn-sm" style="cursor:pointer;list-style:none;width:100%;text-align:center;">
+            <i class="fas fa-edit"></i> {{ t.get('edit','تعديل') }}
+          </summary>
+          <form method="POST" action="{{ url_for('admin.save_plan') }}" style="margin-top:12px;">
+            <input type="hidden" name="plan_id" value="{{ plan.id }}"/>
+            <input type="hidden" name="slug" value="{{ plan.slug }}"/>
+            <div class="mb-2"><label class="form-label-custom">{{ t.get('plan_name','اسم الباقة') }}</label>
+              <input name="name" class="form-control-custom" value="{{ plan.name }}" style="padding:8px;font-size:13px;"/></div>
+            <div class="row g-2 mb-2">
+              <div class="col-6"><label class="form-label-custom">{{ t.get('price_month','سعر/شهر') }}</label>
+                <input name="price_month" type="number" class="form-control-custom" value="{{ plan.price_month }}" style="padding:8px;font-size:13px;"/></div>
+              <div class="col-6"><label class="form-label-custom">{{ t.get('price_year','سعر/سنة') }}</label>
+                <input name="price_year" type="number" class="form-control-custom" value="{{ plan.price_year }}" style="padding:8px;font-size:13px;"/></div>
+            </div>
+            <button class="btn-gold btn-full" style="padding:8px;font-size:12px;"><i class="fas fa-save"></i> {{ t.save }}</button>
+          </form>
+        </details>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

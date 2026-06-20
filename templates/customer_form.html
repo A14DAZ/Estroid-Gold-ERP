@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ t.add_customer if not customer else t.edit }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h4 class="page-title">
+    {{ t.add_customer if not customer else t.edit ~ ' — ' ~ customer.name }}
+  </h4>
+  <a href="{{ url_for('customers.list_customers') }}" class="btn-grey btn-sm">
+    <i class="fas fa-arrow-{{ 'right' if dir=='rtl' else 'left' }}"></i> {{ t.back }}
+  </a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="gcard">
+      <div class="gcard-header">
+        <div class="gcard-title">
+          <span class="ti"><i class="fas fa-user-{{ 'plus' if not customer else 'edit' }}"></i></span>
+          {{ t.add_customer if not customer else t.edit }}
+        </div>
+      </div>
+      <div class="gcard-body">
+        <form method="POST"
+              action="{{ url_for('customers.edit_customer', cid=customer.id) if customer else url_for('customers.create_customer') }}">
+          <div class="row g-3">
+            {# Row 1: code (2) + name (6) + phone (4) #}
+            <div class="col-md-2">
+              {% if not customer %}
+              <label class="form-label-custom">{{ t.get('customer_code','كود العميل') }}</label>
+              <input type="text" class="form-control-custom" value="{{ next_code }}"
+                     readonly style="background:#f8fafc;font-family:monospace;
+                     font-weight:800;color:var(--gold-dark);letter-spacing:1px;
+                     text-align:center;"/>
+              {% else %}
+              <label class="form-label-custom">{{ t.get('customer_code','الكود') }}</label>
+              <input type="text" class="form-control-custom"
+                     value="{{ customer.code or '—' }}"
+                     readonly style="background:#f8fafc;font-family:monospace;
+                     font-weight:800;color:var(--gold-dark);text-align:center;"/>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label-custom">{{ t.customer_name }} *</label>
+              <input type="text" name="name" class="form-control-custom" required
+                     value="{{ customer.name if customer else '' }}"
+                     placeholder="{{ t.get('full_name','الاسم الكامل') }}"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label-custom">{{ t.phone }}</label>
+              <input type="text" name="phone" class="form-control-custom"
+                     value="{{ customer.phone if customer else '' }}"
+                     placeholder="05XXXXXXXX" style="direction:ltr;"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label-custom">{{ t.notes }}</label>
+              <textarea name="notes" class="form-control-custom" rows="2">{{ customer.notes if customer else '' }}</textarea>
+            </div>
+            <div class="col-12">
+              <hr class="gold-divider"/>
+              <button type="submit" class="btn-gold btn-full" style="padding:12px;font-size:14px;">
+                <i class="fas fa-save"></i> {{ t.save }}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
