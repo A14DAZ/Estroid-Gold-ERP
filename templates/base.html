@@ -38,12 +38,11 @@
 <!-- ── Sidebar ───────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    {# Platform logo — always use sidebar-logo div to keep golden background #}
+    {# Platform logo — keep golden background, show logo on top #}
     {% if platform_logo %}
-    <div class="sidebar-logo" style="padding:0;overflow:hidden;">
+    <div class="sidebar-logo" style="padding:4px;overflow:hidden;">
       <img src="{{ platform_logo }}" alt="logo"
-           style="width:42px;height:42px;object-fit:contain;
-                  mix-blend-mode:multiply;"/>
+           style="width:44px;height:44px;object-fit:contain;border-radius:8px;"/>
     </div>
     {% else %}
     <div class="sidebar-logo"><i class="fas fa-ring"></i></div>

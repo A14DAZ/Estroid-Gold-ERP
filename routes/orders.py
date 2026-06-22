@@ -502,6 +502,18 @@ def add_stage(order_id):
     stage_list    = STAGE_NAMES_AR if lang == 'ar' else STAGE_NAMES_EN
     setting_stage = SETTING_STAGE_AR if lang == 'ar' else SETTING_STAGE_EN
 
+    # ── BLOCK if there's already an in_progress stage ─────────────────
+    active_stage = ProductionStage.query.filter_by(
+        work_order_id=order.id, status='in_progress'
+    ).first()
+    if active_stage:
+        flash(
+            f'{"لا يمكن إنشاء مرحلة جديدة — يجب إكمال مرحلة" if lang=="ar" else "Cannot create new stage — complete stage"} '
+            f'"{active_stage.stage_name}" {"أولاً." if lang=="ar" else "first."}',
+            'danger'
+        )
+        return redirect(url_for('orders.order_detail', order_id=order.id))
+
     # ── Determine locked received_weight ─────────────────────────────
     last_stage = ProductionStage.query.filter_by(
         work_order_id=order.id, status='completed'

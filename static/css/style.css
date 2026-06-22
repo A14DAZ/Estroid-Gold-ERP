@@ -872,9 +872,14 @@ html[dir="rtl"] .nav-sub { padding:0 38px 0 0; }
   --grey-bg:     #0f1117;
   --grey-border: rgba(255,255,255,.07);
   --text-dark:   #e2e8f0;
-  --text-muted:  #64748b;
-  --text-light:  #94a3b8;
+  --text-muted:  #94a3b8;
+  --text-light:  #64748b;
 }
+/* Body text in dark mode = white */
+[data-theme="dark"] body {
+  color: #e2e8f0 !important;
+}
+/* removed: color inherit broke icon colors */
 [data-theme="dark"] body {
   background: #0f1117 !important;
   color: #e2e8f0 !important;
@@ -1217,3 +1222,317 @@ html[dir="rtl"] .nav-sub { padding:0 38px 0 0; }
   background: #1a1d21 !important;
   border-color: rgba(212,175,55,.15) !important;
 }
+
+/* ── DARK MODE — fix black text that disappears ──────────── */
+[data-theme="dark"] [style*="color:#212529"],
+[data-theme="dark"] [style*="color: #212529"],
+[data-theme="dark"] [style*="color:#1a1a1a"],
+[data-theme="dark"] [style*="color: #1a1a1a"],
+[data-theme="dark"] [style*="color:#000"],
+[data-theme="dark"] [style*="color: #000"] {
+  color: #e2e8f0 !important;
+}
+
+/* Stat values and labels — ensure visible */
+[data-theme="dark"] .stat-value { color: #f1f5f9 !important; }
+[data-theme="dark"] .stat-label { color: #94a3b8 !important; }
+
+/* Dashboard cards content */
+[data-theme="dark"] .gcard-body p,
+[data-theme="dark"] .gcard-body span,
+[data-theme="dark"] .gcard-body div,
+[data-theme="dark"] .gcard-body label,
+[data-theme="dark"] .gcard-body strong {
+  color: #e2e8f0;
+}
+
+/* Keep colored values (gold/red/green/blue/purple) as-is — only fix black */
+[data-theme="dark"] [style*="color:var(--gold"],
+[data-theme="dark"] [style*="color:#f87171"],
+[data-theme="dark"] [style*="color:#86efac"],
+[data-theme="dark"] [style*="color:#22c55e"],
+[data-theme="dark"] [style*="color:#c4b5fd"],
+[data-theme="dark"] [style*="color:#1d4ed8"],
+[data-theme="dark"] [style*="color:#7e22ce"],
+[data-theme="dark"] [style*="color:#d97706"],
+[data-theme="dark"] [style*="color:#ef4444"],
+[data-theme="dark"] [style*="color:#9333ea"] {
+  /* keep brand colors unchanged */
+  opacity: 1;
+}
+
+/* Text muted - ensure readable in dark */
+[data-theme="dark"] .text-muted { color: #64748b !important; }
+[data-theme="dark"] small { color: #64748b !important; }
+
+/* Page body text */
+[data-theme="dark"] .page-body { color: #e2e8f0; }
+
+/* ── Fix: sidebar always dark — brand name always visible ─── */
+.sidebar-brand-name {
+  color: var(--gold-light) !important;
+}
+.sidebar-brand-sub {
+  color: #94a3b8 !important;
+}
+/* Dark mode — ensure sidebar text stays visible */
+[data-theme="dark"] .sidebar-brand-name { color: #F0D060 !important; }
+[data-theme="dark"] .sidebar-brand-sub  { color: #94a3b8 !important; }
+
+/* ── Fix: factory dashboard black text in dark mode ────────── */
+[data-theme="dark"] .factory-chip {
+  color: #D4AF37 !important;
+  background: rgba(212,175,55,.12) !important;
+}
+/* Sidebar date display */
+[data-theme="dark"] .topbar-date,
+[data-theme="dark"] span[style*="color:var(--text-light)"] {
+  color: #64748b !important;
+}
+/* Dashboard inline dark texts */
+[data-theme="dark"] [style*="color:#475569"],
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color:#64748b"],
+[data-theme="dark"] [style*="color:#6b7280"] {
+  color: #94a3b8 !important;
+}
+/* Report section headings */
+[data-theme="dark"] [style*="color:#374151"],
+[data-theme="dark"] [style*="color: #374151"] {
+  color: #e2e8f0 !important;
+}
+
+/* ── WhatsApp button: add bottom padding to page so it doesn't cover content ─ */
+.content-area,
+.page-body {
+  padding-bottom: 80px;
+}
+@media print {
+  .content-area, .page-body { padding-bottom: 0; }
+}
+
+/* ── Ensure sidebar brand text ALWAYS visible (sidebar is always dark) ─ */
+.sidebar .sidebar-brand-name,
+aside.sidebar .sidebar-brand-name {
+  color: #F0D060 !important;
+}
+.sidebar .sidebar-brand-sub,
+aside.sidebar .sidebar-brand-sub {
+  color: #94a3b8 !important;
+}
+
+/* ── DARK MODE — comprehensive text fix for dashboard cards ─ */
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .gcard {
+  color: #e2e8f0;
+}
+/* removed: color inherit broke icons */
+/* But keep specific brand colors */
+[data-theme="dark"] [style*="color:#f87171"] { color: #f87171 !important; }
+[data-theme="dark"] [style*="color:#86efac"] { color: #86efac !important; }
+[data-theme="dark"] [style*="color:#1d4ed8"] { color: #60a5fa !important; }
+[data-theme="dark"] [style*="color:#7e22ce"] { color: #c084fc !important; }
+[data-theme="dark"] [style*="color:#22c55e"] { color: #4ade80 !important; }
+[data-theme="dark"] [style*="color:#d97706"] { color: #fbbf24 !important; }
+[data-theme="dark"] [style*="color:#dc2626"] { color: #f87171 !important; }
+[data-theme="dark"] [style*="color:#16a34a"] { color: #4ade80 !important; }
+[data-theme="dark"] [style*="color:#9333ea"] { color: #c084fc !important; }
+[data-theme="dark"] [style*="color:#fff"]    { color: #ffffff !important; }
+[data-theme="dark"] [style*="color:white"]   { color: #ffffff !important; }
+/* Gold stays gold */
+[data-theme="dark"] [style*="color:var(--gold"] { color: var(--gold) !important; }
+[data-theme="dark"] [style*="color:#D4AF37"]  { color: #D4AF37 !important; }
+[data-theme="dark"] [style*="color:#c8a84b"]  { color: #c8a84b !important; }
+[data-theme="dark"] [style*="color:#A8892A"]  { color: #D4AF37 !important; }
+
+/* ── LIGHT MODE — keep cards white with dark text ────────── */
+/* (this is default behavior, no overrides needed) */
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — Complete text color fix
+   Covers ALL inline color values found in templates
+═══════════════════════════════════════════════════════════ */
+
+/* Invisible dark text → white */
+[data-theme="dark"] [style*="color:#212529"],
+[data-theme="dark"] [style*="color: #212529"],
+[data-theme="dark"] [style*="color:#1a1a1a"],
+[data-theme="dark"] [style*="color: #1a1a1a"],
+[data-theme="dark"] [style*="color:#1f2937"],
+[data-theme="dark"] [style*="color:#111827"],
+[data-theme="dark"] [style*="color:#374151"],
+[data-theme="dark"] [style*="color:#0f172a"] {
+  color: #e2e8f0 !important;
+}
+
+/* Dark muted text → readable gray */
+[data-theme="dark"] [style*="color:#555"],
+[data-theme="dark"] [style*="color: #555"],
+[data-theme="dark"] [style*="color:#666"],
+[data-theme="dark"] [style*="color: #666"],
+[data-theme="dark"] [style*="color:#777"],
+[data-theme="dark"] [style*="color:#888"],
+[data-theme="dark"] [style*="color: #888"],
+[data-theme="dark"] [style*="color:#999"],
+[data-theme="dark"] [style*="color: #999"],
+[data-theme="dark"] [style*="color:#aaa"],
+[data-theme="dark"] [style*="color: #aaa"],
+[data-theme="dark"] [style*="color:#475569"],
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color:#64748b"],
+[data-theme="dark"] [style*="color: #64748b"],
+[data-theme="dark"] [style*="color:#6b7280"],
+[data-theme="dark"] [style*="color: #6b7280"] {
+  color: #94a3b8 !important;
+}
+
+/* Purple brand colors — lighter in dark mode */
+[data-theme="dark"] [style*="color:#7e22ce"],
+[data-theme="dark"] [style*="color: #7e22ce"],
+[data-theme="dark"] [style*="color:#7c3aed"],
+[data-theme="dark"] [style*="color: #7c3aed"],
+[data-theme="dark"] [style*="color:#9d174d"] {
+  color: #c084fc !important;
+}
+
+/* Blue brand colors — lighter in dark mode */
+[data-theme="dark"] [style*="color:#1d4ed8"],
+[data-theme="dark"] [style*="color: #1d4ed8"],
+[data-theme="dark"] [style*="color:#166534"],
+[data-theme="dark"] [style*="color: #166534"],
+[data-theme="dark"] [style*="color:#15803d"],
+[data-theme="dark"] [style*="color: #15803d"],
+[data-theme="dark"] [style*="color:#92710a"] {
+  color: #60a5fa !important;
+}
+
+/* Print header — keep dark (it's for printing) */
+[data-theme="dark"] .print-header [style*="color:#"],
+[data-theme="dark"] .print-footer [style*="color:#"],
+[data-theme="dark"] #printArea [style*="color:#"] {
+  /* Don't override print colors */
+}
+
+/* Specific light muted (already ok but ensure) */
+[data-theme="dark"] [style*="color:#94a3b8"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#cbd5e1"] { color: #94a3b8 !important; }
+
+/* rgba white backgrounds */
+[data-theme="dark"] [style*="background:rgba(255,255,255"],
+[data-theme="dark"] [style*="background: rgba(255,255,255"] {
+  background: rgba(255,255,255,.04) !important;
+}
+/* Light border colors */
+[data-theme="dark"] [style*="border-color:#e"],
+[data-theme="dark"] [style*="border:1px solid #e2"],
+[data-theme="dark"] [style*="border: 1px solid #e2"],
+[data-theme="dark"] [style*="border-bottom:1px solid #e2"],
+[data-theme="dark"] [style*="border-top:1px solid #e2"] {
+  border-color: rgba(255,255,255,.07) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — Fix text only, NOT icons
+   Target: p, span, div, label, strong, small
+   Exclude: i (FontAwesome icons), svg, img
+═══════════════════════════════════════════════════════════ */
+
+/* stat-card labels (the small text under numbers) */
+[data-theme="dark"] .stat-label { color: #94a3b8 !important; }
+[data-theme="dark"] .stat-value { color: #f1f5f9 !important; }
+
+/* generic text containers inside cards — NOT icons */
+[data-theme="dark"] .gcard-body p { color: #e2e8f0 !important; }
+[data-theme="dark"] .gcard-body label { color: #94a3b8 !important; }
+[data-theme="dark"] .gcard-body small { color: #64748b !important; }
+
+/* Inline dark text colors → readable */
+[data-theme="dark"] [style*="color:#212529"] { color: #e2e8f0 !important; }
+[data-theme="dark"] [style*="color:#1a1a1a"] { color: #e2e8f0 !important; }
+[data-theme="dark"] [style*="color:#374151"] { color: #e2e8f0 !important; }
+[data-theme="dark"] [style*="color:#1f2937"] { color: #e2e8f0 !important; }
+
+/* Muted grays → lighter gray */
+[data-theme="dark"] [style*="color:#555"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#666"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#777"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#888"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#999"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#aaa"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#475569"] { color: #94a3b8 !important; }
+[data-theme="dark"] [style*="color:#6b7280"] { color: #94a3b8 !important; }
+
+/* Dark purple/blue → lighter for readability */
+[data-theme="dark"] [style*="color:#7e22ce"] { color: #c084fc !important; }
+[data-theme="dark"] [style*="color:#7c3aed"] { color: #c084fc !important; }
+[data-theme="dark"] [style*="color:#9d174d"] { color: #f9a8d4 !important; }
+
+/* ── DARK MODE — restore icon colors (overridden by body color) ─ */
+[data-theme="dark"] .ic-gold  { color: #a07510 !important; }
+[data-theme="dark"] .ic-blue  { color: #1d4ed8 !important; }
+[data-theme="dark"] .ic-green { color: #15803d !important; }
+[data-theme="dark"] .ic-red   { color: #be123c !important; }
+
+/* stat-icon backgrounds in dark mode — softer */
+[data-theme="dark"] .ic-gold  { background: linear-gradient(135deg,rgba(254,249,231,.15),rgba(253,230,138,.2)) !important; }
+[data-theme="dark"] .ic-blue  { background: linear-gradient(135deg,rgba(239,246,255,.1),rgba(191,219,254,.15)) !important; }
+[data-theme="dark"] .ic-green { background: linear-gradient(135deg,rgba(240,253,244,.1),rgba(187,247,208,.15)) !important; }
+[data-theme="dark"] .ic-red   { background: linear-gradient(135deg,rgba(255,241,242,.1),rgba(252,205,211,.15)) !important; }
+
+/* stat-icon i elements keep their class color */
+[data-theme="dark"] .stat-icon i,
+[data-theme="dark"] .stat-icon svg,
+[data-theme="dark"] .ti i {
+  color: inherit !important;
+}
+
+/* ── DARK MODE — ic-purple + all icon inline colors ────────── */
+[data-theme="dark"] .ic-purple {
+  background: linear-gradient(135deg,rgba(250,245,255,.1),rgba(233,213,255,.15)) !important;
+  color: #7e22ce !important;
+}
+[data-theme="dark"] .ic-purple i { color: #7e22ce !important; }
+
+/* Inline-colored icons — keep their colors in dark mode */
+[data-theme="dark"] i[style*="color:#dc2626"] { color: #f87171 !important; }
+[data-theme="dark"] i[style*="color:#9333ea"] { color: #c084fc !important; }
+[data-theme="dark"] i[style*="color:#d97706"] { color: #fbbf24 !important; }
+[data-theme="dark"] i[style*="color:#6b7280"] { color: #94a3b8 !important; }
+[data-theme="dark"] i[style*="color:#1d4ed8"] { color: #60a5fa !important; }
+[data-theme="dark"] i[style*="color:#3b82f6"] { color: #60a5fa !important; }
+[data-theme="dark"] i[style*="color:#f59e0b"] { color: #fbbf24 !important; }
+[data-theme="dark"] i[style*="color:#e1306c"] { color: #f9a8d4 !important; }
+[data-theme="dark"] i[style*="color:#1da1f2"] { color: #60a5fa !important; }
+[data-theme="dark"] i[style*="color:#25D366"] { color: #4ade80 !important; }
+[data-theme="dark"] i[style*="color:#7e22ce"] { color: #c084fc !important; }
+/* Icons using CSS vars — already handled by var() inheritance */
+[data-theme="dark"] i[style*="color:var(--gold"] { color: var(--gold) !important; }
+[data-theme="dark"] i[style*="color:var(--success"] { color: #4ade80 !important; }
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — ROOT CAUSE FIX
+   var(--black) is used as text color in many places.
+   We target each usage explicitly instead of overriding the var
+   (overriding --black breaks backgrounds that use it).
+═══════════════════════════════════════════════════════════ */
+
+/* Elements that use var(--black) as TEXT color */
+[data-theme="dark"] .nav-link-item,
+[data-theme="dark"] .nav-sub-link,
+[data-theme="dark"] .btn-outline-gold,
+[data-theme="dark"] .form-control-custom,
+[data-theme="dark"] .page-title,
+[data-theme="dark"] .page-subtitle,
+[data-theme="dark"] .gcard-title,
+[data-theme="dark"] .stat-value,
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .badge-custom {
+  color: #e2e8f0;
+}
+
+/* Specific text inside stat-cards */
+[data-theme="dark"] .stat-card > div { color: #e2e8f0; }
+[data-theme="dark"] .stat-card [style*="font-size"] { color: #e2e8f0; }
+
+/* var(--black) as text color in inline styles */
+[data-theme="dark"] [style*="color:var(--black)"] { color: #e2e8f0 !important; }

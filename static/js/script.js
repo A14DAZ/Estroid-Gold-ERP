@@ -41,10 +41,14 @@
     backdrop.addEventListener('click', closeSidebar);
   }
 
-  /* Close when clicking nav links on mobile */
+  /* Close when clicking nav links on mobile —
+     skip nav-toggle buttons (they expand sub-menus, don't navigate) */
   document.querySelectorAll('.nav-link-item, .nav-sub-link').forEach(function(el) {
     el.addEventListener('click', function() {
-      if (window.innerWidth <= MOBILE_BP) closeSidebar();
+      if (window.innerWidth <= MOBILE_BP) {
+        if (el.classList.contains('nav-toggle')) return; // sub-menu toggle — keep sidebar open
+        closeSidebar();
+      }
     });
   });
 
