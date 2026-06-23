@@ -26,7 +26,7 @@
         </h4>
         {% if customer.phone %}
         <div style="color:var(--text-muted);font-size:13px;direction:ltr;text-align:right;margin-top:2px;">
-          <i class="fas fa-phone" style="margin-left:5px;color:var(--gold-dark);"></i>{{ customer.phone }}
+          <i class="fas fa-phone" style="margin-left:5px;margin-right:5px;color:var(--gold-dark);"></i>{{ customer.phone }}
         </div>
         {% endif %}
       </div>
@@ -100,7 +100,7 @@
             border-bottom:3px solid {{ 'var(--gold)' if tab==t_id else 'transparent' }};
             color:{{ 'var(--gold-dark)' if tab==t_id else 'var(--text-muted)' }};
             margin-bottom:-2px;transition:all .15s;">
-    <i class="fas {{ t_icon }}" style="margin-left:5px;"></i>{{ t_label }}
+    <i class="fas {{ t_icon }}" style="margin-left:5px;margin-right:5px;"></i>{{ t_label }}
   </a>
   {% endfor %}
 </div>

@@ -463,14 +463,17 @@
       <div class="gcard-body" style="padding:24px;">
         <div class="row g-3 mb-4">
           <div class="col-6">
-            <div class="stat-card" style="min-height:0;border-color:var(--gold-border);">
-              <div style="font-size:11px;color:var(--text-muted);">{{ t.plan }}</div>
+            <div class="stat-card" style="min-height:80px;height:100%;border-color:var(--gold-border);
+                                          display:flex;flex-direction:column;justify-content:center;padding:16px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">{{ t.plan }}</div>
               <div style="font-size:20px;font-weight:900;color:var(--gold-dark);">{{ (fac.plan or 'basic').title() }}</div>
             </div>
           </div>
           <div class="col-6">
-            <div class="stat-card" style="min-height:0;border-color:{{ '#bbf7d0' if fac.is_subscription_valid else '#fecaca' }};">
-              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('subscription_status','الحالة') }}</div>
+            <div class="stat-card" style="min-height:80px;height:100%;
+                                          border-color:{{ '#bbf7d0' if fac.is_subscription_valid else '#fecaca' }};
+                                          display:flex;flex-direction:column;justify-content:center;padding:16px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">{{ t.get('subscription_status','الحالة') }}</div>
               <div style="font-size:14px;font-weight:800;color:{{ 'var(--success)' if fac.is_subscription_valid else '#ef4444' }};">
                 {% if fac.is_subscription_valid %}
                 <i class="fas fa-check-circle"></i> {{ t.sub_active }}
@@ -481,16 +484,18 @@
             </div>
           </div>
           <div class="col-6">
-            <div class="stat-card" style="min-height:0;">
-              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('days_remaining','أيام متبقية') }}</div>
+            <div class="stat-card" style="min-height:80px;height:100%;
+                                          display:flex;flex-direction:column;justify-content:center;padding:16px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">{{ t.get('days_remaining','أيام متبقية') }}</div>
               <div style="font-size:24px;font-weight:900;color:{{ '#22c55e' if (fac.days_remaining or 0)>7 else ('#f59e0b' if (fac.days_remaining or 0)>0 else '#ef4444') }};">
                 {{ fac.days_remaining if fac.days_remaining is not none else '∞' }}
               </div>
             </div>
           </div>
           <div class="col-6">
-            <div class="stat-card" style="min-height:0;">
-              <div style="font-size:11px;color:var(--text-muted);">{{ t.get('subscription_expiry','تاريخ الانتهاء') }}</div>
+            <div class="stat-card" style="min-height:80px;height:100%;
+                                          display:flex;flex-direction:column;justify-content:center;padding:16px;">
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">{{ t.get('subscription_expiry','تاريخ الانتهاء') }}</div>
               <div style="font-size:14px;font-weight:800;">{{ fac.subscription_expiry or '∞' }}</div>
             </div>
           </div>
@@ -646,8 +651,8 @@
           <div class="row g-4 align-items-center">
             <div class="col-md-4" style="text-align:center;">
               <div id="qrCodeArea" style="background:#fff;border:2px solid rgba(212,175,55,.2);
-                                          border-radius:12px;padding:16px;display:inline-block;">
-                <canvas id="qrCanvas" width="140" height="140"></canvas>
+                                          border-radius:12px;padding:12px;display:inline-block;
+                                          text-align:center;min-width:140px;min-height:140px;">
               </div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">
                 {{ fac.factory_code or fac.id }}
@@ -682,6 +687,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 function switchTab(tabId) {
   document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
@@ -726,35 +732,32 @@ function updatePwStrength(v) {
   }
 }
 
-// ── QR Code Generation ─────────────────────────────────────
+// ── QR Code Generation (real QR using qrcode library) ────────
 function generateQR() {
-  const canvas = document.getElementById('qrCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const size = 140;
-  // Simple visual QR placeholder (real QR needs library)
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = '#1a1a1a';
-  // Draw finder patterns
-  [[0,0],[size-30,0],[0,size-30]].forEach(([x,y]) => {
-    ctx.fillRect(x+2, y+2, 26, 26);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(x+6, y+6, 18, 18);
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(x+9, y+9, 12, 12);
+  var qrArea = document.getElementById('qrCodeArea');
+  if (!qrArea) return;
+  qrArea.innerHTML = '';  // clear old content
+  var code = '{{ fac.factory_code or fac.id }}';
+  var url  = window.location.origin + '/auth/register?code=' + code;
+  new QRCode(qrArea, {
+    text:           url,
+    width:          140,
+    height:         140,
+    colorDark:      '#000000',
+    colorLight:     '#ffffff',
+    correctLevel:   QRCode.CorrectLevel.M
   });
-  // Add factory code text
-  const code = '{{ fac.factory_code or fac.id }}';
-  ctx.fillStyle = '#c8a84b';
-  ctx.font = 'bold 9px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(code, size/2, size-4);
+  // Add label below
+  var label = document.createElement('div');
+  label.textContent = code;
+  label.style.cssText = 'font-size:10px;color:var(--gold-dark);font-weight:800;margin-top:6px;font-family:monospace;letter-spacing:1px;';
+  qrArea.appendChild(label);
 }
+
 function downloadQR() {
-  const canvas = document.getElementById('qrCanvas');
+  var canvas = document.querySelector('#qrCodeArea canvas');
   if (!canvas) return;
-  const link = document.createElement('a');
+  var link = document.createElement('a');
   link.download = 'qr-{{ fac.factory_code or fac.id }}.png';
   link.href = canvas.toDataURL();
   link.click();

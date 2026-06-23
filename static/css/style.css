@@ -1536,3 +1536,9 @@ aside.sidebar .sidebar-brand-sub {
 
 /* var(--black) as text color in inline styles */
 [data-theme="dark"] [style*="color:var(--black)"] { color: #e2e8f0 !important; }
+
+/* ── DARK MODE — fix rgba(0,0,0) text that disappears ─────── */
+[data-theme="dark"] [style*="color:rgba(0,0,0,"] {
+  color: var(--text-muted) !important;
+  opacity: 0.85 !important;
+}

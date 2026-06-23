@@ -13,7 +13,7 @@
   <div style="flex:1;">
     <h4 style="margin:0;font-weight:900;font-size:20px;color:var(--black);">{{ fac.name }}</h4>
     <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
-      <i class="fas fa-calendar-alt" style="color:var(--gold-dark);margin-left:5px;"></i>{{ today }}
+      <i class="fas fa-calendar-alt" style="color:var(--gold-dark);margin-left:5px;margin-right:5px;"></i>{{ today }}
     </div>
   </div>
 </div>
@@ -103,7 +103,7 @@
       <div class="gcard-body" style="padding:22px 20px;text-align:center;">
         <div style="font-size:11px;font-weight:700;color:rgba(212,175,55,.6);
                     text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
-          <i class="fas fa-balance-scale" style="margin-left:5px;"></i>
+          <i class="fas fa-balance-scale" style="margin-left:5px;margin-right:5px;"></i>
           {{ t.get('pure_balance','الرصيد الحالي (24K)') }}
         </div>
         <div style="font-size:36px;font-weight:900;color:var(--gold);letter-spacing:-1px;line-height:1.1;">
@@ -130,7 +130,7 @@
   <div class="col-12 col-md-8">
     <div style="font-size:11px;font-weight:700;color:var(--text-muted);
                 text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">
-      <i class="fas fa-star" style="color:var(--gold);margin-left:5px;"></i>
+      <i class="fas fa-star" style="color:var(--gold);margin-left:5px;margin-right:5px;"></i>
       {{ t.get('total_pure_gold','مقاييس الذهب (24K)') }}
     </div>
     <div class="row g-3">
@@ -192,7 +192,7 @@
         <div>
           <div style="font-size:20px;font-weight:900;color:var(--gold-dark);">{{ total_ops }}</div>
           <div style="font-size:11px;color:var(--text-muted);">{{ t.get('total_ops','عدد العمليات') }}</div>
-          <div style="font-size:10px;color:rgba(0,0,0,.35);">{{ t.get('sales_and_purchases','مبيعات + مشتريات') }}</div>
+          <div style="font-size:10px;color:var(--text-muted);opacity:.75;">{{ t.get('sales_and_purchases','مبيعات + مشتريات') }}</div>
         </div>
       </div>
     </div>
@@ -204,7 +204,7 @@
         <div>
           <div style="font-size:20px;font-weight:900;color:var(--success);">{{ today_ops }}</div>
           <div style="font-size:11px;color:var(--text-muted);">{{ t.get('today_ops','عمليات اليوم') }}</div>
-          <div style="font-size:10px;color:rgba(0,0,0,.35);">{{ t.get('today','اليوم') }}</div>
+          <div style="font-size:10px;color:var(--text-muted);opacity:.75;">{{ t.get('today','اليوم') }}</div>
         </div>
       </div>
     </div>
@@ -218,7 +218,7 @@
           <div>
             <div style="font-size:20px;font-weight:900;color:#7e22ce;">{{ total_products }}</div>
             <div style="font-size:11px;color:var(--text-muted);">{{ t.get('total_products','عدد المنتجات') }}</div>
-            <div style="font-size:10px;color:rgba(0,0,0,.35);">{{ t.get('in_inventory','في المخزون') }}</div>
+            <div style="font-size:10px;color:var(--text-muted);opacity:.75;">{{ t.get('in_inventory','في المخزون') }}</div>
           </div>
         </div>
       </div>

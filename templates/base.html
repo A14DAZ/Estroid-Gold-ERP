@@ -47,13 +47,7 @@
     {% else %}
     <div class="sidebar-logo"><i class="fas fa-ring"></i></div>
     {% endif %}
-    <span class="sidebar-brand-name">
-      {% if current_user.is_authenticated and not current_user.is_superadmin and current_user.factory %}
-        {{ current_user.factory.name }}
-      {% else %}
-        {{ platform_name }}
-      {% endif %}
-    </span>
+    <span class="sidebar-brand-name">{{ platform_name }}</span>
     <span class="sidebar-brand-sub">{{ platform_version }}</span>
   </div>
 
@@ -361,9 +355,9 @@
           {% if platform_logo %}
           <img src="{{ platform_logo }}" alt="logo"
                style="width:24px;height:24px;object-fit:contain;border-radius:6px;
-                      vertical-align:middle;margin-{{ 'left' if dir=='rtl' else 'right' }}:6px;"/>
+                      vertical-align:middle;margin-right:8px;margin-left:8px;flex-shrink:0;"/>
           {% else %}
-          <i class="fas fa-ring" style="color:var(--gold);font-size:18px;"></i>
+          <i class="fas fa-ring" style="color:var(--gold);font-size:18px;margin-right:8px;margin-left:8px;"></i>
           {% endif %}
           {{ platform_name }}
         </div>

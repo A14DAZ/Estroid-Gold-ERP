@@ -62,7 +62,7 @@
         {# للعرض فقط: badge + زر تعديل بباسورد + زر حذف بباسورد #}
         <span class="badge-custom {{ 'badge-green' if order.status=='completed' else 'badge-red' }}"
               style="font-size:12px;padding:7px 14px;">
-          <i class="fas fa-eye" style="margin-left:5px;"></i>
+          <i class="fas fa-eye" style="margin-left:5px;margin-right:5px;"></i>
           {{ t.get('completed','مكتمل') if order.status=='completed' else t.get('cancelled','ملغي') }}
         </span>
         <a href="{{ url_for('orders.edit_auth', order_id=order.id) }}" class="btn-grey btn-sm">
