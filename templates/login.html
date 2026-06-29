@@ -21,15 +21,17 @@
 <div class="auth-bg">
   <div class="auth-card">
     <div class="auth-logo">
-      {% if platform_logo %}
-      <div class="auth-logo-icon">
-        <img src="{{ platform_logo }}" alt="logo"
-             style="width:64px;height:64px;object-fit:contain;border-radius:14px;"/>
-      </div>
-      {% else %}
-      <div class="auth-logo-icon"><i class="fas fa-ring"></i></div>
-      {% endif %}
-      <div class="auth-title">{{ platform_name }}</div>
+      <a href="{{ url_for('index') }}" style="text-decoration:none;display:inline-block;">
+        {% if platform_logo %}
+        <div class="auth-logo-icon">
+          <img src="{{ platform_logo }}" alt="logo"
+               style="width:40px;height:40px;object-fit:contain;mix-blend-mode:multiply;"/>
+        </div>
+        {% else %}
+        <div class="auth-logo-icon"><i class="fas fa-ring"></i></div>
+        {% endif %}
+        <div class="auth-title" style="color:inherit;">{{ platform_name }}</div>
+      </a>
       <div class="auth-sub" style="font-size:12px;opacity:.7;">{{ platform_tagline }}</div>
     </div>
 

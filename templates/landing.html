@@ -207,10 +207,13 @@
     }
     .nav-mobile {
       display: none; flex-direction: column; gap: 8px;
-      position: absolute; top: 100%; left: 0; right: 0;
+      position: fixed; top: 64px; left: 0; right: 0; z-index: 998;
       background: var(--nav-bg); backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border); padding: 16px 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
     }
+    .navbar.scrolled ~ #navMobile,
+    .nav-mobile.scrolled-offset { top: 54px; }
     .nav-mobile.open { display: flex; }
 
     @media(max-width: 900px) {
@@ -1346,16 +1349,31 @@
 
   /* ── Navbar scroll ── */
   window.addEventListener('scroll', function(){
-    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+    var scrolled = window.scrollY > 40;
+    document.getElementById('navbar').classList.toggle('scrolled', scrolled);
+    var mob = document.getElementById('navMobile');
+    if (mob) mob.style.top = scrolled ? '54px' : '64px';
   }, { passive: true });
 
   /* ── Mobile nav ── */
   function toggleNavMobile() {
-    document.getElementById('navMobile').classList.toggle('open');
+    var mob = document.getElementById('navMobile');
+    mob.classList.toggle('open');
+    var scrolled = window.scrollY > 40;
+    mob.style.top = scrolled ? '54px' : '64px';
   }
   function closeNavMobile() {
     document.getElementById('navMobile').classList.remove('open');
   }
+  /* Close mobile nav when clicking outside */
+  document.addEventListener('click', function(e) {
+    var mob = document.getElementById('navMobile');
+    var btn = document.querySelector('.nav-hamburger');
+    if (mob && mob.classList.contains('open') &&
+        !mob.contains(e.target) && !btn.contains(e.target)) {
+      mob.classList.remove('open');
+    }
+  });
 
   /* ── Screenshot slider ── */
   function showSlide(idx, btn) {
