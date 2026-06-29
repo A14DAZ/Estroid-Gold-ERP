@@ -67,15 +67,15 @@
 .mp-down { background: rgba(220,38,38,.1);  color: #dc2626; }
 .mp-flat { background: rgba(100,116,139,.1); color: #64748b; }
 
-.mp-gold-bg::after {
-  content: '⚜'; position: absolute; bottom: -10px;
-  {{ 'left' if dir=='rtl' else 'right' }}: 12px;
-  font-size: 52px; opacity: .06; pointer-events: none;
-}
-.mp-silver-bg::after {
-  content: '◆'; position: absolute; bottom: -8px;
-  {{ 'left' if dir=='rtl' else 'right' }}: 14px;
-  font-size: 44px; opacity: .06; pointer-events: none;
+.mp-gold-bg::after, .mp-silver-bg::after {
+  content: '';
+  position: absolute; bottom: 6px;
+  {{ 'left' if dir=='rtl' else 'right' }}: 10px;
+  width: 48px; height: 48px;
+  {% if platform_logo %}
+  background: url('{{ platform_logo }}') no-repeat center/contain;
+  {% endif %}
+  opacity: .08; pointer-events: none;
 }
 
 /* ── Currency panel ── */

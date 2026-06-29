@@ -43,18 +43,37 @@ def _fetch_spot_prices():
             req = urllib.request.Request(url, headers={'User-Agent': 'GoldERP/5'})
             with urllib.request.urlopen(req, timeout=8) as r:
                 data = json.loads(r.read())
-            # response: [{"gold": 2034.5, "silver": 22.45, ...}]
             if isinstance(data, list) and data:
                 row = data[0]
             elif isinstance(data, dict):
                 row = data
             else:
-                return None, None
+                row = {}
             gold   = float(row.get('gold', 0)) or None
             silver = float(row.get('silver', 0)) or None
-            return gold, silver
+            if gold:
+                return gold, silver
         except Exception as exc:
             print(f'  [Metals] metals.live error: {exc}')
+
+        # ── goldprice.org fallback (free, no key) ────────────
+        try:
+            url = 'https://data-asg.goldprice.org/dbXRates/USD'
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer':    'https://goldprice.org/',
+            })
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.loads(r.read())
+            items = data.get('items', [])
+            if items:
+                item   = items[0]
+                gold   = float(item.get('xauPrice', 0)) or None
+                silver = float(item.get('xagPrice', 0)) or None
+                if gold:
+                    return gold, silver
+        except Exception as exc:
+            print(f'  [Metals] goldprice.org error: {exc}')
 
     # ── metalpriceapi.com (paid, requires key) ────────────────
     if source == 'metalpriceapi.com' and api_key:

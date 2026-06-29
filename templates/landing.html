@@ -27,13 +27,8 @@
   <meta name="twitter:image" content="{{ platform_logo or url_for('static', filename='estroid_logo.svg', _external=True) }}"/>
 
   {# Favicon #}
-  {% if platform_logo %}
-  <link rel="icon" type="image/png" href="{{ platform_logo }}"/>
-  <link rel="apple-touch-icon" href="{{ platform_logo }}"/>
-  {% else %}
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
-  {% endif %}
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}"/>
   <meta name="theme-color" content="#D4AF37"/>
 
@@ -93,12 +88,18 @@
        BASE
     ═══════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+    }
     body {
       font-family: 'Cairo', sans-serif;
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
+      max-width: 100vw;
+      overscroll-behavior-x: none;
       transition: background .3s, color .3s;
     }
     ::-webkit-scrollbar { width: 5px; }
@@ -109,7 +110,7 @@
        NAVBAR
     ═══════════════════════════════════════ */
     .navbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      position: fixed; top: 52px; left: 0; right: 0; z-index: 998;
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 48px;
       background: var(--nav-bg);
@@ -207,13 +208,12 @@
     }
     .nav-mobile {
       display: none; flex-direction: column; gap: 8px;
-      position: fixed; top: 64px; left: 0; right: 0; z-index: 998;
+      position: fixed; top: 116px; left: 0; right: 0; z-index: 997;
       background: var(--nav-bg); backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border); padding: 16px 20px;
       box-shadow: 0 8px 24px rgba(0,0,0,.25);
     }
-    .navbar.scrolled ~ #navMobile,
-    .nav-mobile.scrolled-offset { top: 54px; }
+    /* nav-mobile top is set dynamically by JS */
     .nav-mobile.open { display: flex; }
 
     @media(max-width: 900px) {
@@ -233,7 +233,7 @@
     .hero {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 120px 24px 80px;
+      text-align: center; padding: 160px 24px 80px;
       position: relative; overflow: hidden;
     }
     .hero-glow {
@@ -244,19 +244,22 @@
     [data-theme="light"] .hero-glow {
       background: radial-gradient(ellipse, rgba(212,175,55,.18) 0%, transparent 65%);
     }
-    .hero-inner { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; }
+    .hero-inner { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; width: 100%; min-width: 0; box-sizing: border-box; }
 
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
       background: rgba(212,175,55,.1); border: 1px solid var(--border);
       padding: 6px 18px; border-radius: 50px; font-size: 13px;
       color: var(--gold); margin-bottom: 28px;
+      max-width: 100%; white-space: normal; text-align: center; flex-wrap: wrap; justify-content: center;
     }
     [data-theme="light"] .hero-badge { background: rgba(212,175,55,.15); }
 
     .hero-title {
-      font-size: clamp(36px, 6.5vw, 76px);
+      font-size: clamp(28px, 6.5vw, 76px);
       font-weight: 900; line-height: 1.12; margin-bottom: 10px;
+      word-break: break-word; overflow-wrap: break-word;
+      max-width: 100%; overflow: hidden;
     }
     .gold-grad {
       background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
@@ -316,7 +319,7 @@
     /* ═══════════════════════════════════════
        SECTION COMMON
     ═══════════════════════════════════════ */
-    section { padding: 96px 24px; }
+    section { padding: 96px 24px; scroll-margin-top: 135px; }
     .sec-alt { background: var(--bg2); transition: background .3s; }
     .gold-line {
       width: 56px; height: 3px; border-radius: 2px;
@@ -530,51 +533,64 @@
        FOOTER
     ═══════════════════════════════════════ */
     footer {
-      background: var(--bg2); border-top: 1px solid var(--border);
-      padding: 40px 48px; transition: background .3s;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      padding: 56px 48px 32px;
+      transition: background .3s;
     }
     .footer-inner {
       max-width: 1100px; margin: 0 auto;
-      display: flex; flex-wrap: wrap; gap: 32px;
-      align-items: flex-start; justify-content: space-between;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
     }
-    .footer-brand { max-width: 280px; }
+    .footer-brand {}
     .footer-logo {
       display: flex; align-items: center; gap: 10px;
-      text-decoration: none; margin-bottom: 12px;
+      text-decoration: none; margin-bottom: 14px;
     }
     .footer-logo-icon {
-      width: 34px; height: 34px; border-radius: 8px;
+      width: 36px; height: 36px; border-radius: 10px;
       background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px; color: #000; font-weight: 900;
+      font-size: 16px; color: #000; font-weight: 900;
+      flex-shrink: 0;
     }
     .footer-logo-text { font-size: 15px; font-weight: 900; color: var(--text); }
     .footer-logo-text span { color: var(--gold); }
-    .footer-tagline { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+    .footer-tagline {
+      font-size: 13px; color: var(--muted); line-height: 1.7;
+      margin-bottom: 18px; max-width: 240px;
+    }
     .footer-powered {
       font-size: 12px; color: var(--muted);
-      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 5px 10px;
     }
-    .footer-powered a { color: var(--gold); font-weight: 700; text-decoration: none; }
-    .footer-powered a:hover { text-decoration: underline; }
+    .footer-powered a { color: var(--gold); font-weight: 800; text-decoration: none; }
 
-    .footer-col { min-width: 140px; }
+    .footer-col {}
     .footer-col-title {
-      font-size: 13px; font-weight: 800; color: var(--text);
-      margin-bottom: 14px; text-transform: uppercase; letter-spacing: .8px;
+      font-size: 11px; font-weight: 800; color: var(--text);
+      margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px;
+      padding-bottom: 8px; border-bottom: 2px solid var(--gold);
+      display: inline-block;
     }
-    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-    .footer-links a {
-      font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s;
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-links li a {
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      transition: color .2s; display: flex; align-items: center; gap: 6px;
     }
-    .footer-links a:hover { color: var(--gold); }
+    .footer-links li a:hover { color: var(--gold); }
 
     .footer-bottom {
-      max-width: 1100px; margin: 28px auto 0;
-      padding-top: 22px; border-top: 1px solid var(--border);
-      display: flex; flex-wrap: wrap; gap: 12px;
-      align-items: center; justify-content: space-between;
+      max-width: 1100px; margin: 24px auto 0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
     }
     .footer-copy { font-size: 12px; color: var(--muted); }
     .footer-version {
@@ -582,6 +598,8 @@
       background: var(--bg); border: 1px solid var(--border);
       padding: 3px 10px; border-radius: 6px;
     }
+
+    /* Footer responsive — handled in main responsive block below */
 
     /* ═══════════════════════════════════════
        VIDEO MODAL
@@ -643,19 +661,67 @@
     /* ═══════════════════════════════════════
        RESPONSIVE
     ═══════════════════════════════════════ */
-    @media(max-width: 768px) {
-      .hero-stats { gap: 28px; }
-      .hstat-num { font-size: 24px; }
-      footer { padding: 32px 20px; }
-      .footer-inner { gap: 24px; }
-      .footer-bottom { flex-direction: column; text-align: center; }
-      .hero-btns { flex-direction: column; align-items: center; }
-      .btn-h { width: 100%; max-width: 320px; justify-content: center; }
+
+    /* ── Tablet ≤1024px ── */
+    @media(max-width: 1024px) {
+      section           { padding: 72px 20px; }
+      .hero-inner       { padding: 0 16px; }
+      .feat-grid        { grid-template-columns: repeat(2, 1fr); }
+      .check-grid       { grid-template-columns: repeat(2, 1fr); }
+      .slider-wrap      { padding: 0 12px; }
+      .contact-cards    { gap: 14px; }
+      footer            { padding: 48px 28px 28px; }
+      .footer-inner     { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .footer-brand     { grid-column: 1 / -1; }
     }
+
+    /* ── Small tablet / large mobile ≤768px ── */
+    @media(max-width: 768px) {
+      section           { padding: 64px 18px; }
+      .hero-title       { font-size: clamp(26px, 6vw, 42px); }
+      .hero-subtitle    { font-size: 14px; }
+      .hero-stats       { gap: 20px; flex-wrap: wrap; justify-content: center; }
+      .hstat-num        { font-size: 22px; }
+      .hero-btns        { flex-direction: column; align-items: center; }
+      .btn-h            { width: 100%; max-width: 300px; justify-content: center; }
+      .feat-grid        { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .check-grid       { grid-template-columns: repeat(2, 1fr); }
+      .slider-tabs      { gap: 6px; }
+      .stab             { padding: 7px 14px; font-size: 12px; }
+      .contact-cards    { flex-direction: column; align-items: center; }
+      .ccard            { width: 100%; max-width: 340px; }
+      footer            { padding: 40px 18px 24px; }
+      .footer-inner     { grid-template-columns: 1fr 1fr; gap: 24px; }
+      .footer-brand     { grid-column: 1 / -1; }
+      .footer-tagline   { max-width: 100%; }
+      .footer-bottom    { flex-direction: column; align-items: flex-start; gap: 14px; }
+    }
+
+    /* ── Mobile ≤480px ── */
     @media(max-width: 480px) {
-      section { padding: 72px 16px; }
-      .check-grid { grid-template-columns: 1fr; }
-      .feat-grid { grid-template-columns: 1fr; }
+      section           { padding: 56px 14px; }
+      .hero-title       { font-size: clamp(22px, 6.5vw, 32px); }
+      .check-grid       { grid-template-columns: 1fr; }
+      .feat-grid        { grid-template-columns: 1fr; }
+      .slider-tabs      { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+                          scrollbar-width: none; -ms-overflow-style: none;
+                          padding-bottom: 4px; gap: 6px; }
+      .slider-tabs::-webkit-scrollbar { display: none; }
+      .stab             { flex-shrink: 0; font-size: 11px; padding: 6px 12px; }
+      .lang-switcher    { display: none; }
+      footer            { padding: 32px 14px 20px; text-align: center; }
+      .footer-inner     { grid-template-columns: 1fr; gap: 20px; }
+      .footer-logo      { justify-content: center; }
+      .footer-tagline   { margin: 0 auto 18px; text-align: center; }
+      .footer-powered   { justify-content: center; }
+      .footer-col-title { display: block; text-align: center; }
+      .footer-links     { align-items: center; }
+      .footer-links li a { justify-content: center; }
+      .footer-bottom    { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+      .footer-copy      { text-align: center; }
+    }
+    @media(max-width: 768px) and (min-width: 481px) {
+      .footer-bottom    { flex-direction: column; align-items: flex-start; gap: 14px; }
     }
   </style>
 
@@ -668,6 +734,239 @@
   </script>
 </head>
 <body>
+<script>try{document.documentElement.scrollLeft=0;window.scrollTo(0,0);}catch(e){}</script>
+
+{# ══════════════════════════════════════════
+   METALS TICKER STRIP
+══════════════════════════════════════════ #}
+<div id="metals-ticker" style="
+  background:linear-gradient(90deg,#0d0d14 0%,#111118 50%,#0d0d14 100%);
+  border-bottom:1px solid rgba(212,175,55,.18);
+  height:52px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:1000;
+  direction:ltr;
+">
+  {# Currency switcher (left side) #}
+  <div id="tk-currency" style="flex-shrink:0;display:flex;align-items:center;gap:2px;
+       padding:0 10px;border-right:1px solid rgba(212,175,55,.18);">
+    <button onclick="tkSetCurrency('usd')" id="tk-btn-usd"
+      style="padding:3px 7px;border-radius:5px;border:1px solid rgba(212,175,55,.3);
+             font-size:10px;font-weight:800;cursor:pointer;transition:all .15s;
+             background:rgba(212,175,55,.2);color:#D4AF37;font-family:'Cairo',sans-serif;">USD</button>
+    <button onclick="tkSetCurrency('sar')" id="tk-btn-sar"
+      style="padding:3px 7px;border-radius:5px;border:1px solid rgba(212,175,55,.12);
+             font-size:10px;font-weight:800;cursor:pointer;transition:all .15s;
+             background:transparent;color:#9a9098;font-family:'Cairo',sans-serif;">SAR</button>
+    <button onclick="tkSetCurrency('try')" id="tk-btn-try"
+      style="padding:3px 7px;border-radius:5px;border:1px solid rgba(212,175,55,.12);
+             font-size:10px;font-weight:800;cursor:pointer;transition:all .15s;
+             background:transparent;color:#9a9098;font-family:'Cairo',sans-serif;">TRY</button>
+  </div>
+
+  {# Scrolling prices — two copies for seamless loop #}
+  <div id="ticker-outer" style="flex:1;overflow:hidden;position:relative;">
+    <div id="ticker-inner" style="display:inline-flex;align-items:center;white-space:nowrap;">
+      {# copy 1 #}
+      <span class="tk-item" data-k="gold_24k"><span class="tk-lbl">Gold 24K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="gold_22k"><span class="tk-lbl">Gold 22K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="gold_21k"><span class="tk-lbl">Gold 21K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="gold_18k"><span class="tk-lbl">Gold 18K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="gold_oz" ><span class="tk-lbl">Gold oz</span>  <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="silver_g"><span class="tk-lbl">Silver/g</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      {# copy 2 — exact duplicate for seamless loop #}
+      <span class="tk-item tk-clone" data-k="gold_24k"><span class="tk-lbl">Gold 24K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="gold_22k"><span class="tk-lbl">Gold 22K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="gold_21k"><span class="tk-lbl">Gold 21K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="gold_18k"><span class="tk-lbl">Gold 18K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="gold_oz" ><span class="tk-lbl">Gold oz</span>  <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="silver_g"><span class="tk-lbl">Silver/g</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+    </div>
+  </div>
+
+  {# live badge (right side) — hidden on small mobile #}
+  <div id="tk-live-badge" style="flex-shrink:0;display:flex;align-items:center;gap:7px;
+              border-left:1px solid rgba(212,175,55,.18);padding:0 14px;">
+    <span id="tk-dot" style="width:7px;height:7px;border-radius:50%;background:#64748b;
+          display:inline-block;flex-shrink:0;"></span>
+    <span style="font-size:11px;font-weight:700;color:#D4AF37;letter-spacing:.5px;white-space:nowrap;">
+      LIVE
+    </span>
+  </div>
+</div>
+
+<style>
+.tk-item {
+  display:inline-flex;align-items:center;gap:8px;
+  padding:0 18px;
+  border-right:1px solid rgba(212,175,55,.14);
+  font-family:'Cairo',sans-serif;
+  flex-shrink:0;
+}
+.tk-lbl { color:#9a9098;font-weight:700;font-size:11px;letter-spacing:.5px;text-transform:uppercase; }
+.tk-val { color:#f0ead6;font-weight:800;font-family:monospace;font-size:14px; }
+.tk-cur { color:#D4AF37;font-weight:700;font-size:11px; }
+.tk-arr { font-size:12px;font-weight:900; }
+.tk-arr.up   { color:#16a34a; }
+.tk-arr.down { color:#dc2626; }
+.tk-arr.flat { color:#64748b; }
+
+/* ── Seamless scroll animation ── */
+@keyframes tkScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Always scrolling on all screen sizes */
+#ticker-inner {
+  animation: tkScroll 30s linear infinite;
+}
+.tk-clone { display:inline-flex; }
+
+@media(max-width:640px){
+  #metals-ticker  { height:44px; }
+  #tk-currency    { padding:0 6px; gap:2px; }
+  #tk-currency button { padding:2px 5px; font-size:9px; }
+  .tk-item        { padding:0 10px; gap:5px; }
+  .tk-lbl         { font-size:9px; }
+  .tk-val         { font-size:11px; }
+  .tk-cur         { display:none; }
+  .tk-arr         { font-size:10px; }
+  #tk-live-badge  { display:none; }
+  .navbar { top:44px !important; }
+  .hero   { padding-top:136px !important; }
+}
+</style>
+
+<script>
+(function(){
+  var G = 31.1035;
+  var PREV = null;
+  var CUR_DATA = null;
+  var CURRENCY = localStorage.getItem('tkCurrency') || 'usd';
+
+  function fmt(n,d){ return parseFloat(n||0).toFixed(d||2); }
+
+  function arrowClass(cur, prev){
+    if(prev===null||prev===undefined||cur===prev) return 'flat';
+    return cur>prev?'up':'down';
+  }
+  function arrowChar(cls){
+    return cls==='up'?'▲':cls==='down'?'▼':'—';
+  }
+
+  function getCurrencyRate(d){
+    if(CURRENCY==='sar') return { rate: d.usd_sar||3.75, sym: 'SAR', dec: 2 };
+    if(CURRENCY==='try') return { rate: d.usd_try||32.0,  sym: 'TRY', dec: 2 };
+    return { rate: 1, sym: '$', dec: null };
+  }
+
+  function renderItems(d){
+    var cr  = getCurrencyRate(d);
+    var sar = d.usd_sar||3.75;
+    var g24  = d.gold_oz_usd / G;
+    var pg24 = PREV ? PREV.gold_oz_usd / G : null;
+
+    var map = {
+      gold_24k: { val: g24,               prev: pg24,                       dec:3 },
+      gold_22k: { val: g24*22/24,         prev: pg24?pg24*22/24:null,       dec:3 },
+      gold_21k: { val: g24*21/24,         prev: pg24?pg24*21/24:null,       dec:3 },
+      gold_18k: { val: g24*18/24,         prev: pg24?pg24*18/24:null,       dec:3 },
+      gold_oz:  { val: d.gold_oz_usd,     prev: PREV?PREV.gold_oz_usd:null, dec:2 },
+      silver_g: { val: d.silver_oz_usd/G, prev: PREV?PREV.silver_oz_usd/G:null, dec:4 },
+    };
+
+    document.querySelectorAll('.tk-item').forEach(function(el){
+      var k = el.dataset.k;
+      if(!map[k]) return;
+      var m   = map[k];
+      var cls = arrowClass(m.val, m.prev);
+      var dec = cr.dec !== null ? cr.dec : m.dec;
+      var dispVal = m.val * cr.rate;
+      var prefix  = CURRENCY==='usd' ? '$' : '';
+      var suffix  = CURRENCY==='usd' ? '' : (' ' + cr.sym);
+      el.querySelector('.tk-val').textContent = prefix + fmt(dispVal, dec) + suffix;
+      var curEl = el.querySelector('.tk-cur');
+      if(curEl){
+        /* show secondary value only when USD primary */
+        if(CURRENCY==='usd'){
+          curEl.textContent = fmt(m.val * sar, 2) + ' SAR';
+        } else {
+          curEl.textContent = '$' + fmt(m.val, m.dec);
+        }
+      }
+      var arr = el.querySelector('.tk-arr');
+      arr.textContent = arrowChar(cls);
+      arr.className   = 'tk-arr ' + cls;
+    });
+
+    var dot = document.getElementById('tk-dot');
+    if(dot) dot.style.background = '#16a34a';
+  }
+
+  function fillTicker(d){
+    CUR_DATA = d;
+    renderItems(d);
+    PREV = d;
+  }
+
+  /* Currency switcher */
+  window.tkSetCurrency = function(c){
+    CURRENCY = c;
+    localStorage.setItem('tkCurrency', c);
+    ['usd','sar','try'].forEach(function(x){
+      var b = document.getElementById('tk-btn-'+x);
+      if(!b) return;
+      if(x===c){
+        b.style.background = 'rgba(212,175,55,.2)';
+        b.style.color       = '#D4AF37';
+        b.style.borderColor = 'rgba(212,175,55,.3)';
+      } else {
+        b.style.background  = 'transparent';
+        b.style.color       = '#9a9098';
+        b.style.borderColor = 'rgba(212,175,55,.12)';
+      }
+    });
+    if(CUR_DATA) renderItems(CUR_DATA);
+  };
+
+  /* init button state from saved preference */
+  tkSetCurrency(CURRENCY);
+
+  /* adjust scroll speed based on viewport — wider = slower */
+  function setScrollSpeed(){
+    var inner = document.getElementById('ticker-inner');
+    if(!inner) return;
+    var w = window.innerWidth;
+    if(w > 1024){
+      inner.style.animationDuration = '35s';
+    } else if(w > 640){
+      inner.style.animationDuration = '26s';
+    } else {
+      inner.style.animationDuration = '18s';
+    }
+  }
+  setScrollSpeed();
+  window.addEventListener('resize', setScrollSpeed);
+
+  function loadTicker(){
+    fetch('/metals/api/prices')
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j.ok) fillTicker(j.data); })
+      .catch(function(){
+        var dot = document.getElementById('tk-dot');
+        if(dot) dot.style.background = '#dc2626';
+      });
+  }
+
+  loadTicker();
+  setInterval(loadTicker, 60000);
+})();
+</script>
 
 {# ══════════════════════════════════════════
    NAVBAR
@@ -677,10 +976,10 @@
     {% if platform_logo %}
     <div class="nav-logo-icon" style="padding:0;overflow:hidden;">
       <img src="{{ platform_logo }}" alt="{{ platform_name }}"
-           style="width:28px;height:28px;object-fit:contain;mix-blend-mode:multiply;"/>
+           style="width:28px;height:28px;object-fit:contain;"/>
     </div>
     {% else %}
-    <div class="nav-logo-icon">⚜</div>
+    <div class="nav-logo-icon" style="font-size:20px;font-weight:900;">E</div>
     {% endif %}
     <div class="nav-logo-text">Estroid <span>Gold ERP</span></div>
   </a>
@@ -825,7 +1124,7 @@
       ('👥', 'land_f4_title', 'land_f4_desc', 'إدارة العملاء', 'كشف حساب شامل لكل عميل مع الأرصدة.'),
       ('👷', 'land_f5_title', 'land_f5_desc', 'إدارة الموظفين', 'سجل الموظفين والرواتب وكفاءة الأداء.'),
       ('📊', 'land_f6_title', 'land_f6_desc', 'التقارير الذكية', 'تقارير مفصلة مع إمكانية الطباعة والتصدير.'),
-      ('⚜', 'land_f7_title', 'land_f7_desc', 'إدارة الذهب الخام', 'تتبع دقيق للذهب الخام بالعيارات المختلفة.'),
+      ('🥇', 'land_f7_title', 'land_f7_desc', 'إدارة الذهب الخام', 'تتبع دقيق للذهب الخام بالعيارات المختلفة.'),
       ('🌍', 'land_f8_title', 'land_f8_desc', 'نظام متعدد اللغات', 'دعم كامل للعربية والإنجليزية والتركية.'),
     ] %}
     {% for icon, tkey, dkey, fb_title, fb_desc in features %}
@@ -864,7 +1163,12 @@
         <div class="mock-dot" style="background:#ff5f57"></div>
         <div class="mock-dot" style="background:#febc2e"></div>
         <div class="mock-dot" style="background:#28c840"></div>
-        <div class="mock-bar-title">⚜ {{ platform_name }} — {{ t.get('land_ss_tab1','لوحة التحكم') }}</div>
+        <div class="mock-bar-title" style="display:flex;align-items:center;gap:6px;">
+          {% if platform_logo %}
+          <img src="{{ platform_logo }}" style="width:14px;height:14px;object-fit:contain;border-radius:3px;" alt=""/>
+          {% endif %}
+          {{ platform_name }} — {{ t.get('land_ss_tab1','لوحة التحكم') }}
+        </div>
       </div>
       <div class="mock-body">
         <div class="mock-cards">
@@ -1202,15 +1506,15 @@
                     display:flex;align-items:center;justify-content:center;
                     box-shadow:0 4px 12px rgba(212,175,55,0.4);">
           <img src="{{ platform_logo }}" alt="{{ platform_name }}"
-               style="width:26px;height:26px;object-fit:contain;mix-blend-mode:multiply;" loading="lazy"/>
+               style="width:26px;height:26px;object-fit:contain;" loading="lazy"/>
         </div>
         {% else %}
-        <div class="footer-logo-icon">⚜</div>
+        <div class="footer-logo-icon" style="font-size:18px;font-weight:900;">E</div>
         {% endif %}
         <div class="footer-logo-text">Estroid <span>Gold ERP</span></div>
       </a>
       <p class="footer-tagline">{{ t.get('land_hero_subtitle','نظام ERP احترافي لإدارة مصانع الذهب والمجوهرات') }}</p>
-      <div class="footer-powered">
+      <div class="footer-powered" style="direction:ltr;">
         <span>{{ t.get('land_powered','Powered by') }}</span>
         <a href="https://estroid.com/" target="_blank" rel="noopener">Estroid</a>
         <span>·</span>
@@ -1345,22 +1649,34 @@
   /* Sync icons after DOM ready */
   document.addEventListener('DOMContentLoaded', function(){
     applyMode(localStorage.getItem(MKEY) || 'dark');
+    /* Fix RTL horizontal scroll — reset scroll to start position */
+    document.documentElement.scrollLeft = 0;
+    document.body.scrollLeft = 0;
+    window.scrollTo(0, 0);
   });
+
+  /* ── Calculate nav-mobile top dynamically ── */
+  function navMobileTop() {
+    var ticker = document.getElementById('metals-ticker');
+    var navbar = document.getElementById('navbar');
+    var tickerH = ticker ? ticker.offsetHeight : 52;
+    var navbarH = navbar ? navbar.offsetHeight : 60;
+    return (tickerH + navbarH) + 'px';
+  }
 
   /* ── Navbar scroll ── */
   window.addEventListener('scroll', function(){
-    var scrolled = window.scrollY > 40;
+    var scrolled = window.scrollY > 10;
     document.getElementById('navbar').classList.toggle('scrolled', scrolled);
     var mob = document.getElementById('navMobile');
-    if (mob) mob.style.top = scrolled ? '54px' : '64px';
+    if (mob && mob.classList.contains('open')) mob.style.top = navMobileTop();
   }, { passive: true });
 
   /* ── Mobile nav ── */
   function toggleNavMobile() {
     var mob = document.getElementById('navMobile');
     mob.classList.toggle('open');
-    var scrolled = window.scrollY > 40;
-    mob.style.top = scrolled ? '54px' : '64px';
+    mob.style.top = navMobileTop();
   }
   function closeNavMobile() {
     document.getElementById('navMobile').classList.remove('open');
