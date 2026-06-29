@@ -1854,7 +1854,12 @@ def create_app(env='default'):
             if current_user.is_superadmin:
                 return redirect(url_for('admin.dashboard'))
             return redirect(url_for('factory.dashboard'))
-        return redirect(url_for('auth.login'))
+        ps = _get_platform_settings()
+        return render_template('landing.html',
+                               platform_name=ps['platform_name'],
+                               platform_version=ps['platform_version'],
+                               support_whatsapp=ps['support_whatsapp'],
+                               support_email=ps['support_email'])
 
     # ── Error handlers ────────────────────────────────────────
     @app.errorhandler(403)
