@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+{% block title %}{{ t.get('metals_title','أسعار المعادن العالمية') }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Metal Price Page ───────────────────────────────────── */
+.mp-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
+}
+.mp-live-dot {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(37,211,102,.12); border: 1px solid rgba(37,211,102,.3);
+  color: #16a34a; padding: 4px 14px; border-radius: 50px;
+  font-size: 12px; font-weight: 700;
+}
+.mp-live-dot::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%; background: #16a34a;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .4; transform: scale(.85); }
+}
+
+/* ── Metal cards ── */
+.mp-section-title {
+  font-size: 13px; font-weight: 800; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 12px; margin-top: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px; margin-bottom: 24px;
+}
+.mp-card {
+  background: #fff; border-radius: 14px;
+  border: 1px solid var(--grey-border);
+  padding: 18px 20px; position: relative; overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+[data-theme="dark"] .mp-card {
+  background: #1a1d21; border-color: rgba(212,175,55,.14);
+}
+.mp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+.mp-card-karat {
+  font-size: 11px; font-weight: 800; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px;
+}
+.mp-card-price {
+  font-size: 22px; font-weight: 900; letter-spacing: -.5px;
+  color: var(--black); transition: color .3s;
+}
+[data-theme="dark"] .mp-card-price { color: #f1f5f9; }
+.mp-card-unit { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+.mp-card-change {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 700; margin-top: 8px;
+  padding: 2px 8px; border-radius: 20px;
+}
+.mp-up   { background: rgba(22,163,74,.1);  color: #16a34a; }
+.mp-down { background: rgba(220,38,38,.1);  color: #dc2626; }
+.mp-flat { background: rgba(100,116,139,.1); color: #64748b; }
+
+.mp-gold-bg::after {
+  content: '⚜'; position: absolute; bottom: -10px;
+  {{ 'left' if dir=='rtl' else 'right' }}: 12px;
+  font-size: 52px; opacity: .06; pointer-events: none;
+}
+.mp-silver-bg::after {
+  content: '◆'; position: absolute; bottom: -8px;
+  {{ 'left' if dir=='rtl' else 'right' }}: 14px;
+  font-size: 44px; opacity: .06; pointer-events: none;
+}
+
+/* ── Currency panel ── */
+.mp-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px; margin-bottom: 24px;
+}
+.mp-currency-card {
+  background: #fff; border: 1px solid var(--grey-border);
+  border-radius: 14px; padding: 18px 20px;
+}
+[data-theme="dark"] .mp-currency-card {
+  background: #1a1d21; border-color: rgba(212,175,55,.14);
+}
+.mp-flag { font-size: 22px; margin-bottom: 6px; }
+.mp-currency-name { font-size: 11px; font-weight: 800; color: var(--text-muted); }
+.mp-currency-rate { font-size: 20px; font-weight: 900; color: var(--black); margin-top: 4px; }
+[data-theme="dark"] .mp-currency-rate { color: #f1f5f9; }
+.mp-currency-sub  { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── Converter ── */
+.mp-converter {
+  background: #fff; border: 1px solid var(--grey-border);
+  border-radius: 16px; padding: 22px; margin-bottom: 24px;
+}
+[data-theme="dark"] .mp-converter {
+  background: #1a1d21; border-color: rgba(212,175,55,.14);
+}
+.mp-conv-row {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: flex-end;
+}
+.mp-conv-field { flex: 1; min-width: 130px; }
+.mp-conv-field label { font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px; }
+.mp-conv-field input, .mp-conv-field select {
+  width: 100%; padding: 9px 12px; border-radius: 9px;
+  border: 1px solid var(--grey-border); font-family: 'Cairo', sans-serif;
+  font-size: 14px; font-weight: 700; background: #fff; color: var(--black);
+  outline: none; transition: border-color .2s;
+}
+[data-theme="dark"] .mp-conv-field input,
+[data-theme="dark"] .mp-conv-field select {
+  background: #242830; border-color: rgba(212,175,55,.2); color: #f1f5f9;
+}
+.mp-conv-field input:focus, .mp-conv-field select:focus {
+  border-color: var(--gold-dark);
+}
+.mp-conv-result {
+  background: var(--gold-pale); border: 1.5px solid var(--gold-border);
+  border-radius: 10px; padding: 12px 18px; margin-top: 14px;
+  font-size: 18px; font-weight: 900; color: var(--gold-dark);
+  min-height: 48px;
+}
+
+/* ── History table ── */
+.mp-history {
+  background: #fff; border: 1px solid var(--grey-border);
+  border-radius: 16px; overflow: hidden;
+}
+[data-theme="dark"] .mp-history {
+  background: #1a1d21; border-color: rgba(212,175,55,.14);
+}
+.mp-history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--grey-border);
+  flex-wrap: wrap; gap: 10px;
+}
+[data-theme="dark"] .mp-history-header { border-color: rgba(212,175,55,.1); }
+.mp-history-title { font-size: 15px; font-weight: 800; }
+.mp-history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.mp-history-table th {
+  padding: 10px 14px; text-align: {{ 'right' if dir=='rtl' else 'left' }};
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  border-bottom: 1px solid var(--grey-border); background: #f8fafc;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+[data-theme="dark"] .mp-history-table th {
+  background: #242830; border-color: rgba(212,175,55,.1);
+}
+.mp-history-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--grey-border);
+  font-weight: 600;
+}
+[data-theme="dark"] .mp-history-table td { border-color: rgba(212,175,55,.07); }
+.mp-history-table tr:last-child td { border-bottom: none; }
+.mp-history-table tr:hover td { background: var(--gold-pale); }
+
+/* ── Refresh bar ── */
+.mp-refresh-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+  background: #fff; border: 1px solid var(--grey-border);
+  border-radius: 12px; padding: 12px 18px; margin-bottom: 20px;
+}
+[data-theme="dark"] .mp-refresh-bar {
+  background: #1a1d21; border-color: rgba(212,175,55,.14);
+}
+.mp-next-refresh { font-size: 12px; color: var(--text-muted); }
+.mp-countdown { font-weight: 800; color: var(--gold-dark); }
+.mp-source-badge {
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  background: var(--grey-border); padding: 3px 10px; border-radius: 20px;
+}
+.btn-refresh {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 9px; font-size: 12px; font-weight: 700;
+  font-family: 'Cairo', sans-serif; cursor: pointer; border: none;
+  background: var(--gold-pale); color: var(--gold-dark);
+  border: 1px solid var(--gold-border); transition: all .18s;
+}
+.btn-refresh:hover { background: var(--gold-border); }
+.btn-refresh.spinning i { animation: spin .8s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media(max-width:600px) {
+  .mp-grid { grid-template-columns: repeat(2, 1fr); }
+  .mp-currency-grid { grid-template-columns: repeat(2, 1fr); }
+  .mp-card-price { font-size: 18px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{# ── Header ─────────────────────────────────────────────── #}
+<div class="mp-header">
+  <div>
+    <h4 class="page-title">
+      <i class="fas fa-chart-line" style="color:var(--gold-dark);margin-{{ 'left' if dir=='rtl' else 'right' }}:8px;"></i>
+      {{ t.get('metals_title','أسعار المعادن العالمية') }}
+    </h4>
+    <p class="page-subtitle">{{ t.get('metals_subtitle','Global Metals Market — Live Prices') }}</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span class="mp-live-dot" id="liveStatus">{{ t.get('metals_live','مباشر') }}</span>
+    <span class="mp-source-badge" id="sourceLabel">
+      {{ price.source if price else 'metals.live' }}
+    </span>
+    <button class="btn-refresh" id="refreshBtn" onclick="forceRefresh()">
+      <i class="fas fa-sync-alt" id="refreshIcon"></i>
+      {{ t.get('metals_refresh','تحديث') }}
+    </button>
+  </div>
+</div>
+
+{# ── Refresh bar ─────────────────────────────────────────── #}
+<div class="mp-refresh-bar">
+  <span class="mp-next-refresh">
+    {{ t.get('metals_last_update','آخر تحديث') }}:
+    <strong id="lastUpdateTime">{{ price.fetched_at.strftime('%H:%M:%S') if price else '—' }}</strong>
+  </span>
+  {% if auto_refresh %}
+  <span class="mp-next-refresh">
+    {{ t.get('metals_next_update','التحديث القادم خلال') }}
+    <span class="mp-countdown" id="countdown">{{ refresh_interval }}:00</span>
+  </span>
+  {% endif %}
+  <span class="mp-next-refresh" id="offlineWarning" style="display:none;color:#dc2626;">
+    <i class="fas fa-wifi-slash"></i>
+    {{ t.get('metals_offline','لا يوجد اتصال — آخر سعر محفوظ') }}
+  </span>
+</div>
+
+{# ── Gold Section ─────────────────────────────────────────── #}
+<div class="mp-section-title">
+  <span style="color:var(--gold-dark);">⚜</span>
+  {{ t.get('metals_gold','الذهب') }} — Gold
+</div>
+<div class="mp-grid" id="goldGrid">
+
+  <div class="mp-card mp-gold-bg">
+    <div class="mp-card-karat">{{ t.get('metals_oz','أونصة') }} (Troy oz)</div>
+    <div class="mp-card-price" id="gold_oz_usd">
+      {{ '${:,.2f}'.format(price.gold_oz_usd) if price and price.gold_oz_usd else '—' }}
+    </div>
+    <div class="mp-card-unit">USD / oz</div>
+    <div class="mp-card-change mp-flat" id="chg_gold_oz">—</div>
+  </div>
+
+  {% set g24 = (price.gold_oz_usd / 31.1035) if price and price.gold_oz_usd else 0 %}
+  {% for karat, mult in [('24K', 1), ('22K', 22/24), ('21K', 21/24), ('18K', 18/24)] %}
+  {% set price_val = g24 * mult %}
+  <div class="mp-card mp-gold-bg">
+    <div class="mp-card-karat">{{ t.get('metals_gram','جرام') }} {{ karat }}</div>
+    <div class="mp-card-price" id="gold_{{ karat[:-1] }}k_usd">
+      {{ '${:.4f}'.format(price_val) if price_val else '—' }}
+    </div>
+    <div class="mp-card-unit" id="gold_{{ karat[:-1] }}k_sar">
+      {{ '{:.2f} SAR'.format(price_val * price.usd_sar) if price_val and price else '— SAR' }}
+    </div>
+    <div class="mp-card-change mp-flat" id="chg_gold_{{ karat[:-1] }}k">—</div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Silver Section ─────────────────────────────────────────── #}
+<div class="mp-section-title">
+  <span style="color:#94a3b8;">◆</span>
+  {{ t.get('metals_silver','الفضة') }} — Silver
+</div>
+<div class="mp-grid" id="silverGrid">
+
+  <div class="mp-card mp-silver-bg">
+    <div class="mp-card-karat">{{ t.get('metals_oz','أونصة') }} (Troy oz)</div>
+    <div class="mp-card-price" id="silver_oz_usd">
+      {{ '${:.4f}'.format(price.silver_oz_usd) if price and price.silver_oz_usd else '—' }}
+    </div>
+    <div class="mp-card-unit">USD / oz</div>
+    <div class="mp-card-change mp-flat" id="chg_silver_oz">—</div>
+  </div>
+
+  {% set sg = (price.silver_oz_usd / 31.1035) if price and price.silver_oz_usd else 0 %}
+  <div class="mp-card mp-silver-bg">
+    <div class="mp-card-karat">{{ t.get('metals_gram','جرام') }}</div>
+    <div class="mp-card-price" id="silver_g_usd">
+      {{ '${:.4f}'.format(sg) if sg else '—' }}
+    </div>
+    <div class="mp-card-unit" id="silver_g_sar">
+      {{ '{:.4f} SAR'.format(sg * price.usd_sar) if sg and price else '— SAR' }}
+    </div>
+    <div class="mp-card-change mp-flat" id="chg_silver_g">—</div>
+  </div>
+
+</div>
+
+{# ── Currency Section ─────────────────────────────────────────── #}
+<div class="mp-section-title">
+  <span>💱</span>
+  {{ t.get('metals_currencies','أسعار العملات') }} — Exchange Rates
+</div>
+<div class="mp-currency-grid">
+  <div class="mp-currency-card">
+    <div class="mp-flag">🇺🇸</div>
+    <div class="mp-currency-name">USD — {{ t.get('metals_usd','دولار أمريكي') }}</div>
+    <div class="mp-currency-rate">1.0000</div>
+    <div class="mp-currency-sub">Base currency</div>
+  </div>
+  <div class="mp-currency-card">
+    <div class="mp-flag">🇸🇦</div>
+    <div class="mp-currency-name">SAR — {{ t.get('metals_sar','ريال سعودي') }}</div>
+    <div class="mp-currency-rate" id="usd_sar_disp">
+      {{ '{:.4f}'.format(price.usd_sar) if price else '3.7500' }}
+    </div>
+    <div class="mp-currency-sub">{{ t.get('metals_per_usd','لكل دولار') }}</div>
+  </div>
+  <div class="mp-currency-card">
+    <div class="mp-flag">🇹🇷</div>
+    <div class="mp-currency-name">TRY — {{ t.get('metals_try','ليرة تركية') }}</div>
+    <div class="mp-currency-rate" id="usd_try_disp">
+      {{ '{:.4f}'.format(price.usd_try) if price else '32.0000' }}
+    </div>
+    <div class="mp-currency-sub">{{ t.get('metals_per_usd','لكل دولار') }}</div>
+  </div>
+</div>
+
+{# ── Currency Converter ─────────────────────────────────────── #}
+<div class="mp-section-title" style="margin-top:8px;">
+  <span>🔄</span>
+  {{ t.get('metals_converter','حاسبة الأسعار') }}
+</div>
+<div class="mp-converter">
+  <div class="mp-conv-row">
+    <div class="mp-conv-field">
+      <label>{{ t.get('weight','الوزن') }} ({{ t.get('grams','جرام') }})</label>
+      <input type="number" id="conv_weight" value="10" min="0.001" step="0.001"
+             oninput="calcConvert()" placeholder="10"/>
+    </div>
+    <div class="mp-conv-field">
+      <label>{{ t.get('karat','العيار') }}</label>
+      <select id="conv_karat" onchange="calcConvert()">
+        <option value="24">24K</option>
+        <option value="22">22K</option>
+        <option value="21" selected>21K</option>
+        <option value="18">18K</option>
+        <option value="silver">{{ t.get('metals_silver','فضة') }}</option>
+      </select>
+    </div>
+    <div class="mp-conv-field">
+      <label>{{ t.get('metals_currency','العملة') }}</label>
+      <select id="conv_currency" onchange="calcConvert()">
+        <option value="usd">USD — {{ t.get('metals_usd','دولار') }}</option>
+        <option value="sar" selected>SAR — {{ t.get('metals_sar','ريال') }}</option>
+        <option value="try">TRY — {{ t.get('metals_try','ليرة') }}</option>
+      </select>
+    </div>
+  </div>
+  <div class="mp-conv-result" id="conv_result">—</div>
+</div>
+
+{# ── Price History ─────────────────────────────────────────── #}
+<div class="mp-section-title" style="margin-top:8px;">
+  <span>📋</span>
+  {{ t.get('metals_history','سجل الأسعار') }}
+</div>
+<div class="mp-history">
+  <div class="mp-history-header">
+    <span class="mp-history-title">{{ t.get('metals_history','سجل الأسعار') }}</span>
+    <small style="color:var(--text-muted);">{{ t.get('metals_history_sub','آخر 50 تحديث') }}</small>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="mp-history-table">
+      <thead>
+        <tr>
+          <th>{{ t.get('date','التاريخ') }}</th>
+          <th>{{ t.get('metals_oz','أونصة') }} (USD)</th>
+          <th>24K (USD/g)</th>
+          <th>22K (USD/g)</th>
+          <th>21K (USD/g)</th>
+          <th>18K (USD/g)</th>
+          <th>{{ t.get('metals_silver','الفضة') }} (USD/g)</th>
+          <th>USD→SAR</th>
+          <th>USD→TRY</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+        {% set g24h = (h.gold_oz_usd / 31.1035) if h.gold_oz_usd else 0 %}
+        <tr>
+          <td style="white-space:nowrap;">{{ h.fetched_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td style="font-family:monospace;">${{ '{:,.2f}'.format(h.gold_oz_usd or 0) }}</td>
+          <td>${{ '{:.4f}'.format(g24h) }}</td>
+          <td>${{ '{:.4f}'.format(g24h * 22/24) }}</td>
+          <td>${{ '{:.4f}'.format(g24h * 21/24) }}</td>
+          <td>${{ '{:.4f}'.format(g24h * 18/24) }}</td>
+          <td>${{ '{:.4f}'.format((h.silver_oz_usd or 0) / 31.1035) }}</td>
+          <td>{{ '{:.4f}'.format(h.usd_sar or 3.75) }}</td>
+          <td>{{ '{:.4f}'.format(h.usd_try or 32.0) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text-muted);">
+          {{ t.get('metals_no_history','لا توجد بيانات بعد — ستظهر عند أول تحديث') }}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+var REFRESH_INTERVAL = {{ refresh_interval }} * 60 * 1000;  // ms
+var AUTO_REFRESH     = {{ 'true' if auto_refresh else 'false' }};
+var countdownSec     = {{ refresh_interval }} * 60;
+
+// Latest data cache
+var latestData = null;
+
+/* ── Fetch prices from backend ── */
+function fetchPrices(force) {
+  var url = '/metals/api/prices' + (force ? '?force=1' : '');
+  fetch(url)
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.ok) {
+        var prev = latestData;
+        latestData = j.data;
+        updateCards(j.data, prev);
+        document.getElementById('offlineWarning').style.display = 'none';
+        document.getElementById('liveStatus').style.background = 'rgba(37,211,102,.12)';
+        countdownSec = {{ refresh_interval }} * 60;
+      }
+    })
+    .catch(function(){
+      document.getElementById('offlineWarning').style.display = 'inline-flex';
+      document.getElementById('liveStatus').style.background = 'rgba(220,38,38,.12)';
+    })
+    .finally(function(){
+      var btn = document.getElementById('refreshBtn');
+      btn.classList.remove('spinning');
+      document.getElementById('refreshIcon').style.animation = '';
+    });
+}
+
+function forceRefresh() {
+  var btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  document.getElementById('refreshIcon').style.animation = 'spin .6s linear infinite';
+  fetchPrices(true);
+}
+
+/* ── Update card DOM ── */
+function fmt(n, dec) { return parseFloat(n).toFixed(dec); }
+function fmtUSD(n)   { return '$' + parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:4}); }
+function fmtSAR(n)   { return fmt(n,2) + ' SAR'; }
+
+function changeClass(cur, prev) {
+  if (!prev || cur == prev) return 'mp-flat';
+  return cur > prev ? 'mp-up' : 'mp-down';
+}
+function changeLabel(cur, prev) {
+  if (!prev) return '—';
+  var diff = cur - prev;
+  var pct  = ((diff / prev) * 100);
+  var sign = diff >= 0 ? '+' : '';
+  var arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '⬜');
+  return arrow + ' ' + sign + fmt(Math.abs(pct), 2) + '%';
+}
+
+function updateCards(d, prev) {
+  var g = 31.1035;
+  var sar = d.usd_sar || 3.75;
+  var tryR = d.usd_try || 32.0;
+  var pOz  = prev ? prev.gold_oz_usd : null;
+
+  // Gold oz
+  setCard('gold_oz_usd', fmtUSD(d.gold_oz_usd), 'chg_gold_oz', d.gold_oz_usd, pOz);
+  // Gold grams per karat
+  var g24 = d.gold_oz_usd / g;
+  var g22 = g24 * 22/24, g21 = g24 * 21/24, g18 = g24 * 18/24;
+  var pg24 = pOz ? pOz / g : null;
+
+  setCardSAR('gold_24k', g24, sar, pg24);
+  setCardSAR('gold_22k', g22, sar, pg24 ? pg24 * 22/24 : null);
+  setCardSAR('gold_21k', g21, sar, pg24 ? pg24 * 21/24 : null);
+  setCardSAR('gold_18k', g18, sar, pg24 ? pg24 * 18/24 : null);
+
+  // Silver
+  var sg = d.silver_oz_usd / g;
+  var pSilver = prev ? prev.silver_oz_usd : null;
+  setCard('silver_oz_usd', '$' + fmt(d.silver_oz_usd,4), 'chg_silver_oz', d.silver_oz_usd, pSilver);
+  setCard('silver_g_usd',  '$' + fmt(sg,4),             'chg_silver_g',  sg, pSilver ? pSilver/g : null);
+  el('silver_g_sar').textContent = fmt(sg * sar, 4) + ' SAR';
+
+  // Currencies
+  el('usd_sar_disp').textContent = fmt(sar, 4);
+  el('usd_try_disp').textContent = fmt(tryR, 4);
+
+  // Source + timestamp
+  el('sourceLabel').textContent  = d.source || 'metals.live';
+  el('lastUpdateTime').textContent = d.fetched_at || '—';
+
+  calcConvert();
+}
+
+function el(id) { return document.getElementById(id); }
+
+function setCard(priceId, priceStr, chgId, cur, prev) {
+  var priceEl = el(priceId);
+  if (priceEl) priceEl.textContent = priceStr;
+  var chgEl = el(chgId);
+  if (chgEl) {
+    chgEl.textContent = changeLabel(cur, prev);
+    chgEl.className = 'mp-card-change ' + changeClass(cur, prev);
+  }
+}
+function setCardSAR(karatId, usdVal, sar, prevUsd) {
+  setCard('gold_' + karatId + '_usd', '$' + fmt(usdVal, 4),
+          'chg_gold_' + karatId, usdVal, prevUsd);
+  var sarEl = el('gold_' + karatId + '_sar');
+  if (sarEl) sarEl.textContent = fmt(usdVal * sar, 2) + ' SAR';
+}
+
+/* ── Converter ── */
+function calcConvert() {
+  if (!latestData) return;
+  var w    = parseFloat(el('conv_weight').value) || 0;
+  var kar  = el('conv_karat').value;
+  var cur  = el('conv_currency').value;
+  var d    = latestData;
+  var g    = 31.1035;
+  var g24  = d.gold_oz_usd / g;
+
+  var pricePerGramUSD = 0;
+  if (kar === 'silver') pricePerGramUSD = d.silver_oz_usd / g;
+  else pricePerGramUSD = g24 * parseInt(kar) / 24;
+
+  var total = w * pricePerGramUSD;
+  var label = 'USD';
+  if (cur === 'sar') { total *= d.usd_sar || 3.75; label = 'SAR'; }
+  if (cur === 'try') { total *= d.usd_try || 32.0; label = 'TRY'; }
+
+  el('conv_result').textContent =
+    w.toFixed(3) + ' g × ' + (kar === 'silver' ? '{{ t.get("metals_silver","فضة") }}' : kar) +
+    ' = ' + total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) +
+    ' ' + label;
+}
+
+/* ── Countdown timer ── */
+function tick() {
+  if (!AUTO_REFRESH) return;
+  countdownSec--;
+  if (countdownSec <= 0) {
+    fetchPrices(false);
+    countdownSec = {{ refresh_interval }} * 60;
+  }
+  var m = Math.floor(countdownSec / 60);
+  var s = countdownSec % 60;
+  var cdEl = el('countdown');
+  if (cdEl) cdEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+// Boot
+document.addEventListener('DOMContentLoaded', function(){
+  fetchPrices(false);
+  if (AUTO_REFRESH) setInterval(tick, 1000);
+  calcConvert();
+});
+</script>
+{% endblock %}

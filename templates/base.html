@@ -10,7 +10,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>{% block title %}{{ t.gold_factory }}{% endblock %}</title>
+  <title>{% block title %}{{ platform_name }}{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -38,15 +41,16 @@
 <!-- ── Sidebar ───────────────────────────────────────────── -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-brand">
-    {# Platform logo — keep golden background, show logo on top #}
-    {% if platform_logo %}
-    <div class="sidebar-logo" style="padding:4px;overflow:hidden;">
+    {# Platform logo — golden background always; blend removes logo's own background #}
+    <div class="sidebar-logo">
+      {% if platform_logo %}
       <img src="{{ platform_logo }}" alt="logo"
-           style="width:44px;height:44px;object-fit:contain;border-radius:8px;"/>
+           style="width:36px;height:36px;object-fit:contain;
+                  mix-blend-mode:multiply;"/>
+      {% else %}
+      <i class="fas fa-ring"></i>
+      {% endif %}
     </div>
-    {% else %}
-    <div class="sidebar-logo"><i class="fas fa-ring"></i></div>
-    {% endif %}
     <span class="sidebar-brand-name">{{ platform_name }}</span>
     <span class="sidebar-brand-sub">{{ platform_version }}</span>
   </div>
@@ -295,6 +299,14 @@
           </ul>
         </li>
 
+        {# أسعار المعادن — direct link #}
+        <li class="nav-item">
+          <a href="{{ url_for('metals.metals_page') }}" class="nav-link-item">
+            <i class="fas fa-chart-line nav-ico" style="color:#D4AF37;"></i>
+            <span>{{ t.get('metals_nav','أسعار المعادن') }}</span>
+          </a>
+        </li>
+
         {# الإعدادات — direct link #}
         <li class="nav-item">
           <a href="{{ url_for('factory.settings') }}" class="nav-link-item">
@@ -353,9 +365,14 @@
          style="text-decoration:none;color:inherit;">
         <div class="topbar-title">
           {% if platform_logo %}
-          <img src="{{ platform_logo }}" alt="logo"
-               style="width:24px;height:24px;object-fit:contain;border-radius:6px;
-                      vertical-align:middle;margin-right:8px;margin-left:8px;flex-shrink:0;"/>
+          <div style="width:28px;height:28px;border-radius:8px;flex-shrink:0;
+                      background:linear-gradient(135deg,var(--gold),var(--gold-dark));
+                      display:inline-flex;align-items:center;justify-content:center;
+                      margin-right:8px;margin-left:8px;vertical-align:middle;
+                      box-shadow:0 3px 10px rgba(212,175,55,0.4);">
+            <img src="{{ platform_logo }}" alt="logo"
+                 style="width:20px;height:20px;object-fit:contain;mix-blend-mode:multiply;"/>
+          </div>
           {% else %}
           <i class="fas fa-ring" style="color:var(--gold);font-size:18px;margin-right:8px;margin-left:8px;"></i>
           {% endif %}

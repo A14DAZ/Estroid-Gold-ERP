@@ -8,13 +8,21 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
 </head>
+<script>
+  (function(){
+    var m=localStorage.getItem('goldErpMode')||'dark';
+    document.documentElement.setAttribute('data-theme',m);
+  })();
+</script>
 <body>
 <div class="auth-bg">
   <div class="auth-card">
     <div class="auth-logo">
       {% if platform_logo %}
-      <div class="auth-logo-icon" style="background:transparent;padding:0;display:flex;align-items:center;justify-content:center;">
+      <div class="auth-logo-icon">
         <img src="{{ platform_logo }}" alt="logo"
              style="width:64px;height:64px;object-fit:contain;border-radius:14px;"/>
       </div>
@@ -98,6 +106,23 @@
     </div>
   </div>
 </div>
+
+{# Dark Mode Toggle #}
+<button onclick="(function(){var m=localStorage.getItem('goldErpMode')||'dark';var n=m==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('goldErpMode',n);var i=document.getElementById('authModeIcon');if(i)i.className=n==='dark'?'fas fa-sun':'fas fa-moon';})()"
+  style="position:fixed;top:18px;{{ 'left' if dir=='ltr' else 'right' }}:18px;z-index:9999;
+         width:40px;height:40px;border-radius:10px;border:1px solid rgba(212,175,55,.25);
+         background:rgba(212,175,55,.08);color:#D4AF37;cursor:pointer;
+         display:flex;align-items:center;justify-content:center;font-size:16px;
+         transition:all .2s;" title="{{ t.get('dark_mode','Dark/Light Mode') }}">
+  <i id="authModeIcon" class="fas fa-sun"></i>
+</button>
+<script>
+  (function(){
+    var m=localStorage.getItem('goldErpMode')||'dark';
+    var i=document.getElementById('authModeIcon');
+    if(i)i.className=m==='dark'?'fas fa-sun':'fas fa-moon';
+  })();
+</script>
 
 {# WhatsApp Button #}
 {% if support_whatsapp %}

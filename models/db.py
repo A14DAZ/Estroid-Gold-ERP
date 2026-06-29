@@ -24,6 +24,7 @@ def init_extensions(app):
         from models.subscription import (               # register subscription tables
             SubscriptionPlan, Payment, FactoryNote
         )
+        from models.metal_price import MetalPrice      # register metal_price table
         db.create_all()
         _run_migrations()
         _seed_superadmin()
@@ -191,6 +192,10 @@ def _seed_app_settings():
         'platform_name':     'Estroid Gold ERP',
         'platform_tagline':  'Smart ERP System for Gold Factories',
         'platform_version':  'v5.0',
+        'metals_api_source':     'metals.live',
+        'metals_api_key':        '',
+        'metals_refresh_interval': '1',
+        'metals_auto_refresh':   'true',
     }
     for key, val in defaults.items():
         if not AppSetting.query.filter_by(key=key).first():

@@ -1,641 +1,947 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="{{ lang }}" dir="{{ dir }}" data-theme="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Estroid Gold ERP — نظام إدارة مصانع الذهب</title>
+
+  {# ── SEO Meta Tags ── #}
+  <title>{{ platform_name }} — {{ t.get('land_hero_subtitle','نظام ERP لمصانع الذهب') }}</title>
+  <meta name="description" content="{{ t.get('land_hero_desc','إدارة مصنع الذهب بالكامل في منصة واحدة') }}"/>
+  <meta name="keywords" content="gold factory ERP, مصنع الذهب, نظام إدارة, jewelry management, Estroid Gold ERP"/>
+  <meta name="robots" content="index, follow"/>
+  <meta name="author" content="Estroid"/>
+  <link rel="canonical" href="https://estroid.com/"/>
+
+  {# Open Graph #}
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="{{ platform_name }} — {{ t.get('land_hero_subtitle','نظام ERP لمصانع الذهب') }}"/>
+  <meta property="og:description" content="{{ t.get('land_hero_desc','إدارة مصنع الذهب بالكامل في منصة واحدة') }}"/>
+  <meta property="og:url" content="https://estroid.com/"/>
+  <meta property="og:image" content="{{ platform_logo or url_for('static', filename='estroid_logo.svg', _external=True) }}"/>
+  <meta property="og:site_name" content="{{ platform_name }}"/>
+
+  {# Twitter Card #}
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="{{ platform_name }}"/>
+  <meta name="twitter:description" content="{{ t.get('land_hero_desc','إدارة مصنع الذهب بالكامل في منصة واحدة') }}"/>
+  <meta name="twitter:image" content="{{ platform_logo or url_for('static', filename='estroid_logo.svg', _external=True) }}"/>
+
+  {# Favicon #}
+  {% if platform_logo %}
+  <link rel="icon" type="image/png" href="{{ platform_logo }}"/>
+  <link rel="apple-touch-icon" href="{{ platform_logo }}"/>
+  {% else %}
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='estroid_logo.svg') }}"/>
+  {% endif %}
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}"/>
+  <meta name="theme-color" content="#D4AF37"/>
+
+  {# Fonts & Icons #}
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
   <style>
+    /* ═══════════════════════════════════════
+       CSS VARIABLES — Dark (default) + Light
+    ═══════════════════════════════════════ */
     :root {
-      --gold: #D4AF37;
-      --gold-dark: #B8960C;
-      --gold-light: #F5D76E;
-      --gold-glow: rgba(212,175,55,.25);
-      --dark-bg: #0a0a0f;
-      --dark-card: #111118;
-      --dark-card2: #16161f;
-      --dark-border: rgba(212,175,55,.18);
-      --text-main: #f0ead6;
-      --text-muted: #8a8490;
+      --gold:        #D4AF37;
+      --gold-dark:   #B8960C;
+      --gold-light:  #F5D76E;
+      --gold-glow:   rgba(212,175,55,.22);
+
+      /* dark theme colours */
+      --bg:          #0a0a0f;
+      --bg2:         #111118;
+      --bg3:         #16161f;
+      --card:        #111118;
+      --card2:       #16161f;
+      --border:      rgba(212,175,55,.16);
+      --text:        #f0ead6;
+      --muted:       #8a8490;
+      --nav-bg:      rgba(10,10,15,.85);
+      --input-bg:    #16161f;
+      --shadow-clr:  rgba(0,0,0,.6);
+      --check-bg:    #111118;
+      --faq-bg:      #111118;
+      --mock-bg:     #16161f;
+      --mock-card:   #0a0a0f;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    [data-theme="light"] {
+      --bg:          #f5f2ea;
+      --bg2:         #ffffff;
+      --bg3:         #fdf9f0;
+      --card:        #ffffff;
+      --card2:       #fdf9f0;
+      --border:      rgba(180,140,10,.22);
+      --text:        #1a1207;
+      --muted:       #6b6058;
+      --nav-bg:      rgba(245,242,234,.92);
+      --input-bg:    #fdf9f0;
+      --shadow-clr:  rgba(0,0,0,.12);
+      --check-bg:    #ffffff;
+      --faq-bg:      #ffffff;
+      --mock-bg:     #fdf9f0;
+      --mock-card:   #ffffff;
+    }
+
+    /* ═══════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Cairo', sans-serif;
-      background: var(--dark-bg);
-      color: var(--text-main);
+      background: var(--bg);
+      color: var(--text);
       overflow-x: hidden;
+      transition: background .3s, color .3s;
     }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
 
-    /* ── NAVBAR ── */
-    .navbar-landing {
+    /* ═══════════════════════════════════════
+       NAVBAR
+    ═══════════════════════════════════════ */
+    .navbar {
       position: fixed; top: 0; left: 0; right: 0; z-index: 999;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 48px;
-      background: rgba(10,10,15,.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--dark-border);
-      transition: padding .3s;
+      padding: 14px 48px;
+      background: var(--nav-bg);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      transition: padding .3s, background .3s;
     }
-    .navbar-landing.scrolled { padding: 10px 48px; }
-    .navbar-logo {
-      display: flex; align-items: center; gap: 12px;
-      text-decoration: none;
+    .navbar.scrolled { padding: 9px 48px; }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 11px;
+      text-decoration: none; flex-shrink: 0;
     }
-    .navbar-logo-icon {
-      width: 40px; height: 40px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    .nav-logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
       border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 18px; color: #000; font-weight: 900;
-      box-shadow: 0 0 16px var(--gold-glow);
+      font-size: 17px; color: #000; font-weight: 900;
+      box-shadow: 0 0 14px var(--gold-glow);
+      flex-shrink: 0;
     }
-    .navbar-logo-text { font-size: 18px; font-weight: 800; color: var(--text-main); }
-    .navbar-logo-text span { color: var(--gold); }
-    .navbar-links { display: flex; align-items: center; gap: 8px; }
-    .nav-btn {
-      padding: 8px 20px; border-radius: 8px; font-size: 13px;
+    .nav-logo-img {
+      width: 38px; height: 38px; object-fit: contain; border-radius: 9px;
+    }
+    .nav-logo-text {
+      font-size: 17px; font-weight: 900; color: var(--text);
+      white-space: nowrap;
+    }
+    .nav-logo-text span { color: var(--gold); }
+
+    .nav-center {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .nav-link {
+      padding: 7px 16px; border-radius: 8px; font-size: 13px;
       font-weight: 700; font-family: 'Cairo', sans-serif;
+      color: var(--muted); text-decoration: none; transition: all .2s;
+      background: transparent; border: none; cursor: pointer;
+    }
+    .nav-link:hover { color: var(--gold); background: var(--gold-glow); }
+
+    .nav-right {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+
+    /* Language switcher */
+    .lang-switcher {
+      display: flex; align-items: center; gap: 3px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px; flex-shrink: 0;
+    }
+    .lang-btn {
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+      font-weight: 800; font-family: 'Cairo', sans-serif;
+      text-decoration: none; color: var(--muted); transition: all .15s;
+      background: transparent; border: none; cursor: pointer;
+    }
+    .lang-btn.active, .lang-btn:hover {
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      color: #000;
+    }
+
+    /* Dark mode toggle */
+    .mode-btn {
+      width: 36px; height: 36px; border-radius: 9px;
+      background: var(--bg2); border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; transition: all .2s; flex-shrink: 0;
+    }
+    .mode-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .nav-btn {
+      padding: 8px 18px; border-radius: 9px; font-size: 13px;
+      font-weight: 800; font-family: 'Cairo', sans-serif;
       cursor: pointer; text-decoration: none; transition: all .2s;
-      border: none;
+      border: none; white-space: nowrap;
     }
     .nav-btn-outline {
       background: transparent;
-      border: 1px solid var(--dark-border);
-      color: var(--text-main);
+      border: 1px solid var(--border); color: var(--text);
     }
     .nav-btn-outline:hover { border-color: var(--gold); color: var(--gold); }
     .nav-btn-gold {
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
       color: #000;
     }
-    .nav-btn-gold:hover { opacity: .88; color: #000; }
-    .navbar-hamburger { display: none; background: none; border: none; color: var(--text-main); font-size: 22px; cursor: pointer; }
-    @media(max-width:768px) {
-      .navbar-landing { padding: 14px 20px; }
-      .navbar-links { display: none; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--dark-card); padding: 16px; gap: 10px; border-bottom: 1px solid var(--dark-border); }
-      .navbar-links.open { display: flex; }
-      .navbar-hamburger { display: block; }
-      .nav-btn { text-align: center; }
+    .nav-btn-gold:hover { opacity: .88; color: #000; transform: translateY(-1px); }
+
+    /* Hamburger */
+    .nav-hamburger {
+      display: none; background: none; border: none;
+      color: var(--text); font-size: 22px; cursor: pointer;
+    }
+    .nav-mobile {
+      display: none; flex-direction: column; gap: 8px;
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--nav-bg); backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border); padding: 16px 20px;
+    }
+    .nav-mobile.open { display: flex; }
+
+    @media(max-width: 900px) {
+      .navbar { padding: 12px 20px; }
+      .navbar.scrolled { padding: 8px 20px; }
+      .nav-center { display: none; }
+      .nav-right .nav-btn { display: none; }
+      .nav-hamburger { display: block; }
+    }
+    @media(max-width: 480px) {
+      .lang-switcher { display: none; }
     }
 
-    /* ── HERO ── */
+    /* ═══════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════ */
     .hero {
       min-height: 100vh;
       display: flex; align-items: center; justify-content: center;
-      text-align: center;
-      padding: 120px 24px 80px;
-      position: relative;
-      overflow: hidden;
+      text-align: center; padding: 120px 24px 80px;
+      position: relative; overflow: hidden;
     }
-    .hero-bg-glow {
-      position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
-      width: 700px; height: 700px;
-      background: radial-gradient(circle, rgba(212,175,55,.12) 0%, transparent 70%);
-      pointer-events: none;
+    .hero-glow {
+      position: absolute; top: 8%; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 700px; pointer-events: none;
+      background: radial-gradient(ellipse, rgba(212,175,55,.13) 0%, transparent 68%);
     }
+    [data-theme="light"] .hero-glow {
+      background: radial-gradient(ellipse, rgba(212,175,55,.18) 0%, transparent 65%);
+    }
+    .hero-inner { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; }
+
     .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(212,175,55,.1); border: 1px solid var(--dark-border);
+      background: rgba(212,175,55,.1); border: 1px solid var(--border);
       padding: 6px 18px; border-radius: 50px; font-size: 13px;
       color: var(--gold); margin-bottom: 28px;
     }
+    [data-theme="light"] .hero-badge { background: rgba(212,175,55,.15); }
+
     .hero-title {
-      font-size: clamp(36px, 6vw, 72px);
-      font-weight: 900; line-height: 1.15;
-      margin-bottom: 8px;
+      font-size: clamp(36px, 6.5vw, 76px);
+      font-weight: 900; line-height: 1.12; margin-bottom: 10px;
     }
-    .hero-title .gold-text {
+    .gold-grad {
       background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     .hero-subtitle {
-      font-size: clamp(16px, 2.5vw, 22px);
-      color: var(--text-muted); margin-bottom: 16px;
-      font-weight: 600;
+      font-size: clamp(15px, 2.2vw, 21px);
+      color: var(--muted); margin-bottom: 14px; font-weight: 700;
     }
     .hero-desc {
-      font-size: clamp(14px, 1.8vw, 17px);
-      color: var(--text-muted); max-width: 620px;
-      margin: 0 auto 48px; line-height: 1.8;
+      font-size: clamp(14px, 1.7vw, 17px);
+      color: var(--muted); max-width: 600px;
+      margin: 0 auto 48px; line-height: 1.85;
     }
     .hero-btns {
-      display: flex; flex-wrap: wrap; gap: 16px;
-      justify-content: center; margin-bottom: 60px;
+      display: flex; flex-wrap: wrap; gap: 14px;
+      justify-content: center; margin-bottom: 64px;
     }
-    .btn-hero {
-      padding: 14px 32px; border-radius: 12px; font-size: 15px;
+    .btn-h {
+      padding: 13px 28px; border-radius: 12px; font-size: 14px;
       font-weight: 800; font-family: 'Cairo', sans-serif;
       cursor: pointer; text-decoration: none; transition: all .25s;
-      display: inline-flex; align-items: center; gap: 8px; border: none;
+      display: inline-flex; align-items: center; gap: 9px; border: none;
+      white-space: nowrap;
     }
-    .btn-hero-gold {
+    .btn-h-gold {
       background: linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark));
-      color: #000;
-      box-shadow: 0 4px 24px rgba(212,175,55,.4);
+      color: #000; box-shadow: 0 4px 24px rgba(212,175,55,.38);
     }
-    .btn-hero-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,175,55,.5); color: #000; }
-    .btn-hero-outline {
-      background: transparent;
-      border: 1.5px solid rgba(212,175,55,.4);
-      color: var(--text-main);
+    .btn-h-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(212,175,55,.5); color: #000; }
+    .btn-h-outline {
+      background: transparent; border: 1.5px solid var(--border); color: var(--text);
     }
-    .btn-hero-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
-    .btn-hero-whatsapp {
+    .btn-h-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-2px); }
+    .btn-h-video {
+      background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.12); color: var(--text);
+    }
+    [data-theme="light"] .btn-h-video {
+      background: rgba(0,0,0,.04); border-color: rgba(0,0,0,.12);
+    }
+    .btn-h-video:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); color: var(--text); }
+    [data-theme="light"] .btn-h-video:hover { background: rgba(0,0,0,.07); }
+    .btn-h-wa {
       background: linear-gradient(135deg, #25D366, #1aa44e);
-      color: #fff;
-      box-shadow: 0 4px 24px rgba(37,211,102,.3);
+      color: #fff; box-shadow: 0 4px 20px rgba(37,211,102,.28);
     }
-    .btn-hero-whatsapp:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(37,211,102,.4); color: #fff; }
-    .btn-hero-video {
-      background: rgba(255,255,255,.06);
-      border: 1.5px solid rgba(255,255,255,.12);
-      color: var(--text-main);
-    }
-    .btn-hero-video:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); color: var(--text-main); }
+    .btn-h-wa:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,211,102,.4); color: #fff; }
+
     .hero-stats {
-      display: flex; flex-wrap: wrap; justify-content: center;
-      gap: 40px;
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 48px;
     }
-    .hero-stat { text-align: center; }
-    .hero-stat-num { font-size: 28px; font-weight: 900; color: var(--gold); }
-    .hero-stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .hstat { text-align: center; }
+    .hstat-num { font-size: 30px; font-weight: 900; color: var(--gold); }
+    .hstat-lbl { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-    /* ── SECTION COMMON ── */
-    section { padding: 100px 24px; }
-    .section-title {
-      text-align: center; margin-bottom: 16px;
-      font-size: clamp(26px, 4vw, 40px); font-weight: 900;
-    }
-    .section-sub {
-      text-align: center; color: var(--text-muted);
-      font-size: 16px; margin-bottom: 60px; max-width: 560px;
-      margin-left: auto; margin-right: auto;
-    }
+    /* ═══════════════════════════════════════
+       SECTION COMMON
+    ═══════════════════════════════════════ */
+    section { padding: 96px 24px; }
+    .sec-alt { background: var(--bg2); transition: background .3s; }
     .gold-line {
-      width: 60px; height: 3px; border-radius: 2px;
+      width: 56px; height: 3px; border-radius: 2px;
       background: linear-gradient(90deg, var(--gold), var(--gold-dark));
-      margin: 0 auto 20px;
+      margin: 0 auto 18px;
+    }
+    .sec-title {
+      text-align: center; font-size: clamp(26px, 4vw, 42px);
+      font-weight: 900; margin-bottom: 14px;
+    }
+    .sec-sub {
+      text-align: center; color: var(--muted); font-size: 16px;
+      margin-bottom: 58px; max-width: 540px;
+      margin-left: auto; margin-right: auto; line-height: 1.75;
     }
 
-    /* ── WHY SECTION ── */
-    .why-section { background: var(--dark-card); }
-    .feature-grid {
+    /* ═══════════════════════════════════════
+       FEATURE CARDS (WHY)
+    ═══════════════════════════════════════ */
+    .feat-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px; max-width: 1100px; margin: 0 auto;
+      gap: 18px; max-width: 1100px; margin: 0 auto;
     }
-    .feature-card {
-      background: var(--dark-bg);
-      border: 1px solid var(--dark-border);
-      border-radius: 16px; padding: 28px 24px;
-      transition: all .25s; cursor: default;
+    .feat-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 26px 22px; transition: all .25s;
     }
-    .feature-card:hover {
-      border-color: rgba(212,175,55,.5);
-      transform: translateY(-4px);
-      box-shadow: 0 8px 32px rgba(212,175,55,.12);
+    [data-theme="light"] .feat-card { background: var(--bg3); }
+    .feat-card:hover {
+      border-color: rgba(212,175,55,.5); transform: translateY(-4px);
+      box-shadow: 0 10px 36px var(--shadow-clr);
     }
-    .feature-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: linear-gradient(135deg, rgba(212,175,55,.2), rgba(212,175,55,.05));
-      border: 1px solid rgba(212,175,55,.25);
+    .feat-icon {
+      width: 50px; height: 50px; border-radius: 13px;
+      background: linear-gradient(135deg, rgba(212,175,55,.18), rgba(212,175,55,.05));
+      border: 1px solid rgba(212,175,55,.22);
       display: flex; align-items: center; justify-content: center;
-      font-size: 22px; margin-bottom: 16px;
+      font-size: 22px; margin-bottom: 15px;
     }
-    .feature-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
-    .feature-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+    .feat-name { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+    .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.75; }
 
-    /* ── SCREENSHOTS SLIDER ── */
-    .slider-wrap { max-width: 1000px; margin: 0 auto; position: relative; }
+    /* ═══════════════════════════════════════
+       SCREENSHOT SLIDER
+    ═══════════════════════════════════════ */
+    .slider-wrap { max-width: 980px; margin: 0 auto; }
     .slider-tabs {
-      display: flex; justify-content: center; flex-wrap: wrap;
-      gap: 10px; margin-bottom: 32px;
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 8px; margin-bottom: 28px;
     }
-    .slider-tab {
-      padding: 8px 20px; border-radius: 8px; font-size: 13px;
+    .stab {
+      padding: 7px 18px; border-radius: 8px; font-size: 13px;
       font-weight: 700; font-family: 'Cairo', sans-serif;
-      cursor: pointer; background: transparent;
-      border: 1px solid var(--dark-border); color: var(--text-muted);
-      transition: all .2s;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer; transition: all .2s;
     }
-    .slider-tab.active, .slider-tab:hover {
+    .stab.active, .stab:hover {
       background: rgba(212,175,55,.12); border-color: var(--gold); color: var(--gold);
     }
-    .slider-screen {
-      border-radius: 16px; overflow: hidden;
-      border: 1px solid var(--dark-border);
-      box-shadow: 0 24px 64px rgba(0,0,0,.5);
-      display: none; position: relative;
+    .sscreen {
+      display: none; border-radius: 16px; overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 64px var(--shadow-clr);
+      animation: fadeIn .3s ease;
     }
-    .slider-screen.active { display: block; }
-    .slider-screen-inner {
-      background: var(--dark-card2);
-      min-height: 360px;
-      display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 16px; padding: 40px;
-    }
-    .mock-topbar {
-      position: absolute; top: 0; left: 0; right: 0;
-      background: rgba(0,0,0,.4); border-bottom: 1px solid var(--dark-border);
-      padding: 10px 20px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .mock-title { font-size: 12px; color: var(--text-muted); margin-right: auto; margin-left: auto; }
+    .sscreen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-    /* Mock dashboard cards */
-    .mock-dashboard { padding-top: 48px; width: 100%; }
-    .mock-cards { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-    .mock-card {
-      flex: 1; min-width: 120px; background: var(--dark-bg);
-      border: 1px solid var(--dark-border); border-radius: 10px;
-      padding: 14px; text-align: center;
+    .mock-bar {
+      background: var(--mock-bg); border-bottom: 1px solid var(--border);
+      padding: 10px 18px; display: flex; align-items: center; gap: 7px;
     }
-    .mock-card-num { font-size: 20px; font-weight: 900; color: var(--gold); }
-    .mock-card-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .mock-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .mock-bar-title {
+      font-size: 12px; color: var(--muted);
+      margin: 0 auto; font-weight: 600;
+    }
+    .mock-body {
+      background: var(--mock-bg); padding: 20px;
+    }
+    .mock-cards {
+      display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .mc {
+      flex: 1; min-width: 100px; background: var(--mock-card);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; text-align: center;
+    }
+    .mc-n { font-size: 19px; font-weight: 900; color: var(--gold); }
+    .mc-l { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .mock-table { width: 100%; border-collapse: collapse; }
-    .mock-table th { font-size: 11px; color: var(--text-muted); padding: 6px 10px; border-bottom: 1px solid var(--dark-border); text-align: right; }
-    .mock-table td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.04); }
-    .mock-badge {
-      display: inline-block; padding: 2px 8px; border-radius: 4px;
-      font-size: 10px; font-weight: 700;
+    .mock-table th {
+      font-size: 11px; color: var(--muted); padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: {{ 'right' if dir=='rtl' else 'left' }};
     }
-    .badge-active { background: rgba(37,211,102,.15); color: #25D366; }
-    .badge-done { background: rgba(212,175,55,.15); color: var(--gold); }
-    .badge-inprog { background: rgba(99,102,241,.15); color: #818cf8; }
+    .mock-table td {
+      font-size: 12px; padding: 8px 10px;
+      border-bottom: 1px solid rgba(212,175,55,.06);
+    }
+    .mbadge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 4px; font-size: 10px; font-weight: 700;
+    }
+    .mb-g { background: rgba(37,211,102,.15); color: #25D366; }
+    .mb-y { background: rgba(212,175,55,.15); color: var(--gold); }
+    .mb-b { background: rgba(99,102,241,.15); color: #818cf8; }
 
-    /* ── FEATURES GRID ── */
+    /* ═══════════════════════════════════════
+       CHECK FEATURES
+    ═══════════════════════════════════════ */
     .check-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px; max-width: 900px; margin: 0 auto;
+      gap: 12px; max-width: 920px; margin: 0 auto;
     }
-    .check-item {
+    .citem {
       display: flex; align-items: center; gap: 12px;
-      background: var(--dark-card);
-      border: 1px solid var(--dark-border);
-      border-radius: 10px; padding: 14px 18px;
-      transition: border-color .2s;
+      background: var(--check-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 13px 17px; transition: border-color .2s;
     }
-    .check-item:hover { border-color: rgba(212,175,55,.4); }
-    .check-icon { color: var(--gold); font-size: 14px; flex-shrink: 0; }
-    .check-text { font-size: 14px; font-weight: 600; }
+    .citem:hover { border-color: rgba(212,175,55,.45); }
+    .citem i { color: var(--gold); font-size: 14px; flex-shrink: 0; }
+    .citem span { font-size: 13.5px; font-weight: 600; }
 
-    /* ── TESTIMONIALS ── */
-    .testimonials-section { background: var(--dark-card); }
-    .testimonial-grid {
+    /* ═══════════════════════════════════════
+       TESTIMONIALS
+    ═══════════════════════════════════════ */
+    .test-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px; max-width: 1000px; margin: 0 auto;
+      gap: 18px; max-width: 1020px; margin: 0 auto;
     }
-    .testimonial-card {
-      background: var(--dark-bg);
-      border: 1px solid var(--dark-border);
-      border-radius: 16px; padding: 28px;
-      transition: all .25s;
+    .tcard {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 26px; transition: all .25s;
     }
-    .testimonial-card:hover { border-color: rgba(212,175,55,.4); transform: translateY(-3px); }
-    .stars { color: var(--gold); font-size: 14px; margin-bottom: 14px; }
-    .testimonial-text { font-size: 14px; color: var(--text-muted); line-height: 1.8; margin-bottom: 20px; font-style: italic; }
-    .testimonial-author { display: flex; align-items: center; gap: 12px; }
-    .author-avatar {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    [data-theme="light"] .tcard { background: var(--bg3); }
+    .tcard:hover { border-color: rgba(212,175,55,.4); transform: translateY(-3px); }
+    .stars { color: var(--gold); font-size: 14px; margin-bottom: 13px; letter-spacing: 2px; }
+    .ttext {
+      font-size: 14px; color: var(--muted); line-height: 1.85;
+      margin-bottom: 18px; font-style: italic;
+    }
+    .tauthor { display: flex; align-items: center; gap: 11px; }
+    .tavatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px; font-weight: 900; color: #000;
+      font-size: 16px; font-weight: 900; color: #000; flex-shrink: 0;
     }
-    .author-name { font-size: 14px; font-weight: 800; }
-    .author-title { font-size: 12px; color: var(--text-muted); }
+    .tname { font-size: 14px; font-weight: 800; }
+    .trole { font-size: 12px; color: var(--muted); }
 
-    /* ── FAQ ── */
-    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+    /* ═══════════════════════════════════════
+       FAQ
+    ═══════════════════════════════════════ */
+    .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
     .faq-item {
-      background: var(--dark-card);
-      border: 1px solid var(--dark-border);
-      border-radius: 12px; overflow: hidden;
+      background: var(--faq-bg); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; transition: border-color .2s;
     }
+    .faq-item:hover { border-color: rgba(212,175,55,.35); }
     .faq-q {
-      padding: 18px 22px; cursor: pointer;
+      padding: 17px 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: space-between;
-      font-weight: 700; font-size: 15px;
-      transition: color .2s; user-select: none;
+      font-weight: 700; font-size: 14.5px; gap: 12px; user-select: none;
     }
     .faq-q:hover { color: var(--gold); }
-    .faq-q .faq-icon { color: var(--gold); transition: transform .25s; flex-shrink: 0; }
-    .faq-item.open .faq-icon { transform: rotate(180deg); }
+    .faq-q .fi { color: var(--gold); transition: transform .25s; flex-shrink: 0; }
+    .faq-item.open .fi { transform: rotate(180deg); }
     .faq-a {
       max-height: 0; overflow: hidden;
       transition: max-height .35s ease, padding .35s;
-      font-size: 14px; color: var(--text-muted); line-height: 1.8;
-      padding: 0 22px;
+      font-size: 14px; color: var(--muted); line-height: 1.85; padding: 0 20px;
     }
-    .faq-item.open .faq-a { max-height: 200px; padding: 0 22px 18px; }
+    .faq-item.open .faq-a { max-height: 200px; padding: 0 20px 16px; }
 
-    /* ── CONTACT ── */
-    .contact-section { background: var(--dark-card); }
+    /* ═══════════════════════════════════════
+       CONTACT
+    ═══════════════════════════════════════ */
     .contact-cards {
-      display: flex; flex-wrap: wrap; gap: 20px;
-      justify-content: center; max-width: 800px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; gap: 18px;
+      justify-content: center; max-width: 820px; margin: 0 auto;
     }
-    .contact-card {
-      flex: 1; min-width: 220px;
-      background: var(--dark-bg);
-      border: 1px solid var(--dark-border); border-radius: 16px;
-      padding: 32px 24px; text-align: center;
+    .ccard {
+      flex: 1; min-width: 210px; max-width: 260px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+      padding: 30px 22px; text-align: center;
       transition: all .25s; text-decoration: none; color: inherit;
     }
-    .contact-card:hover { border-color: var(--gold); transform: translateY(-4px); color: inherit; }
-    .contact-card-icon { font-size: 32px; margin-bottom: 14px; }
-    .contact-card-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
-    .contact-card-val { font-size: 14px; color: var(--text-muted); }
+    [data-theme="light"] .ccard { background: var(--bg3); }
+    .ccard:hover { border-color: var(--gold); transform: translateY(-4px); color: inherit; }
+    .ccard-icon { font-size: 30px; margin-bottom: 12px; }
+    .ccard-title { font-size: 15px; font-weight: 800; margin-bottom: 7px; }
+    .ccard-val { font-size: 13.5px; color: var(--muted); }
 
-    /* ── CTA ── */
-    .cta-section {
-      text-align: center; padding: 100px 24px;
-      background: linear-gradient(180deg, var(--dark-bg) 0%, rgba(212,175,55,.04) 50%, var(--dark-bg) 100%);
+    /* ═══════════════════════════════════════
+       CTA
+    ═══════════════════════════════════════ */
+    .cta-wrap {
+      text-align: center; padding: 96px 24px;
+      background: linear-gradient(180deg, var(--bg) 0%, rgba(212,175,55,.04) 50%, var(--bg) 100%);
+      transition: background .3s;
     }
-    .cta-title { font-size: clamp(28px, 4vw, 48px); font-weight: 900; margin-bottom: 16px; }
-    .cta-sub { font-size: 17px; color: var(--text-muted); margin-bottom: 40px; }
+    .cta-title { font-size: clamp(27px, 4.2vw, 50px); font-weight: 900; margin-bottom: 14px; }
+    .cta-sub { font-size: 17px; color: var(--muted); margin-bottom: 40px; }
 
-    /* ── FOOTER ── */
+    /* ═══════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════ */
     footer {
-      background: var(--dark-card);
-      border-top: 1px solid var(--dark-border);
-      padding: 40px 48px;
-      display: flex; flex-wrap: wrap;
-      align-items: center; justify-content: space-between;
-      gap: 20px;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      padding: 40px 48px; transition: background .3s;
     }
-    .footer-brand { font-size: 14px; color: var(--text-muted); }
-    .footer-brand strong { color: var(--gold); }
-    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
-    .footer-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color .2s; }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; gap: 32px;
+      align-items: flex-start; justify-content: space-between;
+    }
+    .footer-brand { max-width: 280px; }
+    .footer-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; margin-bottom: 12px;
+    }
+    .footer-logo-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; color: #000; font-weight: 900;
+    }
+    .footer-logo-text { font-size: 15px; font-weight: 900; color: var(--text); }
+    .footer-logo-text span { color: var(--gold); }
+    .footer-tagline { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 14px; }
+    .footer-powered {
+      font-size: 12px; color: var(--muted);
+      display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    }
+    .footer-powered a { color: var(--gold); font-weight: 700; text-decoration: none; }
+    .footer-powered a:hover { text-decoration: underline; }
+
+    .footer-col { min-width: 140px; }
+    .footer-col-title {
+      font-size: 13px; font-weight: 800; color: var(--text);
+      margin-bottom: 14px; text-transform: uppercase; letter-spacing: .8px;
+    }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .footer-links a {
+      font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s;
+    }
     .footer-links a:hover { color: var(--gold); }
 
-    /* ── VIDEO MODAL ── */
+    .footer-bottom {
+      max-width: 1100px; margin: 28px auto 0;
+      padding-top: 22px; border-top: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 12px;
+      align-items: center; justify-content: space-between;
+    }
+    .footer-copy { font-size: 12px; color: var(--muted); }
+    .footer-version {
+      font-size: 11px; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 3px 10px; border-radius: 6px;
+    }
+
+    /* ═══════════════════════════════════════
+       VIDEO MODAL
+    ═══════════════════════════════════════ */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 9999;
-      background: rgba(0,0,0,.85); backdrop-filter: blur(8px);
+      background: rgba(0,0,0,.8); backdrop-filter: blur(10px);
       align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal-box {
-      background: var(--dark-card);
-      border: 1px solid var(--dark-border);
-      border-radius: 20px; padding: 32px;
-      max-width: 820px; width: 90%;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px; max-width: 820px; width: 92%;
       position: relative;
     }
     .modal-close {
-      position: absolute; top: 16px; left: 16px;
-      background: rgba(255,255,255,.08); border: none; border-radius: 8px;
-      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--text-main); font-size: 16px; transition: background .2s;
+      position: absolute; top: 14px;
+      {{ 'left' if dir=='rtl' else 'right' }}: 14px;
+      background: rgba(255,255,255,.07); border: none; border-radius: 8px;
+      width: 34px; height: 34px; cursor: pointer; color: var(--text);
+      font-size: 15px; display: flex; align-items: center; justify-content: center;
     }
+    [data-theme="light"] .modal-close { background: rgba(0,0,0,.06); }
     .modal-close:hover { background: rgba(255,255,255,.14); }
-    .modal-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; padding-right: 20px; }
+    [data-theme="light"] .modal-close:hover { background: rgba(0,0,0,.1); }
+    .modal-title {
+      font-size: 19px; font-weight: 800; margin-bottom: 20px;
+      padding-{{ 'left' if dir=='rtl' else 'right' }}: 36px;
+    }
     .video-placeholder {
-      background: var(--dark-bg);
-      border: 1px dashed var(--dark-border);
+      background: var(--bg3); border: 1px dashed var(--border);
       border-radius: 12px; aspect-ratio: 16/9;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 12px;
+      align-items: center; justify-content: center; gap: 14px;
     }
-    .video-play-icon {
-      width: 72px; height: 72px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    .vplay {
+      width: 68px; height: 68px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
       display: flex; align-items: center; justify-content: center;
-      font-size: 28px; color: #000;
-      box-shadow: 0 0 40px rgba(212,175,55,.4);
+      font-size: 26px; color: #000;
+      box-shadow: 0 0 40px rgba(212,175,55,.38);
     }
-    .video-placeholder p { color: var(--text-muted); font-size: 14px; }
+    .video-placeholder p { color: var(--muted); font-size: 14px; }
+    .modal-note {
+      margin-top: 14px; font-size: 13px; color: var(--muted); text-align: center;
+    }
+    .modal-note a { color: var(--gold); font-weight: 700; text-decoration: none; }
+    .modal-note a.wa { color: #25D366; }
 
-    /* ── SCROLL ANIMATIONS ── */
-    .reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
+    /* ═══════════════════════════════════════
+       SCROLL REVEAL
+    ═══════════════════════════════════════ */
+    .reveal {
+      opacity: 0; transform: translateY(28px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
 
-    @media(max-width:600px) {
-      footer { flex-direction: column; text-align: center; padding: 32px 20px; }
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════ */
+    @media(max-width: 768px) {
+      .hero-stats { gap: 28px; }
+      .hstat-num { font-size: 24px; }
+      footer { padding: 32px 20px; }
+      .footer-inner { gap: 24px; }
+      .footer-bottom { flex-direction: column; text-align: center; }
       .hero-btns { flex-direction: column; align-items: center; }
+      .btn-h { width: 100%; max-width: 320px; justify-content: center; }
+    }
+    @media(max-width: 480px) {
+      section { padding: 72px 16px; }
+      .check-grid { grid-template-columns: 1fr; }
+      .feat-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  {# Apply saved theme before first paint #}
+  <script>
+    (function(){
+      var s=localStorage.getItem('goldErpMode')||'dark';
+      document.documentElement.setAttribute('data-theme',s);
+    })();
+  </script>
 </head>
 <body>
 
-<!-- ── NAVBAR ── -->
-<nav class="navbar-landing" id="navbar">
-  <a href="#" class="navbar-logo">
-    <div class="navbar-logo-icon">⚜</div>
-    <div class="navbar-logo-text">Estroid <span>Gold ERP</span></div>
+{# ══════════════════════════════════════════
+   NAVBAR
+══════════════════════════════════════════ #}
+<nav class="navbar" id="navbar">
+  <a href="{{ url_for('index') }}" class="nav-logo">
+    {% if platform_logo %}
+    <div class="nav-logo-icon" style="padding:0;overflow:hidden;">
+      <img src="{{ platform_logo }}" alt="{{ platform_name }}"
+           style="width:28px;height:28px;object-fit:contain;mix-blend-mode:multiply;"/>
+    </div>
+    {% else %}
+    <div class="nav-logo-icon">⚜</div>
+    {% endif %}
+    <div class="nav-logo-text">Estroid <span>Gold ERP</span></div>
   </a>
-  <button class="navbar-hamburger" onclick="toggleMenu()" aria-label="القائمة">
-    <i class="fas fa-bars"></i>
-  </button>
-  <div class="navbar-links" id="navLinks">
-    <a href="#why" class="nav-btn nav-btn-outline">لماذا نحن؟</a>
-    <a href="#features" class="nav-btn nav-btn-outline">المميزات</a>
-    <a href="#faq" class="nav-btn nav-btn-outline">الأسئلة</a>
-    <a href="{{ url_for('auth.login') }}" class="nav-btn nav-btn-outline">تسجيل الدخول</a>
-    <a href="{{ url_for('auth.register') }}" class="nav-btn nav-btn-gold">إنشاء حساب</a>
+
+  <div class="nav-center">
+    <a href="#why" class="nav-link">{{ t.get('land_nav_why','لماذا نحن؟') }}</a>
+    <a href="#features" class="nav-link">{{ t.get('land_nav_features','المميزات') }}</a>
+    <a href="#faq" class="nav-link">{{ t.get('land_nav_faq','الأسئلة') }}</a>
+    <a href="#contact" class="nav-link">{{ t.get('land_nav_contact','تواصل') }}</a>
+    <a href="https://estroid.com/" target="_blank" rel="noopener" class="nav-link">Estroid.com</a>
+  </div>
+
+  <div class="nav-right">
+    {# Language switcher #}
+    <div class="lang-switcher">
+      <a href="{{ url_for('lang', code='ar') }}"
+         class="lang-btn {% if lang=='ar' %}active{% endif %}">AR</a>
+      <a href="{{ url_for('lang', code='en') }}"
+         class="lang-btn {% if lang=='en' %}active{% endif %}">EN</a>
+      <a href="{{ url_for('lang', code='tr') }}"
+         class="lang-btn {% if lang=='tr' %}active{% endif %}">TR</a>
+    </div>
+
+    {# Dark / Light toggle #}
+    <button class="mode-btn" onclick="toggleLandingMode()" title="{{ t.get('dark_mode','الوضع الداكن') }}">
+      <i id="modeIconLand" class="fas fa-sun"></i>
+    </button>
+
+    <a href="{{ url_for('auth.login') }}" class="nav-btn nav-btn-outline">
+      {{ t.get('land_btn_login','تسجيل الدخول') }}
+    </a>
+    <a href="{{ url_for('auth.register') }}" class="nav-btn nav-btn-gold">
+      {{ t.get('land_btn_register','إنشاء حساب') }}
+    </a>
+
+    <button class="nav-hamburger" onclick="toggleNavMobile()" aria-label="menu">
+      <i class="fas fa-bars"></i>
+    </button>
   </div>
 </nav>
 
-<!-- ── HERO ── -->
+{# Mobile nav #}
+<div class="nav-mobile" id="navMobile">
+  <a href="#why" class="nav-link" onclick="closeNavMobile()">{{ t.get('land_nav_why','لماذا نحن؟') }}</a>
+  <a href="#features" class="nav-link" onclick="closeNavMobile()">{{ t.get('land_nav_features','المميزات') }}</a>
+  <a href="#faq" class="nav-link" onclick="closeNavMobile()">{{ t.get('land_nav_faq','الأسئلة') }}</a>
+  <a href="#contact" class="nav-link" onclick="closeNavMobile()">{{ t.get('land_nav_contact','تواصل') }}</a>
+  <a href="https://estroid.com/" target="_blank" rel="noopener" class="nav-link">Estroid.com</a>
+  <div style="display:flex;gap:8px;padding-top:6px;">
+    <a href="{{ url_for('auth.login') }}" class="nav-btn nav-btn-outline" style="flex:1;text-align:center;">
+      {{ t.get('land_btn_login','تسجيل الدخول') }}
+    </a>
+    <a href="{{ url_for('auth.register') }}" class="nav-btn nav-btn-gold" style="flex:1;text-align:center;">
+      {{ t.get('land_btn_register','إنشاء حساب') }}
+    </a>
+  </div>
+  <div class="lang-switcher" style="justify-content:center;">
+    <a href="{{ url_for('lang', code='ar') }}"
+       class="lang-btn {% if lang=='ar' %}active{% endif %}">AR</a>
+    <a href="{{ url_for('lang', code='en') }}"
+       class="lang-btn {% if lang=='en' %}active{% endif %}">EN</a>
+    <a href="{{ url_for('lang', code='tr') }}"
+       class="lang-btn {% if lang=='tr' %}active{% endif %}">TR</a>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════
+   HERO
+══════════════════════════════════════════ #}
 <section class="hero" id="home">
-  <div class="hero-bg-glow"></div>
-  <div style="position:relative;z-index:1;">
-    <div class="hero-badge">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+    <div class="hero-badge reveal">
       <i class="fas fa-star"></i>
-      نظام ERP متكامل لمصانع الذهب والمجوهرات
+      {{ t.get('land_hero_badge','نظام ERP متكامل لمصانع الذهب والمجوهرات') }}
     </div>
-    <h1 class="hero-title">
-      منصة<br/>
-      <span class="gold-text">Estroid Gold ERP</span>
+    <h1 class="hero-title reveal">
+      {{ t.get('land_hero_title_1','منصة') }}<br/>
+      <span class="gold-grad">{{ platform_name }}</span>
     </h1>
-    <p class="hero-subtitle">نظام ERP احترافي لإدارة مصانع الذهب والمجوهرات</p>
-    <p class="hero-desc">
-      إدارة المشتريات، المبيعات، أوامر العمل، الإنتاج، الموظفين، المخزون، العملاء، والتقارير في منصة واحدة متكاملة.
-    </p>
-    <div class="hero-btns">
-      <a href="{{ url_for('auth.login') }}" class="btn-hero btn-hero-gold">
-        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+    <p class="hero-subtitle reveal">{{ t.get('land_hero_subtitle','نظام ERP احترافي لإدارة مصانع الذهب والمجوهرات') }}</p>
+    <p class="hero-desc reveal">{{ t.get('land_hero_desc','إدارة المشتريات والمبيعات وأوامر العمل والإنتاج في منصة واحدة.') }}</p>
+
+    <div class="hero-btns reveal">
+      <a href="{{ url_for('auth.login') }}" class="btn-h btn-h-gold">
+        <i class="fas fa-sign-in-alt"></i>
+        {{ t.get('land_btn_login','تسجيل الدخول') }}
       </a>
-      <a href="{{ url_for('auth.register') }}" class="btn-hero btn-hero-outline">
-        <i class="fas fa-plus-circle"></i> إنشاء حساب جديد
+      <a href="{{ url_for('auth.register') }}" class="btn-h btn-h-outline">
+        <i class="fas fa-plus-circle"></i>
+        {{ t.get('land_btn_register','إنشاء حساب جديد') }}
       </a>
-      <button class="btn-hero btn-hero-video" onclick="openVideoModal()">
-        <i class="fas fa-play-circle"></i> شاهد النظام
+      <button class="btn-h btn-h-video" onclick="openVideo()">
+        <i class="fas fa-play-circle"></i>
+        {{ t.get('land_btn_watch','شاهد النظام') }}
       </button>
-      {% if support_whatsapp %}
-      <a href="https://wa.me/{{ support_whatsapp }}?text=السلام عليكم، أريد معرفة المزيد عن نظام Estroid Gold ERP"
-         target="_blank" class="btn-hero btn-hero-whatsapp">
-        <i class="fab fa-whatsapp"></i> تواصل معنا
+      {% set wa_num = support_whatsapp or '' %}
+      <a href="https://wa.me/{{ wa_num }}?text={{ t.get('whatsapp_msg','السلام عليكم، أريد معرفة المزيد عن Estroid Gold ERP')|urlencode }}"
+         target="_blank" rel="noopener" class="btn-h btn-h-wa">
+        <i class="fab fa-whatsapp"></i>
+        {{ t.get('land_btn_contact_wa','تواصل معنا') }}
       </a>
-      {% else %}
-      <a href="https://wa.me/?text=السلام عليكم، أريد معرفة المزيد عن نظام Estroid Gold ERP"
-         target="_blank" class="btn-hero btn-hero-whatsapp">
-        <i class="fab fa-whatsapp"></i> تواصل معنا
-      </a>
-      {% endif %}
     </div>
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-num">+50</div>
-        <div class="hero-stat-lbl">مصنع يستخدم المنصة</div>
+
+    <div class="hero-stats reveal">
+      <div class="hstat">
+        <div class="hstat-num">+50</div>
+        <div class="hstat-lbl">{{ t.get('land_stat_factories','مصنع يستخدم المنصة') }}</div>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">3</div>
-        <div class="hero-stat-lbl">لغات مدعومة</div>
+      <div class="hstat">
+        <div class="hstat-num">3</div>
+        <div class="hstat-lbl">{{ t.get('land_stat_languages','لغات مدعومة') }}</div>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">99.9%</div>
-        <div class="hero-stat-lbl">وقت التشغيل</div>
+      <div class="hstat">
+        <div class="hstat-num">99.9%</div>
+        <div class="hstat-lbl">{{ t.get('land_stat_uptime','وقت التشغيل') }}</div>
       </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">24/7</div>
-        <div class="hero-stat-lbl">دعم فني</div>
+      <div class="hstat">
+        <div class="hstat-num">24/7</div>
+        <div class="hstat-lbl">{{ t.get('land_stat_support','دعم فني') }}</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── WHY SECTION ── -->
-<section class="why-section" id="why">
+{# ══════════════════════════════════════════
+   WHY SECTION
+══════════════════════════════════════════ #}
+<section class="sec-alt" id="why">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">لماذا <span style="color:var(--gold)">Estroid Gold ERP</span>؟</h2>
-  <p class="section-sub reveal">كل ما تحتاجه لإدارة مصنعك في منصة واحدة احترافية</p>
-  <div class="feature-grid">
-    <div class="feature-card reveal">
-      <div class="feature-icon">🏭</div>
-      <div class="feature-title">إدارة الإنتاج</div>
-      <div class="feature-desc">تتبع كل مرحلة من مراحل الإنتاج بدقة مع حساب الفاقد والكسب تلقائياً.</div>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_why_title','لماذا') }}
+    <span class="gold-grad">{{ platform_name }}</span>؟
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_why_sub','كل ما تحتاجه لإدارة مصنعك في منصة واحدة احترافية') }}</p>
+
+  <div class="feat-grid">
+    {% set features = [
+      ('🏭', 'land_f1_title', 'land_f1_desc', 'إدارة الإنتاج', 'تتبع كل مرحلة من مراحل الإنتاج بدقة مع حساب الفاقد تلقائياً.'),
+      ('📋', 'land_f2_title', 'land_f2_desc', 'أوامر العمل', 'أنشئ وتابع أوامر العمل من البداية حتى التسليم.'),
+      ('📦', 'land_f3_title', 'land_f3_desc', 'إدارة المخزون', 'مخزون الذهب الخام والمنتجات مع تقارير العيار.'),
+      ('👥', 'land_f4_title', 'land_f4_desc', 'إدارة العملاء', 'كشف حساب شامل لكل عميل مع الأرصدة.'),
+      ('👷', 'land_f5_title', 'land_f5_desc', 'إدارة الموظفين', 'سجل الموظفين والرواتب وكفاءة الأداء.'),
+      ('📊', 'land_f6_title', 'land_f6_desc', 'التقارير الذكية', 'تقارير مفصلة مع إمكانية الطباعة والتصدير.'),
+      ('⚜', 'land_f7_title', 'land_f7_desc', 'إدارة الذهب الخام', 'تتبع دقيق للذهب الخام بالعيارات المختلفة.'),
+      ('🌍', 'land_f8_title', 'land_f8_desc', 'نظام متعدد اللغات', 'دعم كامل للعربية والإنجليزية والتركية.'),
+    ] %}
+    {% for icon, tkey, dkey, fb_title, fb_desc in features %}
+    <div class="feat-card reveal">
+      <div class="feat-icon">{{ icon }}</div>
+      <div class="feat-name">{{ t.get(tkey, fb_title) }}</div>
+      <div class="feat-desc">{{ t.get(dkey, fb_desc) }}</div>
     </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">📋</div>
-      <div class="feature-title">أوامر العمل</div>
-      <div class="feature-desc">أنشئ وتابع أوامر العمل من البداية حتى التسليم مع رصد كامل للمراحل.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">📦</div>
-      <div class="feature-title">إدارة المخزون</div>
-      <div class="feature-desc">مخزون الذهب الخام والمنتجات مع حركات الوارد والصادر وتقارير العيار.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">👥</div>
-      <div class="feature-title">إدارة العملاء</div>
-      <div class="feature-desc">كشف حساب شامل لكل عميل، المبيعات، المشتريات، والأرصدة المدينة والدائنة.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">👷</div>
-      <div class="feature-title">إدارة الموظفين</div>
-      <div class="feature-desc">سجل الموظفين والرواتب وكفاءة الأداء ونسبة الفاقد لكل موظف.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">📊</div>
-      <div class="feature-title">التقارير الذكية</div>
-      <div class="feature-desc">تقارير مفصلة للإنتاج والمخزون والمبيعات مع إمكانية الطباعة والتصدير.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">⚜</div>
-      <div class="feature-title">إدارة الذهب الخام</div>
-      <div class="feature-desc">تتبع دقيق للذهب الخام بالعيارات المختلفة مع تحويل تلقائي لعيار 24K.</div>
-    </div>
-    <div class="feature-card reveal">
-      <div class="feature-icon">🌍</div>
-      <div class="feature-title">نظام متعدد اللغات</div>
-      <div class="feature-desc">دعم كامل للعربية والإنجليزية والتركية مع واجهة مرنة لكل اتجاه.</div>
-    </div>
+    {% endfor %}
   </div>
 </section>
 
-<!-- ── SCREENSHOTS ── -->
+{# ══════════════════════════════════════════
+   SCREENSHOTS
+══════════════════════════════════════════ #}
 <section id="screenshots">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">صور من <span style="color:var(--gold)">النظام</span></h2>
-  <p class="section-sub reveal">تصفح واجهات النظام الاحترافية</p>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_ss_title','صور من') }}
+    <span class="gold-grad">{{ t.get('land_ss_tab1','النظام') }}</span>
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_ss_sub','تصفح واجهات النظام الاحترافية') }}</p>
+
   <div class="slider-wrap">
     <div class="slider-tabs">
-      <button class="slider-tab active" onclick="showSlide(0,this)">لوحة التحكم</button>
-      <button class="slider-tab" onclick="showSlide(1,this)">أوامر العمل</button>
-      <button class="slider-tab" onclick="showSlide(2,this)">المبيعات</button>
-      <button class="slider-tab" onclick="showSlide(3,this)">المخزون</button>
-      <button class="slider-tab" onclick="showSlide(4,this)">التقارير</button>
+      <button class="stab active" onclick="showSlide(0,this)">{{ t.get('land_ss_tab1','لوحة التحكم') }}</button>
+      <button class="stab" onclick="showSlide(1,this)">{{ t.get('land_ss_tab2','أوامر العمل') }}</button>
+      <button class="stab" onclick="showSlide(2,this)">{{ t.get('land_ss_tab3','المبيعات') }}</button>
+      <button class="stab" onclick="showSlide(3,this)">{{ t.get('land_ss_tab4','المخزون') }}</button>
+      <button class="stab" onclick="showSlide(4,this)">{{ t.get('land_ss_tab5','التقارير') }}</button>
     </div>
 
-    <!-- Slide 0: Dashboard -->
-    <div class="slider-screen active" id="slide-0">
-      <div class="mock-topbar">
-        <div class="mock-dot" style="background:#ff5f57;"></div>
-        <div class="mock-dot" style="background:#febc2e;"></div>
-        <div class="mock-dot" style="background:#28c840;"></div>
-        <div class="mock-title">⚜ Estroid Gold ERP — لوحة التحكم</div>
+    {# Slide 0 — Dashboard #}
+    <div class="sscreen active" id="sl-0">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div class="mock-bar-title">⚜ {{ platform_name }} — {{ t.get('land_ss_tab1','لوحة التحكم') }}</div>
       </div>
-      <div class="slider-screen-inner mock-dashboard">
+      <div class="mock-body">
         <div class="mock-cards">
-          <div class="mock-card"><div class="mock-card-num">2,450g</div><div class="mock-card-lbl">رصيد الذهب</div></div>
-          <div class="mock-card"><div class="mock-card-num">18</div><div class="mock-card-lbl">أوامر نشطة</div></div>
-          <div class="mock-card"><div class="mock-card-num">34</div><div class="mock-card-lbl">الموظفون</div></div>
-          <div class="mock-card"><div class="mock-card-num">127</div><div class="mock-card-lbl">العملاء</div></div>
+          <div class="mc"><div class="mc-n">2,450g</div><div class="mc-l">{{ t.get('gold_balance','رصيد الذهب') }}</div></div>
+          <div class="mc"><div class="mc-n">18</div><div class="mc-l">{{ t.get('active_orders','أوامر نشطة') }}</div></div>
+          <div class="mc"><div class="mc-n">34</div><div class="mc-l">{{ t.get('total_workers','الموظفون') }}</div></div>
+          <div class="mc"><div class="mc-n">127</div><div class="mc-l">{{ t.get('customers','العملاء') }}</div></div>
         </div>
-        <table class="mock-table" style="width:100%">
-          <thead><tr><th>الأمر</th><th>الموديل</th><th>العميل</th><th>العيار</th><th>الحالة</th></tr></thead>
+        <table class="mock-table">
+          <thead><tr>
+            <th>{{ t.get('order_number','الأمر') }}</th>
+            <th>{{ t.get('model_name','الموديل') }}</th>
+            <th>{{ t.get('customer','العميل') }}</th>
+            <th>{{ t.get('karat','العيار') }}</th>
+            <th>{{ t.get('status','الحالة') }}</th>
+          </tr></thead>
           <tbody>
-            <tr><td>#1042</td><td>خاتم كلاسيك</td><td>مصنع النور</td><td>18K</td><td><span class="mock-badge badge-active">نشط</span></td></tr>
-            <tr><td>#1041</td><td>سوار ذهبي</td><td>العميل الدولي</td><td>21K</td><td><span class="mock-badge badge-inprog">جاري</span></td></tr>
-            <tr><td>#1040</td><td>قلادة ماسية</td><td>مجوهرات الخليج</td><td>18K</td><td><span class="mock-badge badge-done">مكتمل</span></td></tr>
+            <tr><td>#1042</td><td>{{ t.get('land_f1_title','إنتاج') }}</td><td>مصنع النور</td><td>18K</td><td><span class="mbadge mb-g">{{ t.get('active','نشط') }}</span></td></tr>
+            <tr><td>#1041</td><td>{{ t.get('land_f2_title','أوامر') }}</td><td>العميل الدولي</td><td>21K</td><td><span class="mbadge mb-b">{{ t.get('in_progress','جاري') }}</span></td></tr>
+            <tr><td>#1040</td><td>{{ t.get('land_f3_title','مخزون') }}</td><td>مجوهرات الخليج</td><td>18K</td><td><span class="mbadge mb-y">{{ t.get('completed','مكتمل') }}</span></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Slide 1: Orders -->
-    <div class="slider-screen" id="slide-1">
-      <div class="mock-topbar">
-        <div class="mock-dot" style="background:#ff5f57;"></div>
-        <div class="mock-dot" style="background:#febc2e;"></div>
-        <div class="mock-dot" style="background:#28c840;"></div>
-        <div class="mock-title">📋 أوامر العمل</div>
+    {# Slide 1 — Work Orders #}
+    <div class="sscreen" id="sl-1">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div class="mock-bar-title">📋 {{ t.get('land_ss_tab2','أوامر العمل') }}</div>
       </div>
-      <div class="slider-screen-inner mock-dashboard">
+      <div class="mock-body">
         <div class="mock-cards">
-          <div class="mock-card"><div class="mock-card-num">18</div><div class="mock-card-lbl">نشطة</div></div>
-          <div class="mock-card"><div class="mock-card-num">142</div><div class="mock-card-lbl">مكتملة</div></div>
-          <div class="mock-card"><div class="mock-card-num">3</div><div class="mock-card-lbl">ملغاة</div></div>
-          <div class="mock-card"><div class="mock-card-num">85%</div><div class="mock-card-lbl">نسبة الإنجاز</div></div>
+          <div class="mc"><div class="mc-n">18</div><div class="mc-l">{{ t.get('active_orders','نشطة') }}</div></div>
+          <div class="mc"><div class="mc-n">142</div><div class="mc-l">{{ t.get('completed_orders','مكتملة') }}</div></div>
+          <div class="mc"><div class="mc-n">3</div><div class="mc-l">{{ t.get('cancelled','ملغاة') }}</div></div>
+          <div class="mc"><div class="mc-n">85%</div><div class="mc-l">{{ t.get('completion_pct','نسبة الإنجاز') }}</div></div>
         </div>
-        <table class="mock-table" style="width:100%">
-          <thead><tr><th>الأمر</th><th>الوزن الابتدائي</th><th>المرحلة الحالية</th><th>الفاقد %</th><th>الحالة</th></tr></thead>
+        <table class="mock-table">
+          <thead><tr>
+            <th>{{ t.get('order_number','الأمر') }}</th>
+            <th>{{ t.get('initial_weight','الوزن') }}</th>
+            <th>{{ t.get('stage','المرحلة') }}</th>
+            <th>{{ t.get('loss_pct','الفاقد %') }}</th>
+            <th>{{ t.get('status','الحالة') }}</th>
+          </tr></thead>
           <tbody>
-            <tr><td>#1042</td><td>45.5g</td><td>التشكيل</td><td>1.2%</td><td><span class="mock-badge badge-active">نشط</span></td></tr>
-            <tr><td>#1041</td><td>32.0g</td><td>التلميع</td><td>0.8%</td><td><span class="mock-badge badge-inprog">جاري</span></td></tr>
-            <tr><td>#1040</td><td>58.2g</td><td>—</td><td>1.5%</td><td><span class="mock-badge badge-done">مكتمل</span></td></tr>
+            <tr><td>#1042</td><td>45.5g</td><td>{{ t.get('in_progress','جاري') }}</td><td>1.2%</td><td><span class="mbadge mb-g">{{ t.get('active','نشط') }}</span></td></tr>
+            <tr><td>#1041</td><td>32.0g</td><td>{{ t.get('stage','مرحلة') }} 2</td><td>0.8%</td><td><span class="mbadge mb-b">{{ t.get('in_progress','جاري') }}</span></td></tr>
+            <tr><td>#1040</td><td>58.2g</td><td>—</td><td>1.5%</td><td><span class="mbadge mb-y">{{ t.get('completed','مكتمل') }}</span></td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Slide 2: Sales -->
-    <div class="slider-screen" id="slide-2">
-      <div class="mock-topbar">
-        <div class="mock-dot" style="background:#ff5f57;"></div>
-        <div class="mock-dot" style="background:#febc2e;"></div>
-        <div class="mock-dot" style="background:#28c840;"></div>
-        <div class="mock-title">💰 المبيعات والمشتريات</div>
+    {# Slide 2 — Sales #}
+    <div class="sscreen" id="sl-2">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div class="mock-bar-title">💰 {{ t.get('land_ss_tab3','المبيعات') }}</div>
       </div>
-      <div class="slider-screen-inner mock-dashboard">
+      <div class="mock-body">
         <div class="mock-cards">
-          <div class="mock-card"><div class="mock-card-num">SAR 184K</div><div class="mock-card-lbl">إجمالي المبيعات</div></div>
-          <div class="mock-card"><div class="mock-card-num">SAR 92K</div><div class="mock-card-lbl">هذا الشهر</div></div>
-          <div class="mock-card"><div class="mock-card-num">58</div><div class="mock-card-lbl">عملية بيع</div></div>
-          <div class="mock-card"><div class="mock-card-num">1,240g</div><div class="mock-card-lbl">إجمالي الذهب</div></div>
+          <div class="mc"><div class="mc-n">SAR 184K</div><div class="mc-l">{{ t.get('total_value','إجمالي') }}</div></div>
+          <div class="mc"><div class="mc-n">SAR 92K</div><div class="mc-l">{{ t.get('month_revenue','هذا الشهر') }}</div></div>
+          <div class="mc"><div class="mc-n">58</div><div class="mc-l">{{ t.get('total_ops','عمليات') }}</div></div>
+          <div class="mc"><div class="mc-n">1,240g</div><div class="mc-l">{{ t.get('total_weight','إجمالي الذهب') }}</div></div>
         </div>
-        <table class="mock-table" style="width:100%">
-          <thead><tr><th>رقم العملية</th><th>العميل</th><th>الوزن</th><th>القيمة</th><th>التاريخ</th></tr></thead>
+        <table class="mock-table">
+          <thead><tr>
+            <th>{{ t.get('op_code','رقم العملية') }}</th>
+            <th>{{ t.get('customer','العميل') }}</th>
+            <th>{{ t.get('weight','الوزن') }}</th>
+            <th>{{ t.get('total_value','القيمة') }}</th>
+            <th>{{ t.get('date','التاريخ') }}</th>
+          </tr></thead>
           <tbody>
             <tr><td>SL-0058</td><td>مجوهرات الخليج</td><td>22.5g</td><td>SAR 6,200</td><td>2026-06-29</td></tr>
             <tr><td>SL-0057</td><td>النور للذهب</td><td>45.0g</td><td>SAR 12,400</td><td>2026-06-28</td></tr>
@@ -645,49 +951,61 @@
       </div>
     </div>
 
-    <!-- Slide 3: Inventory -->
-    <div class="slider-screen" id="slide-3">
-      <div class="mock-topbar">
-        <div class="mock-dot" style="background:#ff5f57;"></div>
-        <div class="mock-dot" style="background:#febc2e;"></div>
-        <div class="mock-dot" style="background:#28c840;"></div>
-        <div class="mock-title">📦 لوحة المخزون</div>
+    {# Slide 3 — Inventory #}
+    <div class="sscreen" id="sl-3">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div class="mock-bar-title">📦 {{ t.get('land_ss_tab4','المخزون') }}</div>
       </div>
-      <div class="slider-screen-inner mock-dashboard">
+      <div class="mock-body">
         <div class="mock-cards">
-          <div class="mock-card"><div class="mock-card-num">2,450g</div><div class="mock-card-lbl">رصيد 18K</div></div>
-          <div class="mock-card"><div class="mock-card-num">820g</div><div class="mock-card-lbl">رصيد 21K</div></div>
-          <div class="mock-card"><div class="mock-card-num">1,120g</div><div class="mock-card-lbl">رصيد 24K</div></div>
-          <div class="mock-card"><div class="mock-card-num">4,390g</div><div class="mock-card-lbl">إجمالي خالص</div></div>
+          <div class="mc"><div class="mc-n">2,450g</div><div class="mc-l">18K</div></div>
+          <div class="mc"><div class="mc-n">820g</div><div class="mc-l">21K</div></div>
+          <div class="mc"><div class="mc-n">1,120g</div><div class="mc-l">24K</div></div>
+          <div class="mc"><div class="mc-n">4,390g</div><div class="mc-l">{{ t.get('pure_balance','رصيد خالص') }}</div></div>
         </div>
-        <table class="mock-table" style="width:100%">
-          <thead><tr><th>نوع الحركة</th><th>العيار</th><th>الوزن</th><th>الوزن الخالص</th><th>التاريخ</th></tr></thead>
+        <table class="mock-table">
+          <thead><tr>
+            <th>{{ t.get('movement_type','النوع') }}</th>
+            <th>{{ t.get('karat','العيار') }}</th>
+            <th>{{ t.get('weight','الوزن') }}</th>
+            <th>{{ t.get('pure_weight','الخالص') }}</th>
+            <th>{{ t.get('date','التاريخ') }}</th>
+          </tr></thead>
           <tbody>
-            <tr><td>وارد</td><td>18K</td><td>500g</td><td>375g</td><td>2026-06-29</td></tr>
-            <tr><td>صادر</td><td>21K</td><td>120g</td><td>105g</td><td>2026-06-28</td></tr>
-            <tr><td>وارد</td><td>24K</td><td>200g</td><td>200g</td><td>2026-06-27</td></tr>
+            <tr><td>{{ t.get('incoming','وارد') }}</td><td>18K</td><td>500g</td><td>375g</td><td>2026-06-29</td></tr>
+            <tr><td>{{ t.get('outgoing','صادر') }}</td><td>21K</td><td>120g</td><td>105g</td><td>2026-06-28</td></tr>
+            <tr><td>{{ t.get('incoming','وارد') }}</td><td>24K</td><td>200g</td><td>200g</td><td>2026-06-27</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Slide 4: Reports -->
-    <div class="slider-screen" id="slide-4">
-      <div class="mock-topbar">
-        <div class="mock-dot" style="background:#ff5f57;"></div>
-        <div class="mock-dot" style="background:#febc2e;"></div>
-        <div class="mock-dot" style="background:#28c840;"></div>
-        <div class="mock-title">📊 التقارير الذكية</div>
+    {# Slide 4 — Reports #}
+    <div class="sscreen" id="sl-4">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div class="mock-bar-title">📊 {{ t.get('land_ss_tab5','التقارير') }}</div>
       </div>
-      <div class="slider-screen-inner mock-dashboard">
+      <div class="mock-body">
         <div class="mock-cards">
-          <div class="mock-card"><div class="mock-card-num">8,240g</div><div class="mock-card-lbl">إجمالي الإنتاج</div></div>
-          <div class="mock-card"><div class="mock-card-num">1.18%</div><div class="mock-card-lbl">متوسط الفاقد</div></div>
-          <div class="mock-card"><div class="mock-card-num">أحمد م.</div><div class="mock-card-lbl">أفضل موظف</div></div>
-          <div class="mock-card"><div class="mock-card-num">التشكيل</div><div class="mock-card-lbl">أعلى فاقد</div></div>
+          <div class="mc"><div class="mc-n">8,240g</div><div class="mc-l">{{ t.get('total_produced_label','إجمالي الإنتاج') }}</div></div>
+          <div class="mc"><div class="mc-n">1.18%</div><div class="mc-l">{{ t.get('loss_pct_label','متوسط الفاقد') }}</div></div>
+          <div class="mc"><div class="mc-n">{{ t.get('best_worker_label','أفضل موظف') }}</div><div class="mc-l">أحمد م.</div></div>
+          <div class="mc"><div class="mc-n">{{ t.get('efficiency','الكفاءة') }}</div><div class="mc-l">94%</div></div>
         </div>
-        <table class="mock-table" style="width:100%">
-          <thead><tr><th>الموظف</th><th>المراحل</th><th>الإنتاج</th><th>الفاقد</th><th>الكفاءة</th></tr></thead>
+        <table class="mock-table">
+          <thead><tr>
+            <th>{{ t.get('worker','الموظف') }}</th>
+            <th>{{ t.get('total_stages','المراحل') }}</th>
+            <th>{{ t.get('total_produced_label','الإنتاج') }}</th>
+            <th>{{ t.get('loss_pct','الفاقد') }}</th>
+            <th>{{ t.get('efficiency','الكفاءة') }}</th>
+          </tr></thead>
           <tbody>
             <tr><td>أحمد محمد</td><td>42</td><td>1,840g</td><td>0.9%</td><td>⭐⭐⭐⭐⭐</td></tr>
             <tr><td>خالد علي</td><td>38</td><td>1,620g</td><td>1.1%</td><td>⭐⭐⭐⭐</td></tr>
@@ -699,259 +1017,391 @@
   </div>
 </section>
 
-<!-- ── FEATURES ── -->
-<section id="features" style="background:var(--dark-card);">
+{# ══════════════════════════════════════════
+   FEATURES CHECK LIST
+══════════════════════════════════════════ #}
+<section class="sec-alt" id="features">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">المميزات <span style="color:var(--gold)">الاحترافية</span></h2>
-  <p class="section-sub reveal">مصمم خصيصاً لتلبية احتياجات مصانع الذهب والمجوهرات</p>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_feat_title','المميزات') }}
+    <span class="gold-grad">{{ t.get('land_feat_title2','الاحترافية') }}</span>
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_feat_sub','مصمم خصيصاً لتلبية احتياجات مصانع الذهب والمجوهرات') }}</p>
+
   <div class="check-grid">
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">يعمل من أي مكان في العالم</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">يعمل على الكمبيوتر والجوال والآيباد</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">نسخ احتياطية تلقائية منتظمة</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">صلاحيات متعددة للمستخدمين</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">سرعة عالية في الأداء</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">حماية قوية للبيانات</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">دعم ثلاث لغات (AR / EN / TR)</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">تحديثات مستمرة ومجانية</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">فواتير احترافية قابلة للطباعة</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">تحليلات وإحصاءات متقدمة</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">واجهة عربية سهلة الاستخدام</span></div>
-    <div class="check-item reveal"><i class="fas fa-check-circle check-icon"></i><span class="check-text">دعم فني متاح على مدار الساعة</span></div>
+    {% set checks = [
+      ('land_c1','يعمل من أي مكان في العالم'),
+      ('land_c2','يعمل على الكمبيوتر والجوال والآيباد'),
+      ('land_c3','نسخ احتياطية تلقائية منتظمة'),
+      ('land_c4','صلاحيات متعددة للمستخدمين'),
+      ('land_c5','سرعة عالية في الأداء'),
+      ('land_c6','حماية قوية للبيانات'),
+      ('land_c7','دعم ثلاث لغات (AR / EN / TR)'),
+      ('land_c8','تحديثات مستمرة ومجانية'),
+      ('land_c9','فواتير احترافية قابلة للطباعة'),
+      ('land_c10','تحليلات وإحصاءات متقدمة'),
+      ('land_c11','واجهة سهلة الاستخدام'),
+      ('land_c12','دعم فني متاح على مدار الساعة'),
+    ] %}
+    {% for key, fallback in checks %}
+    <div class="citem reveal">
+      <i class="fas fa-check-circle"></i>
+      <span>{{ t.get(key, fallback) }}</span>
+    </div>
+    {% endfor %}
   </div>
 </section>
 
-<!-- ── TESTIMONIALS ── -->
-<section class="testimonials-section" id="testimonials">
+{# ══════════════════════════════════════════
+   TESTIMONIALS
+══════════════════════════════════════════ #}
+<section id="testimonials">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">آراء <span style="color:var(--gold)">عملائنا</span></h2>
-  <p class="section-sub reveal">ماذا يقول أصحاب المصانع عن النظام</p>
-  <div class="testimonial-grid">
-    <div class="testimonial-card reveal">
-      <div class="stars">⭐⭐⭐⭐⭐</div>
-      <p class="testimonial-text">"النظام غيّر طريقة عمل مصنعنا بالكامل. الآن أعرف كل تفصيلة في الإنتاج بضغطة زر. الفاقد انخفض وضبطنا الرواتب بدقة."</p>
-      <div class="testimonial-author">
-        <div class="author-avatar">ع</div>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_test_title','آراء') }}
+    <span class="gold-grad">{{ t.get('land_test_title2','عملائنا') }}</span>
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_test_sub','ماذا يقول أصحاب المصانع عن النظام') }}</p>
+
+  <div class="test-grid">
+    {% set testimonials = [
+      ('land_t1_text','"النظام غيّر طريقة عمل مصنعنا بالكامل."','land_t1_name','عبدالرحمن الشمري','land_t1_title','مدير مصنع مجوهرات الرياض','ع'),
+      ('land_t2_text','"أفضل نظام جربته لإدارة مصنع الذهب."','land_t2_name','محمد القحطاني','land_t2_title','صاحب مصنع ذهب — جدة','م'),
+      ('land_t3_text','"واجهة واضحة وكل شيء منظم. أنصح به."','land_t3_name','خالد المنصور','land_t3_title','مدير الإنتاج — الخليج','خ'),
+    ] %}
+    {% for tkey,tfb, nkey,nfb, rkey,rfb, initial in testimonials %}
+    <div class="tcard reveal">
+      <div class="stars">★★★★★</div>
+      <p class="ttext">{{ t.get(tkey, tfb) }}</p>
+      <div class="tauthor">
+        <div class="tavatar">{{ initial }}</div>
         <div>
-          <div class="author-name">عبدالرحمن الشمري</div>
-          <div class="author-title">مدير مصنع مجوهرات الرياض</div>
+          <div class="tname">{{ t.get(nkey, nfb) }}</div>
+          <div class="trole">{{ t.get(rkey, rfb) }}</div>
         </div>
       </div>
     </div>
-    <div class="testimonial-card reveal">
-      <div class="stars">⭐⭐⭐⭐⭐</div>
-      <p class="testimonial-text">"أفضل نظام جربته لإدارة مصنع الذهب. سهل جداً والتقارير ممتازة. الدعم الفني يرد بسرعة وبيحل أي مشكلة."</p>
-      <div class="testimonial-author">
-        <div class="author-avatar">م</div>
-        <div>
-          <div class="author-name">محمد القحطاني</div>
-          <div class="author-title">صاحب مصنع ذهب — جدة</div>
-        </div>
-      </div>
-    </div>
-    <div class="testimonial-card reveal">
-      <div class="stars">⭐⭐⭐⭐⭐</div>
-      <p class="testimonial-text">"استخدمنا النظام من أول يوم وما احتجنا تدريب كبير. الواجهة واضحة والأوامر والمخزون كل شيء منظم. أنصح به لأي مصنع."</p>
-      <div class="testimonial-author">
-        <div class="author-avatar">خ</div>
-        <div>
-          <div class="author-name">خالد المنصور</div>
-          <div class="author-title">مدير الإنتاج — مجوهرات الخليج</div>
-        </div>
-      </div>
-    </div>
+    {% endfor %}
   </div>
 </section>
 
-<!-- ── FAQ ── -->
-<section id="faq">
+{# ══════════════════════════════════════════
+   FAQ
+══════════════════════════════════════════ #}
+<section class="sec-alt" id="faq">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">الأسئلة <span style="color:var(--gold)">الشائعة</span></h2>
-  <p class="section-sub reveal">إجابات على أكثر الأسئلة شيوعاً</p>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_faq_title','الأسئلة') }}
+    <span class="gold-grad">{{ t.get('land_faq_title2','الشائعة') }}</span>
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_faq_sub','إجابات على أكثر الأسئلة شيوعاً') }}</p>
+
   <div class="faq-list">
+    {% set faqs = [
+      ('land_q1','هل بياناتي محفوظة وآمنة؟','land_a1','نعم، بياناتك محفوظة على سيرفرات مؤمّنة مع نسخ احتياطية تلقائية.'),
+      ('land_q2','هل أقدر أضيف أكثر من موظف؟','land_a2','نعم، يمكنك إضافة عدد غير محدود من الموظفين مع تحديد صلاحيات.'),
+      ('land_q3','هل يعمل النظام على الجوال؟','land_a3','نعم، متوافق مع جميع الأجهزة. يعمل عبر المتصفح مباشرةً دون تطبيق.'),
+      ('land_q4','هل يوجد نسخ احتياطي تلقائي؟','land_a4','نعم، يتم أخذ نسخ دورية. يمكنك أيضاً تحميل نسخة يدوية من الإعدادات.'),
+      ('land_q5','هل يدعم النظام أكثر من لغة؟','land_a5','نعم، يدعم العربية والإنجليزية والتركية. التبديل فوري في أي وقت.'),
+      ('land_q6','كيف أبدأ باستخدام النظام؟','land_a6','تواصل معنا للحصول على كود التفعيل، ثم سجّل مصنعك بدقيقة واحدة.'),
+    ] %}
+    {% for qkey,qfb, akey,afb in faqs %}
     <div class="faq-item reveal">
       <div class="faq-q" onclick="toggleFaq(this)">
-        هل بياناتي محفوظة وآمنة؟
-        <i class="fas fa-chevron-down faq-icon"></i>
+        <span>{{ t.get(qkey, qfb) }}</span>
+        <i class="fas fa-chevron-down fi"></i>
       </div>
-      <div class="faq-a">نعم، بياناتك محفوظة بالكامل على سيرفرات مؤمّنة مع نسخ احتياطية تلقائية منتظمة. لا يمكن لأي طرف ثالث الوصول إلى بياناتك.</div>
+      <div class="faq-a">{{ t.get(akey, afb) }}</div>
     </div>
-    <div class="faq-item reveal">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        هل أقدر أضيف أكثر من موظف؟
-        <i class="fas fa-chevron-down faq-icon"></i>
-      </div>
-      <div class="faq-a">نعم، يمكنك إضافة عدد غير محدود من الموظفين مع تحديد صلاحيات لكل موظف حسب دوره في المصنع.</div>
-    </div>
-    <div class="faq-item reveal">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        هل يعمل النظام على الجوال؟
-        <i class="fas fa-chevron-down faq-icon"></i>
-      </div>
-      <div class="faq-a">نعم، النظام متوافق بالكامل مع جميع الأجهزة: كمبيوتر، جوال، تابلت، وآيباد. يعمل عبر المتصفح مباشرةً دون الحاجة لتثبيت تطبيق.</div>
-    </div>
-    <div class="faq-item reveal">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        هل يوجد نسخ احتياطي تلقائي؟
-        <i class="fas fa-chevron-down faq-icon"></i>
-      </div>
-      <div class="faq-a">نعم، يتم أخذ نسخ احتياطية تلقائية بشكل دوري. كما يمكنك تحميل نسخة احتياطية يدوية في أي وقت من إعدادات المصنع.</div>
-    </div>
-    <div class="faq-item reveal">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        هل يدعم النظام أكثر من لغة؟
-        <i class="fas fa-chevron-down faq-icon"></i>
-      </div>
-      <div class="faq-a">نعم، النظام يدعم ثلاث لغات كاملة: العربية، الإنجليزية، والتركية. يمكن التبديل بين اللغات في أي وقت.</div>
-    </div>
-    <div class="faq-item reveal">
-      <div class="faq-q" onclick="toggleFaq(this)">
-        كيف أبدأ باستخدام النظام؟
-        <i class="fas fa-chevron-down faq-icon"></i>
-      </div>
-      <div class="faq-a">تواصل معنا عبر واتساب أو البريد الإلكتروني للحصول على كود التفعيل، ثم سجّل مصنعك بدقيقة واحدة وابدأ فوراً.</div>
-    </div>
+    {% endfor %}
   </div>
 </section>
 
-<!-- ── CONTACT ── -->
-<section class="contact-section" id="contact">
+{# ══════════════════════════════════════════
+   CONTACT
+══════════════════════════════════════════ #}
+<section id="contact">
   <div class="gold-line reveal"></div>
-  <h2 class="section-title reveal">تواصل <span style="color:var(--gold)">معنا</span></h2>
-  <p class="section-sub reveal">نحن هنا لمساعدتك في كل خطوة</p>
+  <h2 class="sec-title reveal">
+    {{ t.get('land_contact_title','تواصل') }}
+    <span class="gold-grad">{{ t.get('land_contact_title2','معنا') }}</span>
+  </h2>
+  <p class="sec-sub reveal">{{ t.get('land_contact_sub','نحن هنا لمساعدتك في كل خطوة') }}</p>
+
   <div class="contact-cards">
     {% if support_whatsapp %}
-    <a href="https://wa.me/{{ support_whatsapp }}?text=السلام عليكم، أريد الاستفسار عن نظام Estroid Gold ERP"
-       target="_blank" class="contact-card reveal">
-    {% else %}
-    <a href="#" class="contact-card reveal">
-    {% endif %}
-      <div class="contact-card-icon">💬</div>
-      <div class="contact-card-title">واتساب</div>
-      <div class="contact-card-val">{% if support_whatsapp %}{{ support_whatsapp }}{% else %}تواصل عبر واتساب{% endif %}</div>
+    <a href="https://wa.me/{{ support_whatsapp }}?text={{ t.get('whatsapp_msg','السلام عليكم')|urlencode }}"
+       target="_blank" rel="noopener" class="ccard reveal">
+      <div class="ccard-icon">💬</div>
+      <div class="ccard-title">{{ t.get('land_contact_wa','واتساب') }}</div>
+      <div class="ccard-val">{{ support_whatsapp }}</div>
     </a>
+    {% endif %}
+
     {% if support_email %}
-    <a href="mailto:{{ support_email }}" class="contact-card reveal">
-      <div class="contact-card-icon">📧</div>
-      <div class="contact-card-title">البريد الإلكتروني</div>
-      <div class="contact-card-val">{{ support_email }}</div>
+    <a href="mailto:{{ support_email }}" class="ccard reveal">
+      <div class="ccard-icon">📧</div>
+      <div class="ccard-title">{{ t.get('land_contact_email','البريد الإلكتروني') }}</div>
+      <div class="ccard-val">{{ support_email }}</div>
     </a>
     {% else %}
-    <div class="contact-card reveal">
-      <div class="contact-card-icon">📧</div>
-      <div class="contact-card-title">البريد الإلكتروني</div>
-      <div class="contact-card-val">support@estroid.com</div>
+    <div class="ccard reveal">
+      <div class="ccard-icon">📧</div>
+      <div class="ccard-title">{{ t.get('land_contact_email','البريد الإلكتروني') }}</div>
+      <div class="ccard-val">support@estroid.com</div>
     </div>
     {% endif %}
-    <div class="contact-card reveal">
-      <div class="contact-card-icon">🌐</div>
-      <div class="contact-card-title">الموقع الإلكتروني</div>
-      <div class="contact-card-val">estroid.com</div>
+
+    <a href="https://estroid.com/" target="_blank" rel="noopener" class="ccard reveal">
+      <div class="ccard-icon">🌐</div>
+      <div class="ccard-title">{{ t.get('land_contact_site','الموقع الإلكتروني') }}</div>
+      <div class="ccard-val">estroid.com</div>
+    </a>
+  </div>
+</section>
+
+{# ══════════════════════════════════════════
+   CTA
+══════════════════════════════════════════ #}
+<div class="cta-wrap">
+  <h2 class="cta-title reveal">
+    {{ t.get('land_cta_title','ابدأ اليوم مع') }}
+    <span class="gold-grad">{{ platform_name }}</span>
+  </h2>
+  <p class="cta-sub reveal">{{ t.get('land_cta_sub','انضم إلى مصانع الذهب التي تثق بنا وطوّر عملك الآن') }}</p>
+  <div class="hero-btns reveal" style="margin-bottom:0;">
+    <a href="{{ url_for('auth.register') }}" class="btn-h btn-h-gold">
+      <i class="fas fa-rocket"></i>
+      {{ t.get('land_btn_start','ابدأ الآن') }}
+    </a>
+    <button class="btn-h btn-h-video" onclick="openVideo()">
+      <i class="fas fa-play-circle"></i>
+      {{ t.get('land_btn_watch_first','شاهد النظام أولاً') }}
+    </button>
+    <a href="https://estroid.com/" target="_blank" rel="noopener" class="btn-h btn-h-outline">
+      <i class="fas fa-external-link-alt"></i>
+      {{ t.get('land_visit_estroid','زيارة موقع Estroid') }}
+    </a>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ #}
+<footer>
+  <div class="footer-inner">
+    {# Brand col #}
+    <div class="footer-brand">
+      <a href="{{ url_for('index') }}" class="footer-logo">
+        {% if platform_logo %}
+        <div style="width:38px;height:38px;border-radius:11px;flex-shrink:0;
+                    background:linear-gradient(135deg,#D4AF37,#A8892A);
+                    display:flex;align-items:center;justify-content:center;
+                    box-shadow:0 4px 12px rgba(212,175,55,0.4);">
+          <img src="{{ platform_logo }}" alt="{{ platform_name }}"
+               style="width:26px;height:26px;object-fit:contain;mix-blend-mode:multiply;" loading="lazy"/>
+        </div>
+        {% else %}
+        <div class="footer-logo-icon">⚜</div>
+        {% endif %}
+        <div class="footer-logo-text">Estroid <span>Gold ERP</span></div>
+      </a>
+      <p class="footer-tagline">{{ t.get('land_hero_subtitle','نظام ERP احترافي لإدارة مصانع الذهب والمجوهرات') }}</p>
+      <div class="footer-powered">
+        <span>{{ t.get('land_powered','Powered by') }}</span>
+        <a href="https://estroid.com/" target="_blank" rel="noopener">Estroid</a>
+        <span>·</span>
+        <span class="footer-version">{{ platform_version or 'v5.0' }}</span>
+      </div>
+    </div>
+
+    {# Quick links #}
+    <div class="footer-col">
+      <div class="footer-col-title">{{ platform_name }}</div>
+      <ul class="footer-links">
+        <li><a href="{{ url_for('auth.login') }}">{{ t.get('land_btn_login','تسجيل الدخول') }}</a></li>
+        <li><a href="{{ url_for('auth.register') }}">{{ t.get('land_btn_register','إنشاء حساب') }}</a></li>
+        <li><a href="#why">{{ t.get('land_nav_why','لماذا نحن؟') }}</a></li>
+        <li><a href="#features">{{ t.get('land_nav_features','المميزات') }}</a></li>
+        <li><a href="#faq">{{ t.get('land_nav_faq','الأسئلة الشائعة') }}</a></li>
+      </ul>
+    </div>
+
+    {# Contact col #}
+    <div class="footer-col">
+      <div class="footer-col-title">{{ t.get('land_nav_contact','تواصل') }}</div>
+      <ul class="footer-links">
+        {% if support_whatsapp %}
+        <li><a href="https://wa.me/{{ support_whatsapp }}" target="_blank" rel="noopener">
+          <i class="fab fa-whatsapp" style="color:#25D366;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+          {{ t.get('land_contact_wa','واتساب') }}
+        </a></li>
+        {% endif %}
+        {% if support_email %}
+        <li><a href="mailto:{{ support_email }}">
+          <i class="fas fa-envelope" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+          {{ support_email }}
+        </a></li>
+        {% endif %}
+        <li><a href="https://estroid.com/" target="_blank" rel="noopener">
+          <i class="fas fa-globe" style="color:var(--gold);margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i>
+          estroid.com
+        </a></li>
+      </ul>
+    </div>
+
+    {# Legal col #}
+    <div class="footer-col">
+      <div class="footer-col-title">{{ t.get('legal','القانونية') }}</div>
+      <ul class="footer-links">
+        <li><a href="https://estroid.com/privacy" target="_blank" rel="noopener">
+          {{ t.get('land_privacy','سياسة الخصوصية') }}
+        </a></li>
+        <li><a href="https://estroid.com/terms" target="_blank" rel="noopener">
+          {{ t.get('land_terms','الشروط والأحكام') }}
+        </a></li>
+        <li><a href="/sitemap.xml" target="_blank">Sitemap</a></li>
+        <li><a href="https://estroid.com/" target="_blank" rel="noopener">
+          {{ t.get('land_visit_estroid','زيارة Estroid') }}
+        </a></li>
+      </ul>
     </div>
   </div>
-</section>
 
-<!-- ── CTA ── -->
-<section class="cta-section">
-  <h2 class="cta-title reveal">ابدأ اليوم مع <span style="color:var(--gold)">Estroid Gold ERP</span></h2>
-  <p class="cta-sub reveal">انضم إلى مصانع الذهب التي تثق بنا وطوّر عملك الآن</p>
-  <div class="hero-btns reveal" style="margin-bottom:0;">
-    <a href="{{ url_for('auth.register') }}" class="btn-hero btn-hero-gold">
-      <i class="fas fa-rocket"></i> ابدأ الآن مجاناً
-    </a>
-    <button class="btn-hero btn-hero-video" onclick="openVideoModal()">
-      <i class="fas fa-play-circle"></i> شاهد النظام أولاً
-    </button>
-  </div>
-</section>
-
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="footer-brand">
-    <strong>⚜ Estroid Gold ERP</strong> — Powered by Estroid
-    <br/>
-    <span style="font-size:12px;">{{ platform_version or 'v5.0' }} · جميع الحقوق محفوظة © 2026</span>
-  </div>
-  <div class="footer-links">
-    <a href="{{ url_for('auth.login') }}">تسجيل الدخول</a>
-    <a href="{{ url_for('auth.register') }}">إنشاء حساب</a>
-    <a href="#faq">الأسئلة الشائعة</a>
-    <a href="#contact">تواصل معنا</a>
-    <a href="#">سياسة الخصوصية</a>
-    <a href="#">الشروط والأحكام</a>
+  <div class="footer-bottom">
+    <div class="footer-copy">
+      © {{ now.year }} {{ platform_name }} ·
+      {{ t.get('land_powered','Powered by') }}
+      <a href="https://estroid.com/" target="_blank" rel="noopener"
+         style="color:var(--gold);font-weight:700;text-decoration:none;">Estroid</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      {# Language in footer #}
+      <div class="lang-switcher">
+        <a href="{{ url_for('lang', code='ar') }}"
+           class="lang-btn {% if lang=='ar' %}active{% endif %}">AR</a>
+        <a href="{{ url_for('lang', code='en') }}"
+           class="lang-btn {% if lang=='en' %}active{% endif %}">EN</a>
+        <a href="{{ url_for('lang', code='tr') }}"
+           class="lang-btn {% if lang=='tr' %}active{% endif %}">TR</a>
+      </div>
+      <button class="mode-btn" onclick="toggleLandingMode()" title="{{ t.get('dark_mode','الوضع الداكن') }}">
+        <i id="modeIconFoot" class="fas fa-sun"></i>
+      </button>
+    </div>
   </div>
 </footer>
 
-<!-- ── VIDEO MODAL ── -->
-<div class="modal-overlay" id="videoModal" onclick="closeVideoModal(event)">
+{# ══════════════════════════════════════════
+   VIDEO MODAL
+══════════════════════════════════════════ #}
+<div class="modal-overlay" id="videoModal" onclick="closeVideo(event)">
   <div class="modal-box">
-    <button class="modal-close" onclick="closeVideoModal(null)"><i class="fas fa-times"></i></button>
-    <div class="modal-title">🎥 شاهد Estroid Gold ERP في العمل</div>
+    <button class="modal-close" onclick="closeVideo(null)">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="modal-title">🎥 {{ t.get('land_video_title','شاهد النظام في العمل') }}</div>
     <div class="video-placeholder">
-      <div class="video-play-icon"><i class="fas fa-play"></i></div>
-      <p>سيتوفر الفيديو التعريفي قريباً</p>
-      <p style="font-size:12px;color:var(--text-muted);">شرح كامل للنظام — مدة دقيقتين</p>
+      <div class="vplay"><i class="fas fa-play"></i></div>
+      <p>{{ t.get('land_video_soon','سيتوفر الفيديو التعريفي قريباً') }}</p>
+      <p style="font-size:12px;color:var(--muted);">{{ t.get('land_video_duration','شرح كامل للنظام — دقيقتان') }}</p>
     </div>
-    <p style="margin-top:16px;font-size:13px;color:var(--text-muted);text-align:center;">
-      للتجربة الفورية
-      <a href="{{ url_for('auth.register') }}" style="color:var(--gold);font-weight:700;">سجّل مصنعك الآن</a>
-      أو
+    <p class="modal-note">
+      {{ t.get('land_video_try','للتجربة الفورية') }}
+      <a href="{{ url_for('auth.register') }}">{{ t.get('land_register_now','سجّل مصنعك الآن') }}</a>
+      {{ t.get('land_video_or','أو') }}
       {% if support_whatsapp %}
-      <a href="https://wa.me/{{ support_whatsapp }}" target="_blank" style="color:#25D366;font-weight:700;">تواصل معنا عبر واتساب</a>
-      {% else %}
-      <span style="color:#25D366;font-weight:700;">تواصل معنا عبر واتساب</span>
+      <a class="wa" href="https://wa.me/{{ support_whatsapp }}" target="_blank" rel="noopener">
+        {{ t.get('land_contact_wa_text','تواصل عبر واتساب') }}
+      </a>
       {% endif %}
     </p>
   </div>
 </div>
 
+{# ══════════════════════════════════════════
+   JAVASCRIPT
+══════════════════════════════════════════ #}
 <script>
-  // Navbar scroll effect
-  window.addEventListener('scroll', () => {
-    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
-  });
+  /* ── Dark / Light mode (synced with rest of app) ── */
+  var MKEY = 'goldErpMode';
 
-  // Mobile menu
-  function toggleMenu() {
-    document.getElementById('navLinks').classList.toggle('open');
+  function applyMode(m) {
+    document.documentElement.setAttribute('data-theme', m);
+    localStorage.setItem(MKEY, m);
+    ['modeIconLand','modeIconFoot'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.className = m === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    });
   }
-  document.querySelectorAll('#navLinks a').forEach(a => {
-    a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open'));
+
+  function toggleLandingMode() {
+    applyMode(localStorage.getItem(MKEY) === 'dark' ? 'light' : 'dark');
+  }
+
+  /* Sync icons after DOM ready */
+  document.addEventListener('DOMContentLoaded', function(){
+    applyMode(localStorage.getItem(MKEY) || 'dark');
   });
 
-  // Screenshot slider
+  /* ── Navbar scroll ── */
+  window.addEventListener('scroll', function(){
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+  }, { passive: true });
+
+  /* ── Mobile nav ── */
+  function toggleNavMobile() {
+    document.getElementById('navMobile').classList.toggle('open');
+  }
+  function closeNavMobile() {
+    document.getElementById('navMobile').classList.remove('open');
+  }
+
+  /* ── Screenshot slider ── */
   function showSlide(idx, btn) {
-    document.querySelectorAll('.slider-screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.slider-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('slide-' + idx).classList.add('active');
+    document.querySelectorAll('.sscreen').forEach(function(s){ s.classList.remove('active'); });
+    document.querySelectorAll('.stab').forEach(function(t){ t.classList.remove('active'); });
+    document.getElementById('sl-' + idx).classList.add('active');
     btn.classList.add('active');
   }
 
-  // FAQ accordion
+  /* ── FAQ accordion ── */
   function toggleFaq(el) {
-    const item = el.parentElement;
-    const wasOpen = item.classList.contains('open');
-    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    var item = el.parentElement;
+    var wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(function(i){ i.classList.remove('open'); });
     if (!wasOpen) item.classList.add('open');
   }
 
-  // Video modal
-  function openVideoModal() {
+  /* ── Video modal ── */
+  function openVideo() {
     document.getElementById('videoModal').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
-  function closeVideoModal(e) {
+  function closeVideo(e) {
     if (!e || e.target === document.getElementById('videoModal')) {
       document.getElementById('videoModal').classList.remove('open');
       document.body.style.overflow = '';
     }
   }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoModal(null); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeVideo(null);
+  });
 
-  // Scroll reveal
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  /* ── Scroll reveal ── */
+  var revObs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) { e.target.classList.add('visible'); revObs.unobserve(e.target); }
+    });
   }, { threshold: 0.1 });
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  document.querySelectorAll('.reveal').forEach(function(el){ revObs.observe(el); });
+
+  /* ── Lazy images ── */
+  if ('loading' in HTMLImageElement.prototype) {
+    document.querySelectorAll('img[loading="lazy"]').forEach(function(img){
+      img.src = img.dataset.src || img.src;
+    });
+  }
 </script>
 </body>
 </html>

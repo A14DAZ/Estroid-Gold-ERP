@@ -1,0 +1,16 @@
+{
+  "name": "Estroid Gold ERP",
+  "short_name": "Gold ERP",
+  "description": "Professional ERP System for Gold & Jewelry Factories",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#D4AF37",
+  "icons": [
+    {
+      "src": "/static/estroid_logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

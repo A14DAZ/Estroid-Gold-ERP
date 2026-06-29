@@ -36,12 +36,13 @@
           <div class="mb-4" style="text-align:center;">
             <div id="logoPreview"
                  style="width:90px;height:90px;border-radius:16px;margin:0 auto 12px;
-                        border:2px solid rgba(212,175,55,.25);overflow:hidden;
-                        background:rgba(212,175,55,.05);display:flex;align-items:center;justify-content:center;">
+                        background:linear-gradient(135deg,#D4AF37,#A8892A);
+                        box-shadow:0 8px 24px rgba(212,175,55,0.45);
+                        display:flex;align-items:center;justify-content:center;">
               {% if settings.platform_logo %}
-              <img src="{{ settings.platform_logo }}" style="width:100%;height:100%;object-fit:contain;"/>
+              <img src="{{ settings.platform_logo }}" style="width:62px;height:62px;object-fit:contain;mix-blend-mode:multiply;"/>
               {% else %}
-              <i class="fas fa-ring" style="font-size:32px;color:var(--gold-dark);opacity:.4;"></i>
+              <i class="fas fa-ring" style="font-size:32px;color:#000;opacity:.7;"></i>
               {% endif %}
             </div>
             <label class="btn-grey btn-sm" style="cursor:pointer;display:inline-block;">
