@@ -7,26 +7,7 @@ from models.factory import Factory
 
 auth_bp = Blueprint('auth', __name__)
 
-# Common country codes list for the phone field
-COUNTRY_CODES = [
-    ('+966', 'السعودية +966'),
-    ('+971', 'الإمارات +971'),
-    ('+965', 'الكويت +965'),
-    ('+973', 'البحرين +973'),
-    ('+974', 'قطر +974'),
-    ('+968', 'عُمان +968'),
-    ('+962', 'الأردن +962'),
-    ('+20',  'مصر +20'),
-    ('+1',   'USA/Canada +1'),
-    ('+44',  'UK +44'),
-    ('+49',  'Germany +49'),
-    ('+33',  'France +33'),
-    ('+90',  'Turkey +90'),
-    ('+92',  'Pakistan +92'),
-    ('+91',  'India +91'),
-    ('+880', 'Bangladesh +880'),
-    ('+63',  'Philippines +63'),
-]
+from utils.countries import get_phone_codes, get_countries
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -111,6 +92,7 @@ def register():
         pw         = request.form.get('password', '')
         pw2        = request.form.get('confirm_password', '')
         city       = request.form.get('city', '').strip()
+        reg_country= request.form.get('reg_country', 'SA').strip()
         country_cd = request.form.get('country_code', '+966').strip()
         phone_num  = request.form.get('phone_number', '').strip()
 
@@ -122,7 +104,7 @@ def register():
                         else 'Activation code is required.'), 'danger')
             return render_template('register.html',
                                    factory_name=fname, full_name=fullname,
-                                   email=email, country_codes=COUNTRY_CODES)
+                                   email=email, country_codes=get_phone_codes(g.lang), countries=get_countries(g.lang))
 
         factory_slot = Factory.query.filter_by(activation_code=act_code).first()
         if not factory_slot:
@@ -131,7 +113,7 @@ def register():
                         else 'Activation code is invalid.'), 'danger')
             return render_template('register.html',
                                    factory_name=fname, full_name=fullname,
-                                   email=email, country_codes=COUNTRY_CODES)
+                                   email=email, country_codes=get_phone_codes(g.lang), countries=get_countries(g.lang))
 
         # Code must not already be claimed (user_id still None means unclaimed)
         if factory_slot.user_id is not None:
@@ -140,7 +122,7 @@ def register():
                         else 'Activation code already used.'), 'danger')
             return render_template('register.html',
                                    factory_name=fname, full_name=fullname,
-                                   email=email, country_codes=COUNTRY_CODES)
+                                   email=email, country_codes=get_phone_codes(g.lang), countries=get_countries(g.lang))
 
         # ── Remaining field validation ──────────────────────────
         errors = []
@@ -160,7 +142,7 @@ def register():
                 flash(e, 'danger')
             return render_template('register.html',
                                    factory_name=fname, full_name=fullname,
-                                   email=email, country_codes=COUNTRY_CODES,
+                                   email=email, country_codes=get_phone_codes(g.lang), countries=get_countries(g.lang),
                                    activation_code=act_code)
 
         # ── Create user (inactive until OTP verified) ───────────
@@ -179,6 +161,7 @@ def register():
         factory_slot.user_id = user.id
         factory_slot.name    = fname
         factory_slot.city    = city
+        factory_slot.country = reg_country
         db.session.commit()
 
         # ── Mock OTP — store in session + show on screen ────────
@@ -194,7 +177,7 @@ def register():
         return redirect(url_for('auth.verify_otp'))
 
     return render_template('register.html',
-                           country_codes=COUNTRY_CODES)
+                           country_codes=get_phone_codes(g.lang), countries=get_countries(g.lang))
 
 
 # ─────────────────────────────────────────────────────────────────────────────

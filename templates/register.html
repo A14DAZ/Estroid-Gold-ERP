@@ -73,6 +73,14 @@
                  value="{{ full_name|default('') }}" required/>
         </div>
         <div class="col-12">
+          <label class="form-label-custom">{{ t.get('country','الدولة') }}</label>
+          <select name="reg_country" class="form-select-custom">
+            {% for code, cname in countries %}
+            <option value="{{ code }}" {{ 'selected' if code == 'SA' }}>{{ cname }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
           <label class="form-label-custom">{{ t.city }}</label>
           <input type="text" name="city" class="form-control-custom"
                  placeholder="{{ t.get('city','المدينة') }}"/>
@@ -82,7 +90,7 @@
         <div class="col-12">
           <label class="form-label-custom">{{ t.phone }} *</label>
           <div style="display:flex;gap:8px;">
-            <select name="country_code" class="form-select-custom" style="width:170px;flex-shrink:0;">
+            <select name="country_code" class="form-select-custom" style="width:200px;flex-shrink:0;">
               {% for code, label in country_codes %}
               <option value="{{ code }}" {{ 'selected' if code == '+966' }}>{{ label }}</option>
               {% endfor %}
@@ -105,13 +113,31 @@
         </div>
         <div class="col-12">
           <label class="form-label-custom">{{ t.password }} * (min 8)</label>
-          <input type="password" name="password" class="form-control-custom"
-                 required placeholder="••••••••"/>
+          <div style="position:relative;">
+            <input type="password" name="password" id="regPassword" class="form-control-custom"
+                   required placeholder="••••••••"
+                   style="padding-{{ 'right' if dir=='rtl' else 'left' }}:44px;"/>
+            <button type="button" onclick="toggleRegPwd('regPassword','regPwdIcon1')"
+                    style="position:absolute;{{ 'right' if dir=='rtl' else 'left' }}:12px;top:50%;
+                           transform:translateY(-50%);background:none;border:none;
+                           color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1;">
+              <i id="regPwdIcon1" class="fas fa-eye"></i>
+            </button>
+          </div>
         </div>
         <div class="col-12">
           <label class="form-label-custom">{{ t.confirm_password }} *</label>
-          <input type="password" name="confirm_password" class="form-control-custom"
-                 required placeholder="••••••••"/>
+          <div style="position:relative;">
+            <input type="password" name="confirm_password" id="regPassword2" class="form-control-custom"
+                   required placeholder="••••••••"
+                   style="padding-{{ 'right' if dir=='rtl' else 'left' }}:44px;"/>
+            <button type="button" onclick="toggleRegPwd('regPassword2','regPwdIcon2')"
+                    style="position:absolute;{{ 'right' if dir=='rtl' else 'left' }}:12px;top:50%;
+                           transform:translateY(-50%);background:none;border:none;
+                           color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;line-height:1;">
+              <i id="regPwdIcon2" class="fas fa-eye"></i>
+            </button>
+          </div>
         </div>
 
         <div class="col-12">
@@ -157,7 +183,18 @@
          display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .2s;">
   <i id="authModeIcon" class="fas fa-sun"></i>
 </button>
-<script>(function(){var m=localStorage.getItem('goldErpMode')||'dark';var i=document.getElementById('authModeIcon');if(i)i.className=m==='dark'?'fas fa-sun':'fas fa-moon';})();</script>
+<script>
+(function(){var m=localStorage.getItem('goldErpMode')||'dark';var i=document.getElementById('authModeIcon');if(i)i.className=m==='dark'?'fas fa-sun':'fas fa-moon';})();
+
+function toggleRegPwd(inputId, iconId) {
+  var inp  = document.getElementById(inputId);
+  var icon = document.getElementById(iconId);
+  if (!inp) return;
+  var show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  icon.className = show ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
+</script>
 
 {# WhatsApp Button #}
 {% if support_whatsapp %}
