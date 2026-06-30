@@ -107,10 +107,17 @@
   background: #1a1d21; border-color: rgba(212,175,55,.14);
 }
 .mp-conv-row {
-  display: flex; flex-wrap: wrap; gap: 10px;
+  display: flex; flex-wrap: wrap; gap: 14px;
   align-items: flex-end;
 }
 .mp-conv-field { flex: 1; min-width: 130px; }
+
+@media (max-width: 520px) {
+  .mp-converter { padding: 16px; }
+  .mp-conv-row { gap: 12px; }
+  .mp-conv-field { flex: 0 0 100%; min-width: 100%; }
+  .mp-conv-result { font-size: 15px; }
+}
 .mp-conv-field label { font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 5px; }
 .mp-conv-field input, .mp-conv-field select {
   width: 100%; padding: 9px 12px; border-radius: 9px;
