@@ -382,12 +382,16 @@
     </div>
     <div class="mp-conv-field" style="flex:2;">
       <label>{{ t.get('calc_mode','طريقة الحساب') }}</label>
-      <div style="display:flex;flex-wrap:wrap;gap:36px;margin-top:8px;align-items:center;">
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:400;white-space:nowrap;">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;
+                      padding:8px 12px;border:1.5px solid var(--grey-border);border-radius:8px;
+                      transition:border-color .15s;">
           <input type="radio" name="conv_mode" id="mode_gold_labor" value="gold_labor" checked onchange="calcConvert()"/>
           {{ t.get('mode_gold_labor','ذهب + أجور') }}
         </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:400;white-space:nowrap;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer;
+                      padding:8px 12px;border:1.5px solid var(--grey-border);border-radius:8px;
+                      transition:border-color .15s;">
           <input type="radio" name="conv_mode" id="mode_labor_only" value="labor_only" onchange="calcConvert()"/>
           {{ t.get('mode_labor_only','أجور فقط') }}
         </label>
