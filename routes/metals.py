@@ -75,6 +75,32 @@ def _fetch_spot_prices():
         except Exception as exc:
             print(f'  [Metals] goldprice.org error: {exc}')
 
+        # ── Yahoo Finance fallback (free, no key) ─────────────
+        try:
+            gold_url   = 'https://query2.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=1d'
+            silver_url = 'https://query2.finance.yahoo.com/v8/finance/chart/SI=F?interval=1d&range=1d'
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'application/json'}
+
+            req = urllib.request.Request(gold_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as r:
+                gdata = json.loads(r.read())
+            gold = float(gdata['chart']['result'][0]['meta']['regularMarketPrice']) or None
+
+            silver = None
+            try:
+                req2 = urllib.request.Request(silver_url, headers=headers)
+                with urllib.request.urlopen(req2, timeout=8) as r2:
+                    sdata = json.loads(r2.read())
+                silver = float(sdata['chart']['result'][0]['meta']['regularMarketPrice']) or None
+            except Exception:
+                pass
+
+            if gold:
+                print(f'  [Metals] Yahoo Finance: gold={gold}, silver={silver}')
+                return gold, silver
+        except Exception as exc:
+            print(f'  [Metals] Yahoo Finance error: {exc}')
+
     # ── metalpriceapi.com (paid, requires key) ────────────────
     if source == 'metalpriceapi.com' and api_key:
         try:

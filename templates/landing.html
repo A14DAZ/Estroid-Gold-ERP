@@ -111,14 +111,21 @@
     ═══════════════════════════════════════ */
     .navbar {
       position: fixed; top: 52px; left: 0; right: 0; z-index: 998;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 48px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 24px;
       background: var(--nav-bg);
       backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--border);
       transition: padding .3s, background .3s;
     }
-    .navbar.scrolled { padding: 9px 48px; }
+    .navbar.scrolled { padding: 0 24px; }
+    .navbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; max-width: 1280px;
+      padding: 14px 0;
+      transition: padding .3s;
+    }
+    .navbar.scrolled .navbar-inner { padding: 9px 0; }
 
     .nav-logo {
       display: flex; align-items: center; gap: 11px;
@@ -589,7 +596,7 @@
 
     .footer-bottom {
       max-width: 1100px; margin: 24px auto 0;
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex; align-items: center; justify-content: center;
       flex-wrap: wrap; gap: 12px;
     }
     .footer-copy { font-size: 12px; color: var(--muted); }
@@ -778,6 +785,7 @@
       <span class="tk-item" data-k="gold_18k"><span class="tk-lbl">Gold 18K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       <span class="tk-item" data-k="gold_oz" ><span class="tk-lbl">Gold oz</span>  <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       <span class="tk-item" data-k="silver_g"><span class="tk-lbl">Silver/g</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item" data-k="silver_oz"><span class="tk-lbl">Silver oz</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       {# copy 2 — exact duplicate for seamless loop #}
       <span class="tk-item tk-clone" data-k="gold_24k"><span class="tk-lbl">Gold 24K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       <span class="tk-item tk-clone" data-k="gold_22k"><span class="tk-lbl">Gold 22K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
@@ -785,6 +793,7 @@
       <span class="tk-item tk-clone" data-k="gold_18k"><span class="tk-lbl">Gold 18K</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       <span class="tk-item tk-clone" data-k="gold_oz" ><span class="tk-lbl">Gold oz</span>  <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
       <span class="tk-item tk-clone" data-k="silver_g"><span class="tk-lbl">Silver/g</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
+      <span class="tk-item tk-clone" data-k="silver_oz"><span class="tk-lbl">Silver oz</span> <span class="tk-val">—</span> <span class="tk-cur">—</span> <span class="tk-arr">—</span></span>
     </div>
   </div>
 
@@ -877,7 +886,8 @@
       gold_21k: { val: g24*21/24,         prev: pg24?pg24*21/24:null,       dec:3 },
       gold_18k: { val: g24*18/24,         prev: pg24?pg24*18/24:null,       dec:3 },
       gold_oz:  { val: d.gold_oz_usd,     prev: PREV?PREV.gold_oz_usd:null, dec:2 },
-      silver_g: { val: d.silver_oz_usd/G, prev: PREV?PREV.silver_oz_usd/G:null, dec:4 },
+      silver_g:  { val: d.silver_oz_usd/G,  prev: PREV?PREV.silver_oz_usd/G:null,  dec:4 },
+      silver_oz: { val: d.silver_oz_usd,    prev: PREV?PREV.silver_oz_usd:null,    dec:4 },
     };
 
     document.querySelectorAll('.tk-item').forEach(function(el){
@@ -972,6 +982,7 @@
    NAVBAR
 ══════════════════════════════════════════ #}
 <nav class="navbar" id="navbar">
+  <div class="navbar-inner">
   <a href="{{ url_for('index') }}" class="nav-logo">
     {% if platform_logo %}
     <div class="nav-logo-icon" style="padding:0;overflow:hidden;">
@@ -1018,6 +1029,7 @@
     <button class="nav-hamburger" onclick="toggleNavMobile()" aria-label="menu">
       <i class="fas fa-bars"></i>
     </button>
+  </div>
   </div>
 </nav>
 
@@ -1112,7 +1124,7 @@
   <div class="gold-line reveal"></div>
   <h2 class="sec-title reveal">
     {{ t.get('land_why_title','لماذا') }}
-    <span class="gold-grad">{{ platform_name }}</span>؟
+    <span class="gold-grad">{{ platform_name }}</span>?
   </h2>
   <p class="sec-sub reveal">{{ t.get('land_why_sub','كل ما تحتاجه لإدارة مصنعك في منصة واحدة احترافية') }}</p>
 
@@ -1567,7 +1579,6 @@
         <li><a href="https://estroid.com/terms" target="_blank" rel="noopener">
           {{ t.get('land_terms','الشروط والأحكام') }}
         </a></li>
-        <li><a href="/sitemap.xml" target="_blank">Sitemap</a></li>
         <li><a href="https://estroid.com/" target="_blank" rel="noopener">
           {{ t.get('land_visit_estroid','زيارة Estroid') }}
         </a></li>
@@ -1581,20 +1592,6 @@
       {{ t.get('land_powered','Powered by') }}
       <a href="https://estroid.com/" target="_blank" rel="noopener"
          style="color:var(--gold);font-weight:700;text-decoration:none;">Estroid</a>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;">
-      {# Language in footer #}
-      <div class="lang-switcher">
-        <a href="{{ url_for('lang', code='ar') }}"
-           class="lang-btn {% if lang=='ar' %}active{% endif %}">AR</a>
-        <a href="{{ url_for('lang', code='en') }}"
-           class="lang-btn {% if lang=='en' %}active{% endif %}">EN</a>
-        <a href="{{ url_for('lang', code='tr') }}"
-           class="lang-btn {% if lang=='tr' %}active{% endif %}">TR</a>
-      </div>
-      <button class="mode-btn" onclick="toggleLandingMode()" title="{{ t.get('dark_mode','الوضع الداكن') }}">
-        <i id="modeIconFoot" class="fas fa-sun"></i>
-      </button>
     </div>
   </div>
 </footer>

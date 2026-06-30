@@ -108,7 +108,7 @@
       <tfoot style="background:rgba(212,175,55,.05);border-top:2px solid rgba(212,175,55,.2);font-weight:900;">
         <tr>
           <td colspan="4" style="color:var(--gold-dark);">{{ t.get('total','الإجمالي') }}</td>
-          <td style="text-align:center;color:var(--gold-dark);">{{ '%.0f'|format(total_salary) }} ر.س</td>
+          <td style="text-align:center;color:var(--gold-dark);">{{ '%.0f'|format(total_salary) }} {{ t.get('sar_abbr','ر.س') }}</td>
           <td style="text-align:center;color:#86efac;">
             {{ '%.3f'|format(stats.values()|sum(attribute='total_prod')|default(0)) }} {{ t.get('grams','جم') }}
           </td>

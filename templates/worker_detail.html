@@ -41,7 +41,7 @@
       <div style="font-size:13px;color:var(--text-muted);">
         {{ worker.specialty or '' }}
         {% if worker.phone %}· {{ worker.phone }}{% endif %}
-        {% if worker.monthly_salary %}· {{ '%.0f'|format(worker.monthly_salary) }} ر.س{% endif %}
+        {% if worker.monthly_salary %}· {{ '%.0f'|format(worker.monthly_salary) }} {{ t.get('sar_abbr','ر.س') }}{% endif %}
       </div>
     </div>
   </div>
@@ -580,7 +580,7 @@ document.getElementById('idCardOverlay').addEventListener('click', function(e) {
         <i class="fas fa-file-invoice" style="margin-left:5px;margin-right:5px;"></i>{{ t.get('salary_due','ملخص المستحقات') }}</div>
       <div style="display:grid;grid-template-columns:1fr auto;gap:4px 16px;">
         <span style="color:var(--text-muted);">{{ t.get('employee_salary','الراتب الشهري') }}</span>
-        <span style="font-weight:700;">{{ '%.2f'|format(worker.monthly_salary or 0) }} ر.س</span>
+        <span style="font-weight:700;">{{ '%.2f'|format(worker.monthly_salary or 0) }} {{ t.get('sar_abbr','ر.س') }}</span>
         <span style="color:var(--text-muted);">{{ t.get('total_produced_label','إجمالي المنتج') }}</span>
         <span style="font-weight:700;color:var(--gold-dark);">{{ '%.3f'|format(stats.total_prod) }} {{ t.get('grams','جم') }}</span>
         <span style="color:var(--text-muted);">{{ t.get('total_loss_label','إجمالي الفاقد') }}</span>

@@ -230,7 +230,7 @@
             <span style="font-size:10px;color:var(--text-muted);">{{ t.get('grams','جم') }}</span>
           </td>
           <td style="color:var(--text-muted);">
-            {{ '%.2f'|format(txn.price_per_gram) }} ر.س
+            {{ '%.2f'|format(txn.price_per_gram) }} {{ t.get('sar_abbr','ر.س') }}
           </td>
           <td>
             <strong style="color:var(--gold);font-size:14px;">{{ '%.2f'|format(wage) }}</strong>
@@ -246,7 +246,7 @@
           <td></td>
           <td style="font-weight:900;color:var(--gold);">{{ '%.4f'|format(total_out_pure24) }} {{ t.get('grams','جم') }}</td>
           <td></td>
-          <td style="font-weight:900;color:var(--gold);font-size:15px;">{{ '%.2f'|format(total_wages) }} ر.س</td>
+          <td style="font-weight:900;color:var(--gold);font-size:15px;">{{ '%.2f'|format(total_wages) }} {{ t.get('sar_abbr','ر.س') }}</td>
         </tr>
       </tfoot>
     </table>

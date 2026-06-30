@@ -57,6 +57,7 @@
 }
 [data-theme="dark"] .mp-card-price { color: #f1f5f9; }
 .mp-card-unit { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+.mp-card-try  { font-size: 10px; color: var(--text-muted); opacity: .7; margin-top: 2px; }
 
 .mp-card-change {
   display: inline-flex; align-items: center; gap: 4px;
@@ -215,10 +216,6 @@
     <span class="mp-source-badge" id="sourceLabel">
       {{ price.source if price else 'metals.live' }}
     </span>
-    <button class="btn-refresh" id="refreshBtn" onclick="forceRefresh()">
-      <i class="fas fa-sync-alt" id="refreshIcon"></i>
-      {{ t.get('metals_refresh','تحديث') }}
-    </button>
   </div>
 </div>
 
@@ -267,6 +264,9 @@
     <div class="mp-card-unit" id="gold_{{ karat[:-1] }}k_sar">
       {{ '{:.2f} SAR'.format(price_val * price.usd_sar) if price_val and price else '— SAR' }}
     </div>
+    <div class="mp-card-try" id="gold_{{ karat[:-1] }}k_try">
+      {{ '{:.2f} TRY'.format(price_val * price.usd_try) if price_val and price else '— TRY' }}
+    </div>
     <div class="mp-card-change mp-flat" id="chg_gold_{{ karat[:-1] }}k">—</div>
   </div>
   {% endfor %}
@@ -296,6 +296,9 @@
     </div>
     <div class="mp-card-unit" id="silver_g_sar">
       {{ '{:.4f} SAR'.format(sg * price.usd_sar) if sg and price else '— SAR' }}
+    </div>
+    <div class="mp-card-try" id="silver_g_try">
+      {{ '{:.4f} TRY'.format(sg * price.usd_try) if sg and price else '— TRY' }}
     </div>
     <div class="mp-card-change mp-flat" id="chg_silver_g">—</div>
   </div>
@@ -363,6 +366,27 @@
       </select>
     </div>
   </div>
+  {# ── Labor fee row ── #}
+  <div class="mp-conv-row" style="margin-top:10px;border-top:1px dashed var(--border);padding-top:10px;">
+    <div class="mp-conv-field">
+      <label>{{ t.get('labor_fee','أجرة/جرام') }}</label>
+      <input type="number" id="conv_labor" value="0" min="0" step="0.01"
+             oninput="calcConvert()" placeholder="0"/>
+    </div>
+    <div class="mp-conv-field" style="flex:2;">
+      <label>{{ t.get('calc_mode','طريقة الحساب') }}</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:400;">
+          <input type="radio" name="conv_mode" id="mode_gold_labor" value="gold_labor" checked onchange="calcConvert()"/>
+          {{ t.get('mode_gold_labor','ذهب + أجور') }}
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;font-weight:400;">
+          <input type="radio" name="conv_mode" id="mode_labor_only" value="labor_only" onchange="calcConvert()"/>
+          {{ t.get('mode_labor_only','أجور فقط') }}
+        </label>
+      </div>
+    </div>
+  </div>
   <div class="mp-conv-result" id="conv_result">—</div>
 </div>
 
@@ -417,11 +441,14 @@
 
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script>
 var REFRESH_INTERVAL = {{ refresh_interval }} * 60 * 1000;  // ms
-var AUTO_REFRESH     = {{ 'true' if auto_refresh else 'false' }};
-var countdownSec     = {{ refresh_interval }} * 60;
+var AUTO_REFRESH     = true;
+var countdownSec     = 30;
+var TXT_GOLD   = '{{ t.get("metals_gold","Gold") }}';
+var TXT_LABOR  = '{{ t.get("labor_fee","Labor") }}';
+var TXT_LABOR_EQ = '{{ t.get("labor_eq","labor fee") }}';
 
 // Latest data cache
 var latestData = null;
@@ -438,7 +465,7 @@ function fetchPrices(force) {
         updateCards(j.data, prev);
         document.getElementById('offlineWarning').style.display = 'none';
         document.getElementById('liveStatus').style.background = 'rgba(37,211,102,.12)';
-        countdownSec = {{ refresh_interval }} * 60;
+        countdownSec = 30;
       }
     })
     .catch(function(){
@@ -490,10 +517,10 @@ function updateCards(d, prev) {
   var g22 = g24 * 22/24, g21 = g24 * 21/24, g18 = g24 * 18/24;
   var pg24 = pOz ? pOz / g : null;
 
-  setCardSAR('gold_24k', g24, sar, pg24);
-  setCardSAR('gold_22k', g22, sar, pg24 ? pg24 * 22/24 : null);
-  setCardSAR('gold_21k', g21, sar, pg24 ? pg24 * 21/24 : null);
-  setCardSAR('gold_18k', g18, sar, pg24 ? pg24 * 18/24 : null);
+  setCardSAR('gold_24k', g24, sar, pg24, tryR);
+  setCardSAR('gold_22k', g22, sar, pg24 ? pg24 * 22/24 : null, tryR);
+  setCardSAR('gold_21k', g21, sar, pg24 ? pg24 * 21/24 : null, tryR);
+  setCardSAR('gold_18k', g18, sar, pg24 ? pg24 * 18/24 : null, tryR);
 
   // Silver
   var sg = d.silver_oz_usd / g;
@@ -501,6 +528,8 @@ function updateCards(d, prev) {
   setCard('silver_oz_usd', '$' + fmt(d.silver_oz_usd,4), 'chg_silver_oz', d.silver_oz_usd, pSilver);
   setCard('silver_g_usd',  '$' + fmt(sg,4),             'chg_silver_g',  sg, pSilver ? pSilver/g : null);
   el('silver_g_sar').textContent = fmt(sg * sar, 4) + ' SAR';
+  var sgTryEl = el('silver_g_try');
+  if (sgTryEl) sgTryEl.textContent = fmt(sg * tryR, 4) + ' TRY';
 
   // Currencies
   el('usd_sar_disp').textContent = fmt(sar, 4);
@@ -524,36 +553,53 @@ function setCard(priceId, priceStr, chgId, cur, prev) {
     chgEl.className = 'mp-card-change ' + changeClass(cur, prev);
   }
 }
-function setCardSAR(karatId, usdVal, sar, prevUsd) {
+function setCardSAR(karatId, usdVal, sar, prevUsd, tryR) {
   setCard('gold_' + karatId + '_usd', '$' + fmt(usdVal, 4),
           'chg_gold_' + karatId, usdVal, prevUsd);
   var sarEl = el('gold_' + karatId + '_sar');
   if (sarEl) sarEl.textContent = fmt(usdVal * sar, 2) + ' SAR';
+  var tryEl = el('gold_' + karatId + '_try');
+  if (tryEl) tryEl.textContent = fmt(usdVal * tryR, 2) + ' TRY';
 }
 
 /* ── Converter ── */
 function calcConvert() {
   if (!latestData) return;
-  var w    = parseFloat(el('conv_weight').value) || 0;
-  var kar  = el('conv_karat').value;
-  var cur  = el('conv_currency').value;
-  var d    = latestData;
-  var g    = 31.1035;
-  var g24  = d.gold_oz_usd / g;
+  var w     = parseFloat(el('conv_weight').value) || 0;
+  var kar   = el('conv_karat').value;
+  var cur   = el('conv_currency').value;
+  var labor = parseFloat(el('conv_labor').value) || 0;
+  var mode  = document.querySelector('input[name="conv_mode"]:checked')?.value || 'gold_labor';
+  var d     = latestData;
+  var g     = 31.1035;
+  var g24   = d.gold_oz_usd / g;
+  var rate  = cur === 'sar' ? (d.usd_sar || 3.75) : cur === 'try' ? (d.usd_try || 32.0) : 1;
+  var label = cur.toUpperCase();
 
   var pricePerGramUSD = 0;
   if (kar === 'silver') pricePerGramUSD = d.silver_oz_usd / g;
   else pricePerGramUSD = g24 * parseInt(kar) / 24;
 
-  var total = w * pricePerGramUSD;
-  var label = 'USD';
-  if (cur === 'sar') { total *= d.usd_sar || 3.75; label = 'SAR'; }
-  if (cur === 'try') { total *= d.usd_try || 32.0; label = 'TRY'; }
+  // labor input is assumed in the selected currency already
+  var laborUSD = labor / rate;
 
-  el('conv_result').textContent =
-    w.toFixed(3) + ' g × ' + (kar === 'silver' ? '{{ t.get("metals_silver","فضة") }}' : kar) +
-    ' = ' + total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) +
-    ' ' + label;
+  var total = 0;
+  var breakdown = '';
+  if (mode === 'labor_only') {
+    total = w * labor;
+    breakdown = w.toFixed(3) + ' g × ' + labor.toFixed(2) + ' ' + label + ' ' + TXT_LABOR_EQ + ' = ';
+  } else {
+    var goldTotal  = w * pricePerGramUSD * rate;
+    var laborTotal = w * labor;
+    total = goldTotal + laborTotal;
+    var karLabel = kar === 'silver' ? '{{ t.get("metals_silver","Silver") }}' : kar + 'K';
+    breakdown = w.toFixed(3) + ' g ' + karLabel +
+      ' (' + TXT_GOLD + ' ' + goldTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) +
+      ' + ' + TXT_LABOR + ' ' + laborTotal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ') = ';
+  }
+
+  el('conv_result').textContent = breakdown +
+    total.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + label;
 }
 
 /* ── Countdown timer ── */
@@ -562,12 +608,10 @@ function tick() {
   countdownSec--;
   if (countdownSec <= 0) {
     fetchPrices(false);
-    countdownSec = {{ refresh_interval }} * 60;
+    countdownSec = 30;
   }
-  var m = Math.floor(countdownSec / 60);
-  var s = countdownSec % 60;
   var cdEl = el('countdown');
-  if (cdEl) cdEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+  if (cdEl) cdEl.textContent = countdownSec + 's';
 }
 
 // Boot

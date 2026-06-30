@@ -205,7 +205,7 @@
         <td style="color:#86efac;font-weight:700;">{{ '%.4f'|format(d.scrap_24) }}</td>
         <td style="color:#c4b5fd;font-weight:700;">{{ '%.4f'|format(d.stone_gain_24) }}</td>
         <td class="{{ 'loss-bad' if d.loss_pct > 2 else 'loss-ok' }}">{{ '%.2f'|format(d.loss_pct) }}%</td>
-        <td><strong style="color:var(--gold-dark);">{{ '%.2f'|format(d.worker.monthly_salary or 0) }} ر.س</strong></td>
+        <td><strong style="color:var(--gold-dark);">{{ '%.2f'|format(d.worker.monthly_salary or 0) }} {{ t.get('sar_abbr','ر.س') }}</strong></td>
       </tr>
       {% else %}
       <tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text-muted);">{{ t.get('view','لا توجد بيانات.') }}</td></tr>
@@ -859,7 +859,7 @@ document.getElementById('archiveModal').addEventListener('click',function(e){
             <div style="font-size:22px;font-weight:900;color:#86efac;">{{ snap.get('purchases_count',0) }}</div>
             <div style="font-size:12px;color:var(--text-muted);">{{ t.get('operation_code','عملية') }}</div>
             <div style="font-size:13px;font-weight:700;color:#c4b5fd;margin-top:6px;">{{ '%.4f'|format(snap.get('purchases_24',0)) }} {{ t.get('notes','جم') }} (24K)</div>
-            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('purchases_value',0)) }} ر.س</div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('purchases_value',0)) }} {{ t.get('sar_abbr','ر.س') }}</div>
           </div>
         </div>
       </div>
@@ -871,7 +871,7 @@ document.getElementById('archiveModal').addEventListener('click',function(e){
             <div style="font-size:22px;font-weight:900;color:#f87171;">{{ snap.get('sales_count',0) }}</div>
             <div style="font-size:12px;color:var(--text-muted);">{{ t.get('operation_code','عملية') }}</div>
             <div style="font-size:13px;font-weight:700;color:#c4b5fd;margin-top:6px;">{{ '%.4f'|format(snap.get('sales_24',0)) }} {{ t.get('notes','جم') }} (24K)</div>
-            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('sales_value',0)) }} ر.س</div>
+            <div style="font-size:13px;font-weight:700;color:var(--gold-dark);">{{ '%.2f'|format(snap.get('sales_value',0)) }} {{ t.get('sar_abbr','ر.س') }}</div>
           </div>
         </div>
       </div>

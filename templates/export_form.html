@@ -193,7 +193,7 @@
                   align-items:center;justify-content:space-between;display:none;">
         <span style="font-size:13px;color:var(--text-muted);">{{ t.get('total','الإجمالي المتوقع') }}</span>
         <span style="font-size:20px;font-weight:900;color:var(--gold-dark);" id="sale_total_preview">
-          0.00 ر.س
+          0.00 {{ t.get('sar_abbr','ر.س') }}
         </span>
       </div>
 
@@ -214,6 +214,7 @@
 
 {% block extra_js %}
 <script>
+var SAR_ABBR = '{{ t.get("sar_abbr","SAR") }}';
 let activeSaleMode = 'raw_gold';
 
 function setSaleType(type) {
@@ -255,7 +256,7 @@ function calcSaleTotal() {
   const el    = document.getElementById('sale_total_preview');
   if (ppg > 0 && weight > 0) {
     if (box) box.style.display = 'flex';
-    if (el)  el.textContent    = total.toFixed(2) + ' ر.س';
+    if (el)  el.textContent    = total.toFixed(2) + ' ' + SAR_ABBR;
   } else {
     if (box) box.style.display = 'none';
   }
