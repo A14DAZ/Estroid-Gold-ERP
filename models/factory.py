@@ -43,6 +43,10 @@ class Factory(db.Model):
     website             = db.Column(db.String(120), default='')
     instagram           = db.Column(db.String(80), default='')
     twitter             = db.Column(db.String(80), default='')
+    tiktok              = db.Column(db.String(80), default='')
+    snapchat            = db.Column(db.String(80), default='')
+    linkedin            = db.Column(db.String(120), default='')
+    youtube             = db.Column(db.String(120), default='')
     commercial_reg      = db.Column(db.String(40), default='')  # سجل تجاري
     tax_number          = db.Column(db.String(40), default='')  # رقم ضريبي
     description         = db.Column(db.Text, default='')

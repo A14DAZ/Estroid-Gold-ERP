@@ -760,6 +760,8 @@ TRANSLATIONS = {
         'metals_title': 'أسعار المعادن العالمية',
         'metals_live': 'مباشر',
         'metals_next_update': 'التحديث القادم خلال',
+        'metals_troy_oz': 'أونصة',
+        'gram_short': 'جرام',
     },
     'en': {
         'dashboard': 'Dashboard',
@@ -1488,6 +1490,8 @@ TRANSLATIONS = {
         'metals_title': 'Global Metal Prices',
         'metals_live': 'Live',
         'metals_next_update': 'Next update in',
+        'metals_troy_oz': 'Troy Oz',
+        'gram_short': 'Gram',
     },
     'tr': {
         'dashboard': 'Kontrol Paneli',
@@ -2216,6 +2220,8 @@ TRANSLATIONS = {
         'metals_title': 'Küresel Metal Fiyatları',
         'metals_live': 'Canlı',
         'metals_next_update': 'Sonraki güncelleme',
+        'metals_troy_oz': 'Ons',
+        'gram_short': 'Gram',
     },
 }
 

@@ -418,6 +418,10 @@ def settings():
             fac.website   = request.form.get('website', '').strip()
             fac.instagram = request.form.get('instagram', '').strip()
             fac.twitter   = request.form.get('twitter', '').strip()
+            fac.tiktok    = request.form.get('tiktok', '').strip()
+            fac.snapchat  = request.form.get('snapchat', '').strip()
+            fac.linkedin  = request.form.get('linkedin', '').strip()
+            fac.youtube   = request.form.get('youtube', '').strip()
             db.session.commit()
             flash(g.t.get('settings_saved', 'تم الحفظ ✓'), 'success')
             active_tab = 'general'
@@ -531,9 +535,11 @@ def settings():
         return redirect(url_for('factory.settings', tab=active_tab))
 
     from models.subscription import Payment
+    from utils.countries import get_countries
     recent_payments = Payment.query.filter_by(factory_id=fac.id)        .order_by(Payment.paid_at.desc()).limit(5).all()
     return render_template('settings.html', fac=fac, user=user,
-                           active_tab=active_tab, recent_payments=recent_payments)
+                           active_tab=active_tab, recent_payments=recent_payments,
+                           countries=get_countries(g.lang))
 
 
 # ── Settings extra routes ─────────────────────────────────────

@@ -8,8 +8,6 @@
   <div style="display:flex;align-items:center;justify-content:space-between;
               padding:14px 18px;border-bottom:1px solid var(--grey-border);">
     <div style="display:flex;align-items:center;gap:9px;">
-      <img src="/static/estroid_logo.svg" alt="Estroid"
-           style="width:28px;height:28px;object-fit:contain;"/>
       <div>
         <div style="font-size:14px;font-weight:800;">{{ t.get('metals_widget_title','أسعار الذهب المباشرة') }}</div>
         <div style="font-size:11px;color:var(--text-muted);">Gold Live · <span id="wgt-source">—</span></div>
@@ -30,12 +28,13 @@
 
     {# Gold rows #}
     {% set rows = [
-      ('gold_oz',  '⚜ ' + t.get('metals_oz','أونصة'),  'oz',  '#D4AF37'),
-      ('gold_24k', '24K',                               'g',   '#D4AF37'),
-      ('gold_22k', '22K',                               'g',   '#c9a227'),
-      ('gold_21k', '21K',                               'g',   '#b8960c'),
-      ('gold_18k', '18K',                               'g',   '#a07510'),
-      ('silver_g', '◆ ' + t.get('metals_silver','فضة'), 'g',   '#94a3b8'),
+      ('gold_oz',   t.get('metals_troy_oz','أونصة'),                                                    'oz', '#D4AF37'),
+      ('gold_24k',  '24K',                                                                               'g',  '#D4AF37'),
+      ('gold_22k',  '22K',                                                                               'g',  '#c9a227'),
+      ('gold_21k',  '21K',                                                                               'g',  '#b8960c'),
+      ('gold_18k',  '18K',                                                                               'g',  '#a07510'),
+      ('silver_oz', '◆ ' + t.get('metals_silver','فضة') + ' — ' + t.get('metals_troy_oz','أونصة'),     'oz', '#94a3b8'),
+      ('silver_g',  '◆ ' + t.get('metals_silver','فضة') + ' — ' + t.get('gram_short','Gram'),          'g',  '#94a3b8'),
     ] %}
 
     {% for key, label, unit, color in rows %}
@@ -113,12 +112,13 @@
     var pg24 = PREV ? PREV.gold_oz_usd / G : null;
     var psg  = PREV ? PREV.silver_oz_usd / G : null;
 
-    setRow('gold_oz',  d.gold_oz_usd,    PREV ? PREV.gold_oz_usd : null);
-    setRow('gold_24k', g24,              pg24);
-    setRow('gold_22k', g24*22/24,        pg24 ? pg24*22/24 : null);
-    setRow('gold_21k', g24*21/24,        pg24 ? pg24*21/24 : null);
-    setRow('gold_18k', g24*18/24,        pg24 ? pg24*18/24 : null);
-    setRow('silver_g', sg,               psg);
+    setRow('gold_oz',   d.gold_oz_usd,    PREV ? PREV.gold_oz_usd    : null);
+    setRow('gold_24k',  g24,              pg24);
+    setRow('gold_22k',  g24*22/24,        pg24 ? pg24*22/24          : null);
+    setRow('gold_21k',  g24*21/24,        pg24 ? pg24*21/24          : null);
+    setRow('gold_18k',  g24*18/24,        pg24 ? pg24*18/24          : null);
+    setRow('silver_oz', d.silver_oz_usd,  PREV ? PREV.silver_oz_usd  : null);
+    setRow('silver_g',  sg,               psg);
 
     if (el('wgt-sar')) el('wgt-sar').textContent = fmt(d.usd_sar, 4);
     if (el('wgt-try')) el('wgt-try').textContent = fmt(d.usd_try, 4);

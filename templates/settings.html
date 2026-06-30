@@ -66,7 +66,7 @@
             <div class="col-md-6">
               <label class="form-label-custom">{{ t.get('country','الدولة') }}</label>
               <select name="country" class="form-control-custom">
-                {% for code, cname in [('SA','السعودية'),('AE','الإمارات'),('KW','الكويت'),('TR','تركيا'),('EG','مصر'),('OTHER','أخرى')] %}
+                {% for code, cname in countries %}
                 <option value="{{ code }}" {{ 'selected' if (fac.country or 'SA')==code }}>{{ cname }}</option>
                 {% endfor %}
               </select>
@@ -141,16 +141,43 @@
             <input type="url" name="website" class="form-control-custom"
                    value="{{ fac.website or '' }}" style="direction:ltr;" placeholder="https://"/>
           </div>
-          <div class="row g-3 mb-4">
+          <div class="row g-3 mb-3">
             <div class="col-6">
               <label class="form-label-custom"><i class="fab fa-instagram" style="color:#e1306c;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> Instagram</label>
               <input type="text" name="instagram" class="form-control-custom"
                      value="{{ fac.instagram or '' }}" style="direction:ltr;" placeholder="@username"/>
             </div>
             <div class="col-6">
-              <label class="form-label-custom"><i class="fab fa-twitter" style="color:#1da1f2;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> X / Twitter</label>
+              <label class="form-label-custom">
+                <svg style="width:14px;height:14px;vertical-align:middle;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                X
+              </label>
               <input type="text" name="twitter" class="form-control-custom"
                      value="{{ fac.twitter or '' }}" style="direction:ltr;" placeholder="@username"/>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-tiktok" style="color:#010101;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> TikTok</label>
+              <input type="text" name="tiktok" class="form-control-custom"
+                     value="{{ fac.tiktok or '' }}" style="direction:ltr;" placeholder="@username"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-snapchat" style="color:#FFFC00;-webkit-text-stroke:1px #ccc;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> Snapchat</label>
+              <input type="text" name="snapchat" class="form-control-custom"
+                     value="{{ fac.snapchat or '' }}" style="direction:ltr;" placeholder="@username"/>
+            </div>
+          </div>
+          <div class="row g-3 mb-4">
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-linkedin" style="color:#0077b5;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> LinkedIn</label>
+              <input type="text" name="linkedin" class="form-control-custom"
+                     value="{{ fac.linkedin or '' }}" style="direction:ltr;" placeholder="linkedin.com/company/..."/>
+            </div>
+            <div class="col-6">
+              <label class="form-label-custom"><i class="fab fa-youtube" style="color:#ff0000;margin-{{ 'left' if dir=='rtl' else 'right' }}:5px;"></i> YouTube</label>
+              <input type="text" name="youtube" class="form-control-custom"
+                     value="{{ fac.youtube or '' }}" style="direction:ltr;" placeholder="youtube.com/@channel"/>
             </div>
           </div>
           <button type="submit" class="btn-gold btn-full"><i class="fas fa-save"></i> {{ t.save }}</button>
