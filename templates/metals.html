@@ -382,19 +382,17 @@
     </div>
     <div class="mp-conv-field" style="flex:2;">
       <label>{{ t.get('calc_mode','طريقة الحساب') }}</label>
-      <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;justify-content:center;gap:3px;
-                      font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
-                      flex:1;padding:9px 14px;border:1.5px solid var(--grey-border);
-                      border-radius:8px;text-align:center;transition:border-color .15s;">
-          <input type="radio" name="conv_mode" id="mode_gold_labor" value="gold_labor" checked onchange="calcConvert()"/>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+        <label style="display:block;text-align:center;font-size:13px;font-weight:600;
+                      cursor:pointer;padding:9px 14px;line-height:1.8;
+                      border:1.5px solid var(--grey-border);border-radius:8px;">
+          <input type="radio" name="conv_mode" id="mode_gold_labor" value="gold_labor" checked onchange="calcConvert()" style="vertical-align:middle;margin-left:5px;"/>
           {{ t.get('mode_gold_labor','ذهب + أجور') }}
         </label>
-        <label style="display:flex;align-items:center;justify-content:center;gap:3px;
-                      font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
-                      flex:1;padding:9px 14px;border:1.5px solid var(--grey-border);
-                      border-radius:8px;text-align:center;transition:border-color .15s;">
-          <input type="radio" name="conv_mode" id="mode_labor_only" value="labor_only" onchange="calcConvert()"/>
+        <label style="display:block;text-align:center;font-size:13px;font-weight:600;
+                      cursor:pointer;padding:9px 14px;line-height:1.8;
+                      border:1.5px solid var(--grey-border);border-radius:8px;">
+          <input type="radio" name="conv_mode" id="mode_labor_only" value="labor_only" onchange="calcConvert()" style="vertical-align:middle;margin-left:5px;"/>
           {{ t.get('mode_labor_only','أجور فقط') }}
         </label>
       </div>
