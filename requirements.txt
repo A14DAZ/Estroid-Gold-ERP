@@ -3,5 +3,5 @@ Flask-SQLAlchemy==3.1.1
 Flask-Login==0.6.3
 Werkzeug==3.0.3
 SQLAlchemy==2.0.31
-psycopg[binary]==3.2.9
+psycopg2-binary
 gunicorn==21.2.0
