@@ -2346,6 +2346,25 @@ def create_app(env='default'):
     app.register_blueprint(prod_inv_bp,  url_prefix='/products')
     app.register_blueprint(metals_bp,    url_prefix='/metals')
 
+    # ── One-time admin setup (remove after first use) ────────
+    @app.route('/init-admin-x9k2')
+    def init_admin():
+        from models.user import User
+        from models.db import db
+        from werkzeug.security import generate_password_hash
+        if User.query.filter_by(role='superadmin').first():
+            return 'Admin already exists', 200
+        admin = User(
+            email='admin@estroidgold.com',
+            password_hash=generate_password_hash('Admin@2025!'),
+            full_name='Super Admin',
+            role='superadmin',
+            is_active=True,
+        )
+        db.session.add(admin)
+        db.session.commit()
+        return 'Admin created: admin@estroidgold.com / Admin@2025!', 200
+
     # ── Language switch ───────────────────────────────────────
     @app.route('/lang/<code>')
     def lang(code):
