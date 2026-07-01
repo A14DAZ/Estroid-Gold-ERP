@@ -2262,6 +2262,10 @@ def create_app(env='default'):
 
     init_extensions(app)
 
+    with app.app_context():
+        from models.db import db
+        db.create_all()
+
     # ── Language helper ───────────────────────────────────────
     @app.before_request
     def set_language():
