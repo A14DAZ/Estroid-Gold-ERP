@@ -504,7 +504,10 @@ def subscriptions():
     # Financial KPIs
     total_revenue  = db.session.query(db.func.coalesce(db.func.sum(Payment.amount),0)).scalar() or 0
     month_revenue  = db.session.query(db.func.coalesce(db.func.sum(Payment.amount),0))\
-        .filter(db.func.strftime('%Y-%m', Payment.paid_at) == today.strftime('%Y-%m')).scalar() or 0
+        .filter(
+            db.extract('year',  Payment.paid_at) == today.year,
+            db.extract('month', Payment.paid_at) == today.month
+        ).scalar() or 0
     payment_count  = Payment.query.count()
 
     expired_f  = [f for f in all_factories if f.is_active and f.subscription_expiry and not f.is_subscription_valid]
@@ -709,11 +712,11 @@ def analytics():
     monthly = []
     for i in range(11, -1, -1):
         d = today.replace(day=1) - timedelta(days=i*30)
-        ym = d.strftime('%Y-%m')
         rev = db.session.query(
             db.func.coalesce(db.func.sum(Payment.amount), 0)
         ).filter(
-            db.func.strftime('%Y-%m', Payment.paid_at) == ym
+            db.extract('year',  Payment.paid_at) == d.year,
+            db.extract('month', Payment.paid_at) == d.month
         ).scalar() or 0
         monthly.append({'month': d.strftime('%b %Y'), 'revenue': round(float(rev), 2)})
 
