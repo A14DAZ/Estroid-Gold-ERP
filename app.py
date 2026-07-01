@@ -2384,6 +2384,10 @@ def create_app(env='default'):
     return app
 
 
+# For gunicorn: gunicorn app:app
+import os as _os
+app = create_app(_os.environ.get('FLASK_ENV', 'production'))
+
 if __name__ == '__main__':
     app = create_app('development')
     print("=" * 55)
