@@ -2351,9 +2351,14 @@ def create_app(env='default'):
     def init_admin():
         from models.user import User
         from models.db import db
-        from werkzeug.security import generate_password_hash
-        if User.query.filter_by(role='superadmin').first():
-            return 'Admin already exists', 200
+        from werkzeug.security import generate_password_hash, check_password_hash
+        existing = User.query.filter_by(role='superadmin').first()
+        if existing:
+            existing.password_hash = generate_password_hash('Admin@2025!')
+            existing.is_active = True
+            db.session.commit()
+            ok = check_password_hash(existing.password_hash, 'Admin@2025!')
+            return f'Admin reset. email={existing.email} check={ok}', 200
         admin = User(
             email='admin@estroidgold.com',
             password_hash=generate_password_hash('Admin@2025!'),
@@ -2363,7 +2368,7 @@ def create_app(env='default'):
         )
         db.session.add(admin)
         db.session.commit()
-        return 'Admin created: admin@estroidgold.com / Admin@2025!', 200
+        return f'Admin created: admin@estroidgold.com / Admin@2025!', 200
 
     # ── Language switch ───────────────────────────────────────
     @app.route('/lang/<code>')
