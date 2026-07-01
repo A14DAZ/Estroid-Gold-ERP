@@ -2256,6 +2256,26 @@ TRANSLATIONS = {
 
 
 
+def _seed_superadmin():
+    """Create default superadmin if none exists."""
+    from models.user import User
+    from models.db import db
+    from werkzeug.security import generate_password_hash
+    try:
+        if not User.query.filter_by(role='superadmin').first():
+            admin = User(
+                email='admin@estroidgold.com',
+                password_hash=generate_password_hash('Admin@2025!'),
+                full_name='Super Admin',
+                role='superadmin',
+                is_active=True,
+            )
+            db.session.add(admin)
+            db.session.commit()
+    except Exception:
+        pass
+
+
 def create_app(env='default'):
     app = Flask(__name__)
     app.config.from_object(config[env])
@@ -2265,6 +2285,7 @@ def create_app(env='default'):
     with app.app_context():
         from models.db import db
         db.create_all()
+        _seed_superadmin()
 
     # ── Language helper ───────────────────────────────────────
     @app.before_request
